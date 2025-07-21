@@ -9,10 +9,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include_directories(include)
 
 add_executable(database
-	src/main.cpp
 	src/common.cpp
 	src/error.cpp
+	src/main.cpp
+	src/op.cpp
+	src/token.cpp
 	src/type.cpp
 	src/value.cpp
-	src/op.cpp
 )
