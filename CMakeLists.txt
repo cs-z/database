@@ -14,4 +14,5 @@ add_executable(database
 	src/error.cpp
 	src/type.cpp
 	src/value.cpp
+	src/op.cpp
 )
