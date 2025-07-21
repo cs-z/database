@@ -17,4 +17,5 @@ add_executable(database
 	src/type.cpp
 	src/value.cpp
 	src/lexer.cpp
+	src/ast.cpp
 )

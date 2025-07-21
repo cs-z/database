@@ -6,6 +6,7 @@
 #include "type.hpp"
 #include "value.hpp"
 #include "lexer.hpp"
+#include "ast.hpp"
 
 int main()
 {
