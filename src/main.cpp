@@ -5,6 +5,7 @@
 #include "token.hpp"
 #include "type.hpp"
 #include "value.hpp"
+#include "lexer.hpp"
 
 int main()
 {

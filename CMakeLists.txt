@@ -16,4 +16,5 @@ add_executable(database
 	src/token.cpp
 	src/type.cpp
 	src/value.cpp
+	src/lexer.cpp
 )
