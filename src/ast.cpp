@@ -125,6 +125,7 @@ void AstQuery::print() const
 			}
 		}
 	}
+	printf("\n");
 }
 
 void AstSource::print() const

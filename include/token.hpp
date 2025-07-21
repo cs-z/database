@@ -73,7 +73,7 @@ public:
 		End,
 	};
 
-	using DataOp = ::Op2;
+	using DataOp2 = ::Op2;
 	using DataAggregate = AggregateFunction;
 	using DataIdentifier = std::string;
 	// structs for avoiding type collision in variant
@@ -82,7 +82,7 @@ public:
 	struct DataConstantReal { ColumnValueReal value; };
 	struct DataConstantString { ColumnValueVarchar value; };
 
-	using Data = std::variant<DataOp, DataAggregate, DataIdentifier, DataConstantBoolean, DataConstantInteger, DataConstantReal, DataConstantString>;
+	using Data = std::variant<DataOp2, DataAggregate, DataIdentifier, DataConstantBoolean, DataConstantInteger, DataConstantReal, DataConstantString>;
 
 	Token(Tag tag, Text text) : tag { tag }, text { text } {}
 	Token(Tag tag, Data data, Text text) : tag { tag }, data { std::move(data) }, text { text } {}

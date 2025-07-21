@@ -31,7 +31,3 @@ template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
 
 #define ASSERT(expr) static_cast<bool>(expr) ? void (0) : abort_expr(#expr, __FILE__, __LINE__)
 #define UNREACHABLE() abort_expr("UNREACHABLE", __FILE__, __LINE__)
-
-#define ASSERT_TODO ASSERT
-#define ASSERT_INNER ASSERT
-#define ASSERT_CLIENT ASSERT

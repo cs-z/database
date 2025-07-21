@@ -1,13 +1,15 @@
-#include "aggregate.hpp"
-#include "common.hpp"
-#include "error.hpp"
-#include "op.hpp"
-#include "token.hpp"
-#include "type.hpp"
-#include "value.hpp"
-#include "lexer.hpp"
-#include "ast.hpp"
+#include "parse.hpp"
 
-int main()
+int main(int argc, const char **argv)
 {
+	ASSERT(argc == 2);
+	std::string source = argv[1];
+	Lexer lexer { source };
+	try {
+		AstQuery query = parse_query(lexer);
+		query.print();
+	}
+	catch(const ClientError &error) {
+		error.report(source);
+	}
 }
