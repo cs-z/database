@@ -23,12 +23,12 @@ std::string column_type_to_catalog_string(ColumnType type)
 //	return parse_type(std::move(name));
 //}
 
-void column_type_check_cast(std::optional<ColumnType> from, ColumnType to, Text text)
+void column_type_check_cast(std::optional<ColumnType> from, const std::pair<ColumnType, Text> &to)
 {
 	if (from) {
 		switch (*from) {
 			case ColumnType::BOOLEAN:
-				switch (to) {
+				switch (to.first) {
 					case ColumnType::INTEGER:
 					case ColumnType::REAL:
 						break;
@@ -38,7 +38,7 @@ void column_type_check_cast(std::optional<ColumnType> from, ColumnType to, Text 
 				}
 				break;
 			case ColumnType::INTEGER:
-				switch (to) {
+				switch (to.first) {
 					case ColumnType::BOOLEAN:
 						break;
 					case ColumnType::INTEGER:
@@ -48,7 +48,7 @@ void column_type_check_cast(std::optional<ColumnType> from, ColumnType to, Text 
 				}
 				break;
 			case ColumnType::REAL:
-				switch (to) {
+				switch (to.first) {
 					case ColumnType::BOOLEAN:
 						break;
 					case ColumnType::INTEGER:
@@ -58,7 +58,7 @@ void column_type_check_cast(std::optional<ColumnType> from, ColumnType to, Text 
 				}
 				break;
 			case ColumnType::VARCHAR:
-				switch (to) {
+				switch (to.first) {
 					case ColumnType::BOOLEAN:
 					case ColumnType::INTEGER:
 					case ColumnType::REAL:
@@ -69,7 +69,7 @@ void column_type_check_cast(std::optional<ColumnType> from, ColumnType to, Text 
 				break;
 		}
 	}
-	throw ClientError { "invalid cast from " + (from ? column_type_to_string(*from) : "NULL") + " to " + column_type_to_string(to), text };
+	throw ClientError { "invalid cast from " + (from ? column_type_to_string(*from) : "NULL") + " to " + column_type_to_string(to.first), to.second };
 }
 
 void Type::add_column(std::string name, ColumnType type)

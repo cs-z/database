@@ -91,14 +91,13 @@ ColumnValue column_value_eval_cast(const ColumnValue &value, ColumnType to)
 			}
 			UNREACHABLE();
 		},
-		[to](const ColumnValueVarchar &value) -> ColumnValue {
+		[to](const ColumnValueVarchar &) -> ColumnValue {
 			switch (to) {
 				case ColumnType::BOOLEAN:
 				case ColumnType::INTEGER:
 				case ColumnType::REAL:
-					UNREACHABLE();
 				case ColumnType::VARCHAR:
-					return value;
+					UNREACHABLE();
 			}
 			UNREACHABLE();
 		},

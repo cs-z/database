@@ -1,10 +1,18 @@
 #include "op.hpp"
 #include "error.hpp"
 
-static void report_op1_type_error(Text op_text, std::optional<ColumnType> type);
-// throw ClientError { "operator not defined on type " + column_type_to_string(*type), op.second };
-static void report_op2_type_error(Text op_text, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r);
-// throw ClientError { "operator not defined on type " + column_type_to_string(*type), op.second };
+[[noreturn]] static void report_op1_type_error(Text op_text, std::optional<ColumnType> type)
+{
+	std::string type_name = type ? column_type_to_string(*type) : "NULL";
+	throw ClientError { "operator not defined on type " + std::move(type_name), op_text };
+}
+
+[[noreturn]] static void report_op2_type_error(Text op_text, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
+{
+	std::string type_l_name = type_l ? column_type_to_string(*type_l) : "NULL";
+	std::string type_r_name = type_r ? column_type_to_string(*type_r) : "NULL";
+	throw ClientError { "operator not defined on types " + std::move(type_l_name) + " and " + std::move(type_r_name), op_text };
+}
 
 std::string op1_to_string(Op1 op, const std::string &expr)
 {
@@ -55,7 +63,7 @@ std::optional<ColumnType> op1_check(const std::pair<Op1, Text> &op, std::optiona
 	switch (op.first) {
 		case Op1::Pos:
 		case Op1::Neg:
-			if (type && !column_type_is_numeric(*type)) {
+			if (type && !column_type_is_arithmetic(*type)) {
 				report_op1_type_error(op.second, type);
 			}
 			return type;
@@ -173,10 +181,10 @@ std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optiona
 		case Op2::ArithMod:
 		case Op2::ArithAdd:
 		case Op2::ArithSub: {
-			if (type_l && !column_type_is_numeric(*type_l)) {
+			if (type_l && !column_type_is_arithmetic(*type_l)) {
 				report_op2_type_error(op.second, type_l, type_r);
 			}
-			if (type_r && !column_type_is_numeric(*type_r)) {
+			if (type_r && !column_type_is_arithmetic(*type_r)) {
 				report_op2_type_error(op.second, type_l, type_r);
 			}
 			if (!type_l || !type_r) {
@@ -188,10 +196,10 @@ std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optiona
 		case Op2::CompLe:
 		case Op2::CompG:
 		case Op2::CompGe: {
-			if (type_l && !column_type_is_numeric(*type_l)) {
+			if (type_l && !column_type_is_comparable(*type_l)) {
 				report_op2_type_error(op.second, type_l, type_r);
 			}
-			if (type_r && !column_type_is_numeric(*type_r)) {
+			if (type_r && !column_type_is_comparable(*type_r)) {
 				report_op2_type_error(op.second, type_l, type_r);
 			}
 			if (type_l && type_r) {
@@ -333,8 +341,21 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 							UNREACHABLE();
 					}
 				},
-				[](const ColumnValueVarchar &) -> ColumnValue {
-					UNREACHABLE();
+				[op, &value_r](const ColumnValueVarchar &value) -> ColumnValue {
+					const auto a = value;
+					const auto b = std::get<ColumnValueVarchar>(value_r);
+					switch (op.first) {
+						case Op2::CompL:
+							return a < b ? Bool::TRUE : Bool::FALSE;
+						case Op2::CompLe:
+							return a <= b ? Bool::TRUE : Bool::FALSE;
+						case Op2::CompG:
+							return a > b ? Bool::TRUE : Bool::FALSE;
+						case Op2::CompGe:
+							return a >= b ? Bool::TRUE : Bool::FALSE;
+						default:
+							UNREACHABLE();
+					}
 				},
 			}, value_l);
 		}
