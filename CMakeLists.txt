@@ -13,4 +13,5 @@ add_executable(database
 	src/common.cpp
 	src/error.cpp
 	src/type.cpp
+	src/value.cpp
 )

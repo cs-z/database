@@ -3,31 +3,23 @@
 #include "common.hpp"
 #include "error.hpp"
 
-struct ColumnType
+enum class ColumnType
 {
-	enum Tag
-	{
-		NULL_TYPE,
-		BOOLEAN,
-		INTEGER,
-		REAL,
-		VARCHAR,
-	};
-
-	Tag tag;
-	unsigned int size;
-
-	inline bool operator==(const ColumnType &other) const { return tag == other.tag; }
-	inline bool is_numeric() const { return tag == INTEGER || tag == REAL; }
-
-	std::string to_string() const;
-	// TODO
-	//std::string to_catalog_string() const;
-
-	// TODO
-	//static ColumnType from_catalog_string(std::string name);
-	static void check_cast(ColumnType from, ColumnType to, Text text);
+	BOOLEAN,
+	INTEGER,
+	REAL,
+	VARCHAR,
 };
+
+inline bool column_type_is_numeric(ColumnType type)
+{
+	return type == ColumnType::INTEGER || type == ColumnType::REAL;
+}
+
+std::string column_type_to_string(ColumnType type);
+void column_type_check_cast(std::optional<ColumnType> from, ColumnType to, Text text);
+std::string column_type_to_catalog_string(ColumnType type);
+ColumnType column_type_from_catalog_string(std::string name);
 
 class Type
 {

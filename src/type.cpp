@@ -1,10 +1,9 @@
 #include "type.hpp"
-//#include "parse.hpp" TODO
+//#include "parse.hpp"
 
-static const char *tag_to_string(ColumnType::Tag tag)
+std::string column_type_to_string(ColumnType type)
 {
-	switch (tag) {
-		case ColumnType::NULL_TYPE: return "NULL";
+	switch (type) {
 		case ColumnType::BOOLEAN: return "BOOLEAN";
 		case ColumnType::INTEGER: return "INTEGER";
 		case ColumnType::REAL: return "REAL";
@@ -13,84 +12,69 @@ static const char *tag_to_string(ColumnType::Tag tag)
 	UNREACHABLE();
 }
 
-std::string ColumnType::to_string() const
+std::string column_type_to_catalog_string(ColumnType type)
 {
-	std::string string = tag_to_string(tag);
-	if (tag == Tag::VARCHAR && size > 0) {
-		string += "(" + std::to_string(size) + ")";
-	}
-	return string;
+	return column_type_to_string(type);
 }
 
 // TODO
-//std::string ColumnType::to_catalog_string() const
-//{
-//	return to_string();
-//}
-
-// TODO
-//ColumnType ColumnType::from_catalog_string(std::string name)
+//ColumnType column_type_from_catalog_string(std::string name)
 //{
 //	return parse_type(std::move(name));
 //}
 
-void ColumnType::check_cast(ColumnType from, ColumnType to, Text text)
+void column_type_check_cast(std::optional<ColumnType> from, ColumnType to, Text text)
 {
-	switch (from.tag) {
-		case ColumnType::NULL_TYPE:
-			break;
-		case ColumnType::BOOLEAN:
-			switch (to.tag) {
-				case ColumnType::NULL_TYPE:
-				case ColumnType::INTEGER:
-				case ColumnType::REAL:
-					break;
-				case ColumnType::BOOLEAN:
-				case ColumnType::VARCHAR:
-					return;
-			}
-			break;
-		case ColumnType::INTEGER:
-			switch (to.tag) {
-				case ColumnType::NULL_TYPE:
-				case ColumnType::BOOLEAN:
-					break;
-				case ColumnType::INTEGER:
-				case ColumnType::REAL:
-				case ColumnType::VARCHAR:
-					return;
-			}
-			break;
-		case ColumnType::REAL:
-			switch (to.tag) {
-				case ColumnType::NULL_TYPE:
-				case ColumnType::BOOLEAN:
-					break;
-				case ColumnType::INTEGER:
-				case ColumnType::REAL:
-				case ColumnType::VARCHAR:
-					return;
-			}
-			break;
-		case ColumnType::VARCHAR:
-			switch (to.tag) {
-				case ColumnType::NULL_TYPE:
-				case ColumnType::BOOLEAN:
-				case ColumnType::INTEGER:
-				case ColumnType::REAL:
-					break;
-				case ColumnType::VARCHAR:
-					return;
-			}
-			break;
+	if (from) {
+		switch (*from) {
+			case ColumnType::BOOLEAN:
+				switch (to) {
+					case ColumnType::INTEGER:
+					case ColumnType::REAL:
+						break;
+					case ColumnType::BOOLEAN:
+					case ColumnType::VARCHAR:
+						return;
+				}
+				break;
+			case ColumnType::INTEGER:
+				switch (to) {
+					case ColumnType::BOOLEAN:
+						break;
+					case ColumnType::INTEGER:
+					case ColumnType::REAL:
+					case ColumnType::VARCHAR:
+						return;
+				}
+				break;
+			case ColumnType::REAL:
+				switch (to) {
+					case ColumnType::BOOLEAN:
+						break;
+					case ColumnType::INTEGER:
+					case ColumnType::REAL:
+					case ColumnType::VARCHAR:
+						return;
+				}
+				break;
+			case ColumnType::VARCHAR:
+				switch (to) {
+					case ColumnType::BOOLEAN:
+					case ColumnType::INTEGER:
+					case ColumnType::REAL:
+						break;
+					case ColumnType::VARCHAR:
+						return;
+				}
+				break;
+		}
 	}
-	throw ClientError { "invalid cast from " + from.to_string() + " to " + to.to_string(), text };
+	throw ClientError { "invalid cast from " + (from ? column_type_to_string(*from) : "NULL") + " to " + column_type_to_string(to), text };
 }
 
 void Type::add_column(std::string name, ColumnType type)
 {
 	ASSERT(!find_column(name));
-	ASSERT(type.tag != ColumnType::NULL_TYPE);
 	columns.push_back({ std::move(name), type });
 }
 
