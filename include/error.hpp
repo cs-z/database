@@ -6,20 +6,40 @@
 
 // stores location in source text
 // used in error reports
-struct Text
+class Text
 {
-	Text(const char *ptr) : first { ptr }, last { ptr } {}
-	Text(const char *begin, const char *end)
+public:
+
+	Text(const char *ptr) : first { ptr }, last { ptr }
 	{
-		ASSERT(begin < end);
-		first = begin;
-		last = end - 1;
+		ASSERT(ptr);
 	}
-	[[nodiscard]] Text operator+(const Text &other) const
+
+	Text(const char *begin, const char *end) : first { begin }, last { end - 1 }
+	{
+		ASSERT(first && last && first <= last);
+	}
+
+	Text(const Text &other) : first { other.first }, last { other.last } {}
+
+	Text &operator=(const Text &other)
+	{
+		ASSERT(other.first && other.last && other.first <= other.last);
+		first = other.first;
+		last = other.last;
+		return *this;
+	}
+
+	Text operator+(const Text &other) const
 	{
 		ASSERT(last < other.first);
 		return { first, other.last };
 	}
+
+	void report(const std::string &source) const;
+
+private:
+
 	const char *first, *last;
 };
 

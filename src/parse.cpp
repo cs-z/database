@@ -183,7 +183,8 @@ static std::unique_ptr<AstExpr> parse_expr(Lexer &lexer, ExprContext context, un
 		}
 		if (prec <= op1_prec(Op1::IsNull) && (lexer.accept(Token::KwNot) || lexer.accept(Token::KwBetween) || lexer.accept(Token::KwIn))) {
 			const bool negated = lexer.accept_step(Token::KwNot);
-			if (lexer.accept_step(Token::KwBetween)) {
+			if (lexer.accept(Token::KwBetween)) {
+				const Text between_text = lexer.step_token().get_text();
 				std::unique_ptr<AstExpr> min = parse_expr(lexer, context, op2_prec(Op2::LogicAnd) + 1);
 				const Text op_text = lexer.expect(Token::Op2).get_text();
 				if (lexer.step_token().get_data<Token::DataOp2>() != Op2::LogicAnd) {
@@ -191,7 +192,7 @@ static std::unique_ptr<AstExpr> parse_expr(Lexer &lexer, ExprContext context, un
 				}
 				std::unique_ptr<AstExpr> max = parse_expr(lexer, context, op2_prec(Op2::LogicAnd) + 1);
 				const Text text = expr->text + max->text;
-				expr = std::make_unique<AstExpr>(AstExpr::DataBetween { std::move(expr), std::move(min), std::move(max), negated }, text);
+				expr = std::make_unique<AstExpr>(AstExpr::DataBetween { std::move(expr), std::move(min), std::move(max), negated, between_text }, text);
 				continue;
 			}
 			if (lexer.accept_step(Token::KwIn)) {

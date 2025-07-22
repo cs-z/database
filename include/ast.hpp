@@ -38,6 +38,7 @@ struct AstExpr
 	{
 		std::unique_ptr<AstExpr> expr, min, max;
 		bool negated;
+		Text between_text;
 	};
 	struct DataIn
 	{
