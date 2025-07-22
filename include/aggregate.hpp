@@ -1,6 +1,7 @@
 #pragma once
 
 #include "value.hpp"
+#include "expr.hpp"
 
 enum class AggregateFunction
 {
@@ -39,12 +40,10 @@ private:
 
 };
 
-//#include "expr.hpp"
-//
-//struct Aggregate
-//{
-//	AggregateFunction function;
-//	std::unique_ptr<Expr> arg;
-//};
-//
-//using Aggregates = std::vector<Aggregate>;
+struct Aggregate
+{
+	AggregateFunction function;
+	std::unique_ptr<Expr> arg;
+};
+
+using Aggregates = std::vector<Aggregate>;

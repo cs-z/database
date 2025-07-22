@@ -26,9 +26,9 @@ ColumnValue Expr::eval(const Value &row) const
 			const ColumnValue value = expr.expr->eval(row);
 			const ColumnValue value_min = expr.min->eval(row);
 			const ColumnValue value_max = expr.max->eval(row);
-			const ColumnValue comp_l = op2_eval({ Op2::CompGe, expr.between_text }, value, value_min);
-			const ColumnValue comp_r = op2_eval({ Op2::CompLe, expr.between_text }, value, value_max);
-			return op2_eval({ Op2::LogicAnd, expr.between_text }, comp_l, comp_r);
+			const ColumnValue comp_l = op2_eval({ expr.negated ? Op2::CompL : Op2::CompGe, expr.between_text }, value, value_min);
+			const ColumnValue comp_r = op2_eval({ expr.negated ? Op2::CompLe : Op2::CompG, expr.between_text }, value, value_max);
+			return op2_eval({ expr.negated ? Op2::LogicOr : Op2::LogicAnd, expr.between_text }, comp_l, comp_r);
 		},
 		[&row](const Expr::DataIn &expr) -> ColumnValue {
 			const ColumnValue value = expr.expr->eval(row);
@@ -42,10 +42,10 @@ ColumnValue Expr::eval(const Value &row) const
 					has_null = true;
 				}
 				else if (element == value) {
-					return Bool::TRUE;
+					return expr.negated ? Bool::FALSE : Bool::TRUE;
 				}
 			}
-			return has_null ? Bool::UNKNOWN : Bool::FALSE;
+			return has_null ? Bool::UNKNOWN : (expr.negated ? Bool::TRUE : Bool::FALSE);
 		},
 		[&row](const Expr::DataAggregate &expr) {
 			return row.at(expr.id);

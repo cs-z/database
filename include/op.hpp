@@ -35,5 +35,5 @@ enum class Op2
 
 const char *op2_cstr(Op2 op);
 unsigned int op2_prec(Op2 op);
-std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r, std::optional<ColumnType> &cast_l_out, std::optional<ColumnType> &cast_r_out);
+std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r);
 ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l, const ColumnValue &value_r);

@@ -40,14 +40,16 @@ static std::pair<AstExpr::DataColumn, Text> parse_column(Lexer &lexer)
 using WildcardOrColumn = std::variant<AstSelectList::Wildcard, AstSelectList::TableWildcard, std::unique_ptr<AstExpr>>;
 static std::optional<WildcardOrColumn> parse_wildcard_or_column(Lexer &lexer)
 {
-	if (lexer.accept_step(Token::Asterisk)) {
-		return { AstSelectList::Wildcard {} };
+	if (lexer.accept(Token::Asterisk)) {
+		const Text asterisk_text = lexer.step_token().get_text();
+		return { AstSelectList::Wildcard { asterisk_text } };
 	}
 	if (lexer.accept(Token::Identifier)) {
 		AstIdentifier name = lexer.step_token().take<Token::DataIdentifier>();
 		if (lexer.accept_step(Token::Period)) {
-			if (lexer.accept_step(Token::Asterisk)) {
-				return { AstSelectList::TableWildcard { std::move(name) } };
+			if (lexer.accept(Token::Asterisk)) {
+				const Text asterisk_text = lexer.step_token().get_text();
+				return { AstSelectList::TableWildcard { std::move(name), asterisk_text } };
 			}
 			if (lexer.accept(Token::Identifier)) {
 				AstIdentifier column = lexer.step_token().take<Token::DataIdentifier>();
@@ -139,18 +141,18 @@ static std::unique_ptr<AstExpr> parse_expr_primary(Lexer &lexer, ExprContext con
 		}
 		auto [function, function_text] = lexer.step_token().take<Token::DataAggregate>();
 		lexer.expect_step(Token::LParen);
-		std::unique_ptr<AstExpr> expr;
+		std::unique_ptr<AstExpr> arg;
 		if (lexer.accept(Token::Asterisk)) {
-			const Text text_arg = lexer.step_token().get_text();
+			const Text arg_text = lexer.step_token().get_text();
 			if(function != AggregateFunction::COUNT) {
-				throw ClientError { "only COUNT function accepts * as argument", text_arg };
+				throw ClientError { "only COUNT function accepts * as argument", arg_text };
 			}
 		}
 		else {
-			expr = parse_expr(lexer, { false, true });
+			arg = parse_expr(lexer, { false, true });
 		}
 		const Text rparen_text = lexer.expect_step(Token::RParen).get_text();
-		return std::make_unique<AstExpr>(AstExpr::DataAggregate { std::move(expr), function }, function_text + rparen_text);
+		return std::make_unique<AstExpr>(AstExpr::DataAggregate { function, std::move(arg) }, function_text + rparen_text);
 	}
 	lexer.unexpect();
 }
@@ -195,7 +197,8 @@ static std::unique_ptr<AstExpr> parse_expr(Lexer &lexer, ExprContext context, un
 				expr = std::make_unique<AstExpr>(AstExpr::DataBetween { std::move(expr), std::move(min), std::move(max), negated, between_text }, text);
 				continue;
 			}
-			if (lexer.accept_step(Token::KwIn)) {
+			if (lexer.accept(Token::KwIn)) {
+				const Text in_text = lexer.step_token().get_text();
 				lexer.expect_step(Token::LParen);
 				std::vector<std::unique_ptr<AstExpr>> list;
 				do {
@@ -203,7 +206,7 @@ static std::unique_ptr<AstExpr> parse_expr(Lexer &lexer, ExprContext context, un
 				} while (lexer.accept_step(Token::Comma));
 				const Text rparen_text = lexer.expect_step(Token::RParen).get_text();
 				const Text text = expr->text + rparen_text;
-				expr = std::make_unique<AstExpr>(AstExpr::DataIn { std::move(expr), std::move(list), negated }, text);
+				expr = std::make_unique<AstExpr>(AstExpr::DataIn { std::move(expr), std::move(list), negated, in_text }, text);
 				continue;
 			}
 			UNREACHABLE();

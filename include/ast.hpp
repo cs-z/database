@@ -18,6 +18,7 @@ struct AstExpr
 	{
 		std::optional<AstIdentifier> table;
 		AstIdentifier name;
+		const std::string to_string() const;
 	};
 	struct DataCast
 	{
@@ -45,11 +46,12 @@ struct AstExpr
 		std::unique_ptr<AstExpr> expr;
 		std::vector<std::unique_ptr<AstExpr>> list;
 		bool negated;
+		Text in_text;
 	};
 	struct DataAggregate
 	{
-		std::unique_ptr<AstExpr> arg;
 		AggregateFunction function;
+		std::unique_ptr<AstExpr> arg;
 	};
 
 	using Data = std::variant<DataConstant, DataColumn, DataCast, DataOp1, DataOp2, DataBetween, DataIn, DataAggregate>;
@@ -65,11 +67,12 @@ struct AstSelectList
 {
 	struct Wildcard
 	{
-		std::string table;
+		Text asterisk_text;
 	};
 	struct TableWildcard
 	{
 		AstIdentifier table;
+		Text asterisk_text;
 	};
 	struct Expr
 	{

@@ -1,5 +1,5 @@
 #include "type.hpp"
-//#include "parse.hpp"
+// #include "parse.hpp"
 
 std::string column_type_to_string(ColumnType type)
 {
@@ -18,10 +18,10 @@ std::string column_type_to_catalog_string(ColumnType type)
 }
 
 // TODO
-//ColumnType column_type_from_catalog_string(std::string name)
-//{
-//	return parse_type(std::move(name));
-//}
+// ColumnType column_type_from_catalog_string(std::string name)
+// {
+// 	return parse_type(std::move(name));
+// }
 
 void column_type_check_cast(std::optional<ColumnType> from, const std::pair<ColumnType, Text> &to)
 {

@@ -1,13 +1,13 @@
 #include "ast.hpp"
 
-static std::string column_to_string(const AstExpr::DataColumn &column)
+const std::string AstExpr::DataColumn::to_string() const
 {
-	return column.table ? (column.table->first + "." + column.name.first) : column.name.first;
+	return table ? (table->first + "." + name.first) : name.first;
 }
 
 static void print_column(const AstExpr::DataColumn &column)
 {
-	printf("%s", column_to_string(column).c_str());
+	printf("%s", column.to_string().c_str());
 }
 
 std::string AstExpr::to_string() const
@@ -17,7 +17,7 @@ std::string AstExpr::to_string() const
 			return column_value_to_string(expr.value, true);
 		},
 		[](const DataColumn &expr) {
-			return column_to_string(expr);
+			return expr.to_string();
 		},
 		[](const DataCast &expr) {
 			return "CAST(" + expr.expr->to_string() + " AS " + column_type_to_string(expr.to.first) + ")";

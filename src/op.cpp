@@ -157,23 +157,7 @@ const char *op2_cstr(Op2 op)
 	UNREACHABLE();
 }
 
-static ColumnType cast_implicit(Text op_text, ColumnType type_l, ColumnType type_r, std::optional<ColumnType> &cast_l_out, std::optional<ColumnType> &cast_r_out)
-{
-	if (type_l == type_r) {
-		return type_l;
-	}
-	if (type_l == ColumnType::INTEGER && type_r == ColumnType::REAL) {
-		cast_l_out = ColumnType::REAL;
-		return ColumnType::REAL;
-	}
-	if (type_l == ColumnType::REAL && type_r == ColumnType::INTEGER) {
-		cast_r_out = ColumnType::REAL;
-		return ColumnType::REAL;
-	}
-	report_op2_type_error(op_text, type_l, type_r);
-}
-
-std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r, std::optional<ColumnType> &cast_l_out, std::optional<ColumnType> &cast_r_out)
+std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
 {
 	switch (op.first) {
 		case Op2::ArithMul:
@@ -190,7 +174,8 @@ std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optiona
 			if (!type_l || !type_r) {
 				return std::nullopt;
 			}
-			return cast_implicit(op.second, *type_l, *type_r, cast_l_out, cast_r_out);
+			ASSERT(*type_l == *type_r);
+			return *type_l;
 		}
 		case Op2::CompL:
 		case Op2::CompLe:
@@ -202,16 +187,12 @@ std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optiona
 			if (type_r && !column_type_is_comparable(*type_r)) {
 				report_op2_type_error(op.second, type_l, type_r);
 			}
-			if (type_l && type_r) {
-				cast_implicit(op.second, *type_l, *type_r, cast_l_out, cast_r_out);
-			}
+			ASSERT(!type_l || !type_r || *type_l == *type_r);
 			return ColumnType::BOOLEAN;
 		}
 		case Op2::CompEq:
 		case Op2::CompNe: {
-			if (type_l && type_r) {
-				cast_implicit(op.second, *type_l, *type_r, cast_l_out, cast_r_out);
-			}
+			ASSERT(!type_l || !type_r || *type_l == *type_r);
 			return ColumnType::BOOLEAN;
 		}
 		case Op2::LogicAnd:
