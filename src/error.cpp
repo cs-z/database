@@ -24,13 +24,23 @@ void Text::report(const std::string &source) const
 
 void ClientError::report(const std::string &source) const
 {
-	std::fprintf(stderr, "client error: %s\n", what());
+	std::fprintf(stderr, "\nclient error: %s\n", what());
 	if (text) {
 		text->report(source);
 	}
 }
 
+ServerError::ServerError(const char *function, int errnum)
+	: std::runtime_error { "call to " + std::string { function } + "() failed: " + strerror(errnum) + " [errno = " + std::to_string(errnum) + "]" }
+{
+}
+
+ServerError::ServerError(const char *function, const std::string &arg, int errnum)
+	: std::runtime_error { "call to " + std::string { function } + "(" + arg + ")" + " failed: " + strerror(errnum) + " [errno = " + std::to_string(errnum) + "]" }
+{
+}
+
 void ServerError::report() const
 {
-	std::fprintf(stderr, "server error: %s\n", what());
+	std::fprintf(stderr, "\nserver error: %s\n", what());
 }

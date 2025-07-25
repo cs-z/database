@@ -23,3 +23,6 @@ std::string column_value_to_string(const ColumnValue &value, bool quote);
 ColumnValue column_value_eval_cast(const ColumnValue &value, ColumnType to);
 
 using Value = std::vector<ColumnValue>;
+
+void value_print(const Value &value);
+bool value_eual(const Value &a, const Value &b);

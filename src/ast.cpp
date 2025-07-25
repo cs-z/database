@@ -1,6 +1,6 @@
 #include "ast.hpp"
 
-const std::string AstExpr::DataColumn::to_string() const
+std::string AstExpr::DataColumn::to_string() const
 {
 	return table ? (table->first + "." + name.first) : name.first;
 }
@@ -55,8 +55,8 @@ std::string AstExpr::to_string() const
 			string += ")";
 			return string;
 		},
-		[](const DataAggregate &expr) {
-			return std::string { aggregate_function_cstr(expr.function) } + "(" + (expr.arg ? expr.arg->to_string() : "*") + ")";
+		[](const DataFunction &expr) {
+			return std::string { function_to_cstr(expr.function) } + "(" + (expr.arg ? expr.arg->to_string() : "*") + ")";
 		},
 	}, data);
 }
@@ -113,7 +113,7 @@ void AstQuery::print() const
 		for (size_t i = 0; i < order_by->columns.size(); i++) {
 			std::visit(Overload{
 				[](const AstOrderBy::Index &column) {
-					printf("%u", column.index.first);
+					printf("%u", column.index.first.get());
 				},
 				[](const AstExpr::DataColumn &column) {
 					print_column(column);
@@ -125,7 +125,6 @@ void AstQuery::print() const
 			}
 		}
 	}
-	printf("\n");
 }
 
 void AstSource::print() const

@@ -57,5 +57,7 @@ class ServerError : public std::runtime_error
 {
 public:
 	ServerError(std::string message) : std::runtime_error { message } {}
+	ServerError(const char *function, int errnum);
+	ServerError(const char *function, const std::string &arg, int errnum);
 	void report() const;
 };

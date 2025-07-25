@@ -26,7 +26,7 @@ std::string op1_to_string(Op1 op, const std::string &expr)
 	UNREACHABLE();
 }
 
-unsigned int op1_prec(Op1 op)
+int op1_prec(Op1 op)
 {
 	switch (op) {
 		case Op1::Pos:       return 7;
@@ -38,7 +38,7 @@ unsigned int op1_prec(Op1 op)
 	UNREACHABLE();
 }
 
-unsigned int op2_prec(Op2 op)
+int op2_prec(Op2 op)
 {
 	switch (op) {
 		case Op2::ArithMul: return 6;
@@ -58,7 +58,7 @@ unsigned int op2_prec(Op2 op)
 	UNREACHABLE();
 }
 
-std::optional<ColumnType> op1_check(const std::pair<Op1, Text> &op, std::optional<ColumnType> type)
+std::optional<ColumnType> op1_compile(const std::pair<Op1, Text> &op, std::optional<ColumnType> type)
 {
 	switch (op.first) {
 		case Op1::Pos:
@@ -157,18 +157,30 @@ const char *op2_cstr(Op2 op)
 	UNREACHABLE();
 }
 
-std::optional<ColumnType> op2_check(const std::pair<Op2, Text> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
+std::optional<ColumnType> op2_compile(const std::pair<Op2, Text> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
 {
 	switch (op.first) {
 		case Op2::ArithMul:
 		case Op2::ArithDiv:
 		case Op2::ArithMod:
-		case Op2::ArithAdd:
 		case Op2::ArithSub: {
 			if (type_l && !column_type_is_arithmetic(*type_l)) {
 				report_op2_type_error(op.second, type_l, type_r);
 			}
 			if (type_r && !column_type_is_arithmetic(*type_r)) {
+				report_op2_type_error(op.second, type_l, type_r);
+			}
+			if (!type_l || !type_r) {
+				return std::nullopt;
+			}
+			ASSERT(*type_l == *type_r);
+			return *type_l;
+		}
+		case Op2::ArithAdd: {
+			if (type_l && !(column_type_is_arithmetic(*type_l) || *type_l == ColumnType::VARCHAR)) {
+				report_op2_type_error(op.second, type_l, type_r);
+			}
+			if (type_r && !(column_type_is_arithmetic(*type_r) || *type_r == ColumnType::VARCHAR)) {
 				report_op2_type_error(op.second, type_l, type_r);
 			}
 			if (!type_l || !type_r) {
@@ -229,8 +241,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					UNREACHABLE();
 				},
 				[op, &value_r](const ColumnValueInteger &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueInteger>(value_r);
+					const ColumnValueInteger a = value;
+					const ColumnValueInteger b = std::get<ColumnValueInteger>(value_r);
 					switch (op.first) {
 						case Op2::ArithMul:
 							return ColumnValueInteger { a * b };
@@ -253,8 +265,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					}
 				},
 				[op, &value_r](const ColumnValueReal &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueReal>(value_r);
+					const ColumnValueReal a = value;
+					const ColumnValueReal b = std::get<ColumnValueReal>(value_r);
 					switch (op.first) {
 						case Op2::ArithMul:
 							return ColumnValueReal { a * b };
@@ -271,8 +283,11 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 							UNREACHABLE();
 					}
 				},
-				[](const ColumnValueVarchar &) -> ColumnValue {
-					UNREACHABLE();
+				[op, &value_r](const ColumnValueVarchar &value) -> ColumnValue {
+					const ColumnValueVarchar &a = value;
+					const ColumnValueVarchar &b = std::get<ColumnValueVarchar>(value_r);
+					ASSERT(op.first == Op2::ArithAdd);
+					return ColumnValueVarchar { a + b };
 				},
 			}, value_l);
 		}
@@ -291,8 +306,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					UNREACHABLE();
 				},
 				[op, &value_r](const ColumnValueInteger &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueInteger>(value_r);
+					const ColumnValueInteger a = value;
+					const ColumnValueInteger b = std::get<ColumnValueInteger>(value_r);
 					switch (op.first) {
 						case Op2::CompL:
 							return a < b ? Bool::TRUE : Bool::FALSE;
@@ -307,8 +322,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					}
 				},
 				[op, &value_r](const ColumnValueReal &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueReal>(value_r);
+					const ColumnValueReal a = value;
+					const ColumnValueReal b = std::get<ColumnValueReal>(value_r);
 					switch (op.first) {
 						case Op2::CompL:
 							return a < b ? Bool::TRUE : Bool::FALSE;
@@ -323,8 +338,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					}
 				},
 				[op, &value_r](const ColumnValueVarchar &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueVarchar>(value_r);
+					const ColumnValueVarchar &a = value;
+					const ColumnValueVarchar &b = std::get<ColumnValueVarchar>(value_r);
 					switch (op.first) {
 						case Op2::CompL:
 							return a < b ? Bool::TRUE : Bool::FALSE;
@@ -349,8 +364,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					UNREACHABLE();
 				},
 				[&value_r](const ColumnValueBoolean &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueBoolean>(value_r);
+					const ColumnValueBoolean a = value;
+					const ColumnValueBoolean b = std::get<ColumnValueBoolean>(value_r);
 					if (a == Bool::UNKNOWN) {
 						return Bool::UNKNOWN;
 					}
@@ -360,18 +375,18 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					return a == b ? Bool::TRUE : Bool::FALSE;
 				},
 				[&value_r](const ColumnValueInteger &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueInteger>(value_r);
+					const ColumnValueInteger a = value;
+					const ColumnValueInteger b = std::get<ColumnValueInteger>(value_r);
 					return a == b ? Bool::TRUE : Bool::FALSE;
 				},
 				[&value_r](const ColumnValueReal &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueReal>(value_r);
+					const ColumnValueReal a = value;
+					const ColumnValueReal b = std::get<ColumnValueReal>(value_r);
 					return a == b ? Bool::TRUE : Bool::FALSE;
 				},
 				[&value_r](const ColumnValueVarchar &value) -> ColumnValue {
-					const auto &a = value;
-					const auto &b = std::get<ColumnValueVarchar>(value_r);
+					const ColumnValueVarchar &a = value;
+					const ColumnValueVarchar &b = std::get<ColumnValueVarchar>(value_r);
 					return a == b ? Bool::TRUE : Bool::FALSE;
 				},
 			}, value_l);
@@ -385,8 +400,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					UNREACHABLE();
 				},
 				[&value_r](const ColumnValueBoolean &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueBoolean>(value_r);
+					const ColumnValueBoolean a = value;
+					const ColumnValueBoolean b = std::get<ColumnValueBoolean>(value_r);
 					if (a == Bool::UNKNOWN) {
 						return Bool::UNKNOWN;
 					}
@@ -396,25 +411,25 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 					return a != b ? Bool::TRUE : Bool::FALSE;
 				},
 				[&value_r](const ColumnValueInteger &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueInteger>(value_r);
+					const ColumnValueInteger a = value;
+					const ColumnValueInteger b = std::get<ColumnValueInteger>(value_r);
 					return a != b ? Bool::TRUE : Bool::FALSE;
 				},
 				[&value_r](const ColumnValueReal &value) -> ColumnValue {
-					const auto a = value;
-					const auto b = std::get<ColumnValueReal>(value_r);
+					const ColumnValueReal a = value;
+					const ColumnValueReal b = std::get<ColumnValueReal>(value_r);
 					return a != b ? Bool::TRUE : Bool::FALSE;
 				},
 				[&value_r](const ColumnValueVarchar &value) -> ColumnValue {
-					const auto &a = value;
-					const auto &b = std::get<ColumnValueVarchar>(value_r);
+					const ColumnValueVarchar &a = value;
+					const ColumnValueVarchar &b = std::get<ColumnValueVarchar>(value_r);
 					return a != b ? Bool::TRUE : Bool::FALSE;
 				},
 			}, value_l);
 		}
 		case Op2::LogicAnd: {
-			const auto a = std::get<ColumnValueBoolean>(value_l);
-			const auto b = std::get<ColumnValueBoolean>(value_r);
+			const ColumnValueBoolean a = std::get<ColumnValueBoolean>(value_l);
+			const ColumnValueBoolean b = std::get<ColumnValueBoolean>(value_r);
 			switch (a) {
 				case Bool::TRUE:
 					switch (b) {
@@ -441,8 +456,8 @@ ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l,
 			UNREACHABLE();
 		}
 		case Op2::LogicOr: {
-			const auto a = std::get<ColumnValueBoolean>(value_l);
-			const auto b = std::get<ColumnValueBoolean>(value_r);
+			const ColumnValueBoolean a = std::get<ColumnValueBoolean>(value_l);
+			const ColumnValueBoolean b = std::get<ColumnValueBoolean>(value_r);
 			switch (a) {
 				case Bool::TRUE:
 					switch (b) {

@@ -3,6 +3,10 @@
 #include "common.hpp"
 #include "value.hpp"
 #include "op.hpp"
+#include "row.hpp"
+
+struct Expr;
+using ExprPtr = std::unique_ptr<Expr>;
 
 struct Expr
 {
@@ -12,45 +16,45 @@ struct Expr
 	};
 	struct DataColumn
 	{
-		unsigned int id;
+		row::ColumnId column_id;
 	};
 	struct DataCast
 	{
-		std::unique_ptr<Expr> expr;
+		ExprPtr expr;
 		ColumnType to;
 	};
 	struct DataOp1
 	{
-		std::unique_ptr<Expr> expr;
+		ExprPtr expr;
 		std::pair<Op1, Text> op;
 	};
 	struct DataOp2
 	{
-		std::unique_ptr<Expr> expr_l, expr_r;
+		ExprPtr expr_l, expr_r;
 		std::pair<Op2, Text> op;
 	};
 	struct DataBetween
 	{
-		std::unique_ptr<Expr> expr, min, max;
+		ExprPtr expr, min, max;
 		bool negated;
 		Text between_text;
 	};
 	struct DataIn
 	{
-		std::unique_ptr<Expr> expr;
-		std::vector<std::unique_ptr<Expr>> list;
+		ExprPtr expr;
+		std::vector<ExprPtr> list;
 		bool negated;
 	};
-	struct DataAggregate
+	struct DataFunction
 	{
-		unsigned int id;
+		row::ColumnId column_id;
 	};
 
-	using Data = std::variant<DataConstant, DataColumn, DataCast, DataOp1, DataOp2,DataBetween, DataIn, DataAggregate>;
+	using Data = std::variant<DataConstant, DataColumn, DataCast, DataOp1, DataOp2,DataBetween, DataIn, DataFunction>;
 
 	Data data;
 	std::optional<ColumnType> type;
 
 	void print() const;
-	ColumnValue eval(const Value &row) const;
+	ColumnValue eval(const Value &value) const;
 };

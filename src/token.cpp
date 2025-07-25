@@ -13,6 +13,9 @@ const char *Token::tag_to_cstr(Tag tag)
 		case Tag::KwKey: return "KEY";
 		case Tag::KwCheck: return "CHECK";
 		case Tag::KwDrop: return "DROP";
+		case Tag::KwInsert: return "INSERT";
+		case Tag::KwInto: return "INTO";
+		case Tag::KwValues: return "VALUES";
 		case Tag::KwSelect: return "SELECT";
 		case Tag::KwDistinct: return "DISTINCT";
 		case Tag::KwAll: return "ALL";
@@ -51,7 +54,7 @@ const char *Token::tag_to_cstr(Tag tag)
 		case Tag::Comma: return ",";
 		case Tag::Asterisk: return "*";
 		case Tag::Op2: return "an operator";
-		case Tag::Aggregate: return "an aggregation function";
+		case Tag::Function: return "an aggregation function";
 		case Tag::Identifier: return "an identifier";
 		case Tag::ConstantBoolean: return "a boolean constant";
 		case Tag::ConstantInteger: return "an integer constant";

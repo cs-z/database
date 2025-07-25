@@ -3,7 +3,6 @@
 #include "common.hpp"
 #include "op.hpp"
 #include "value.hpp"
-#include "aggregate.hpp"
 #include "error.hpp"
 
 class Token
@@ -22,6 +21,9 @@ public:
 		KwKey,
 		KwCheck,
 		KwDrop,
+		KwInsert,
+		KwInto,
+		KwValues,
 		KwSelect,
 		KwDistinct,
 		KwAll,
@@ -62,7 +64,7 @@ public:
 		Asterisk,
 
 		Op2,
-		Aggregate,
+		Function,
 		Identifier,
 
 		ConstantBoolean,
@@ -74,7 +76,7 @@ public:
 	};
 
 	using DataOp2 = ::Op2;
-	using DataAggregate = AggregateFunction;
+	using DataFunction = ::Function;
 	using DataIdentifier = std::string;
 	// structs for avoiding type collision in variant
 	struct DataConstantBoolean { ColumnValueBoolean value; };
@@ -82,7 +84,7 @@ public:
 	struct DataConstantReal { ColumnValueReal value; };
 	struct DataConstantString { ColumnValueVarchar value; };
 
-	using Data = std::variant<DataOp2, DataAggregate, DataIdentifier, DataConstantBoolean, DataConstantInteger, DataConstantReal, DataConstantString>;
+	using Data = std::variant<DataOp2, DataFunction, DataIdentifier, DataConstantBoolean, DataConstantInteger, DataConstantReal, DataConstantString>;
 
 	Token(Tag tag, Text text) : tag { tag }, text { text } {}
 	Token(Tag tag, Data data, Text text) : tag { tag }, data { std::move(data) }, text { text } {}

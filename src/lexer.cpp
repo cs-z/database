@@ -171,6 +171,15 @@ Token Lexer::next_token()
 		if (identifier == "DROP") {
 			return { Token::KwDrop, { text_begin, ptr } };
 		}
+		if (identifier == "INSERT") {
+			return { Token::KwInsert, { text_begin, ptr } };
+		}
+		if (identifier == "INTO") {
+			return { Token::KwInto, { text_begin, ptr } };
+		}
+		if (identifier == "VALUES") {
+			return { Token::KwValues, { text_begin, ptr } };
+		}
 		if (identifier == "SELECT") {
 			return { Token::KwSelect, { text_begin, ptr } };
 		}
@@ -265,19 +274,19 @@ Token Lexer::next_token()
 			return { Token::Op2, Op2::LogicOr, { text_begin, ptr } };
 		}
 		if (identifier == "COUNT") {
-			return { Token::Aggregate, AggregateFunction::COUNT, { text_begin, ptr } };
+			return { Token::Function, Function::COUNT, { text_begin, ptr } };
 		}
 		if (identifier == "SUM") {
-			return { Token::Aggregate, AggregateFunction::SUM, { text_begin, ptr } };
+			return { Token::Function, Function::SUM, { text_begin, ptr } };
 		}
 		if (identifier == "AVG") {
-			return { Token::Aggregate, AggregateFunction::AVG, { text_begin, ptr } };
+			return { Token::Function, Function::AVG, { text_begin, ptr } };
 		}
 		if (identifier == "MAX") {
-			return { Token::Aggregate, AggregateFunction::MAX, { text_begin, ptr } };
+			return { Token::Function, Function::MAX, { text_begin, ptr } };
 		}
 		if (identifier == "MIN") {
-			return { Token::Aggregate, AggregateFunction::MIN, { text_begin, ptr } };
+			return { Token::Function, Function::MIN, { text_begin, ptr } };
 		}
 		if (identifier == "BETWEEN") {
 			return { Token::KwBetween, { text_begin, ptr } };

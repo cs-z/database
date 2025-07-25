@@ -3,10 +3,13 @@
 #include "common.hpp"
 #include "value.hpp"
 #include "op.hpp"
-#include "aggregate.hpp"
 #include "error.hpp"
+#include "row.hpp"
 
 using AstIdentifier = std::pair<std::string, Text>;
+
+struct AstExpr;
+using AstExprPtr = std::unique_ptr<AstExpr>;
 
 struct AstExpr
 {
@@ -18,43 +21,43 @@ struct AstExpr
 	{
 		std::optional<AstIdentifier> table;
 		AstIdentifier name;
-		const std::string to_string() const;
+		std::string to_string() const;
 	};
 	struct DataCast
 	{
-		std::unique_ptr<AstExpr> expr;
+		AstExprPtr expr;
 		std::pair<ColumnType, Text> to;
 	};
 	struct DataOp1
 	{
-		std::unique_ptr<AstExpr> expr;
+		AstExprPtr expr;
 		std::pair<Op1, Text> op;
 	};
 	struct DataOp2
 	{
-		std::unique_ptr<AstExpr> expr_l, expr_r;
+		AstExprPtr expr_l, expr_r;
 		std::pair<Op2, Text> op;
 	};
 	struct DataBetween
 	{
-		std::unique_ptr<AstExpr> expr, min, max;
+		AstExprPtr expr, min, max;
 		bool negated;
 		Text between_text;
 	};
 	struct DataIn
 	{
-		std::unique_ptr<AstExpr> expr;
-		std::vector<std::unique_ptr<AstExpr>> list;
+		AstExprPtr expr;
+		std::vector<AstExprPtr> list;
 		bool negated;
 		Text in_text;
 	};
-	struct DataAggregate
+	struct DataFunction
 	{
-		AggregateFunction function;
-		std::unique_ptr<AstExpr> arg;
+		Function function;
+		AstExprPtr arg;
 	};
 
-	using Data = std::variant<DataConstant, DataColumn, DataCast, DataOp1, DataOp2, DataBetween, DataIn, DataAggregate>;
+	using Data = std::variant<DataConstant, DataColumn, DataCast, DataOp1, DataOp2, DataBetween, DataIn, DataFunction>;
 
 	Data data;
 	Text text;
@@ -76,13 +79,16 @@ struct AstSelectList
 	};
 	struct Expr
 	{
-		std::unique_ptr<AstExpr> expr;
+		AstExprPtr expr;
 		std::optional<AstIdentifier> alias;
 	};
 	using Element = std::variant<Wildcard, TableWildcard, Expr>;
 
 	std::vector<Element> elements;
 };
+
+struct AstSource;
+using AstSourcePtr = std::unique_ptr<AstSource>;
 
 struct AstSource
 {
@@ -93,7 +99,7 @@ struct AstSource
 	};
 	struct DataJoinCross
 	{
-		std::unique_ptr<AstSource> source_l, source_r;
+		AstSourcePtr source_l, source_r;
 	};
 	struct DataJoinConditional
 	{
@@ -104,9 +110,9 @@ struct AstSource
 			RIGHT,
 			FULL,
 		};
-		std::unique_ptr<AstSource> source_l, source_r;
+		AstSourcePtr source_l, source_r;
 		std::optional<Join> join;
-		std::unique_ptr<AstExpr> condition;
+		AstExprPtr condition;
 	};
 
 	using Data = std::variant<DataTable, DataJoinCross, DataJoinConditional>;
@@ -125,8 +131,8 @@ struct AstGroupBy
 struct AstSelect
 {
 	AstSelectList list;                              // SELECT clause
-	std::vector<std::unique_ptr<AstSource>> sources; // FROM clause
-	std::unique_ptr<AstExpr> where;                  // WHERE clause: null if missing
+	std::vector<AstSourcePtr> sources; // FROM clause
+	AstExprPtr where;                  // WHERE clause: null if missing
 	std::optional<AstGroupBy> group_by;              // GROUP BY clause
 };
 
@@ -134,7 +140,7 @@ struct AstOrderBy
 {
 	struct Index
 	{
-		std::pair<unsigned int, Text> index;
+		std::pair<row::ColumnId, Text> index;
 	};
 	struct Column
 	{
@@ -149,4 +155,10 @@ struct AstQuery
 	AstSelect select;
 	std::optional<AstOrderBy> order_by;
 	void print() const;
+};
+
+struct AstInsertValue
+{
+	AstIdentifier table;
+	std::vector<AstExprPtr> exprs;
 };

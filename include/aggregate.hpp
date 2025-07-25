@@ -1,35 +1,15 @@
 #pragma once
 
-#include "value.hpp"
-#include "expr.hpp"
-
-enum class AggregateFunction
-{
-	AVG,
-	MAX,
-	MIN,
-	SUM,
-	COUNT,
-};
-
-inline const char *aggregate_function_cstr(AggregateFunction function)
-{
-	switch (function) {
-		case AggregateFunction::AVG: return "AVG";
-		case AggregateFunction::MAX: return "MAX";
-		case AggregateFunction::MIN: return "MIN";
-		case AggregateFunction::SUM: return "SUM";
-		case AggregateFunction::COUNT: return "COUNT";
-	}
-	UNREACHABLE();
-}
+#include "compile.hpp"
+#include "iter.hpp"
 
 class Aggregator
 {
 public:
 
-	void feed(const ColumnValue *value);
-	ColumnValue get(AggregateFunction function);
+	void init();
+	void feed(const ColumnValue &value);
+	ColumnValue get(Function function);
 
 private:
 
@@ -37,13 +17,25 @@ private:
 	ColumnValue max;
 	ColumnValue sum;
 	ColumnValueInteger count;
-
 };
 
-struct Aggregate
+struct IterAggregate : Iter
 {
-	AggregateFunction function;
-	std::unique_ptr<Expr> arg;
-};
+	IterAggregate(IterPtr parent, Aggregates aggregates);
+	~IterAggregate() override = default;
 
-using Aggregates = std::vector<Aggregate>;
+	void open() override;
+	void close() override;
+	std::optional<Value> next() override;
+
+	std::optional<std::optional<Value>> feed(const Aggregates::GroupBy &group_by, const std::optional<Value> &value);
+
+	const Aggregates aggregates;
+
+	std::optional<Value> current_key;
+	std::vector<Aggregator> aggregators;
+	ColumnValueInteger count;
+	bool done;
+
+	IterPtr iter;
+};

@@ -103,3 +103,26 @@ ColumnValue column_value_eval_cast(const ColumnValue &value, ColumnType to)
 		},
 	}, value);
 }
+
+void value_print(const Value &value)
+{
+	printf("(");
+	for (size_t i = 0; i < value.size(); i++) {
+		printf("%s", column_value_to_string(value[i], true).c_str());
+		if (i + 1 < value.size()) {
+			printf(", ");
+		}
+	}
+	printf(")\n");
+}
+
+bool value_eual(const Value &a, const Value &b)
+{
+	ASSERT(a.size() == b.size());
+	for (size_t i = 0; i < a.size(); i++) {
+		if (a[i] != b[i]) {
+			return false;
+		}
+	}
+	return true;
+}
