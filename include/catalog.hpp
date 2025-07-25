@@ -1,7 +1,7 @@
 #pragma once
 
 #include "type.hpp"
-#include "os.hpp"
+//#include "os.hpp"
 #include "row.hpp"
 
 namespace catalog
@@ -12,7 +12,7 @@ namespace catalog
 	struct TableTag {};
 	using TableId = StrongId<TableTag, unsigned int>;
 
-	class TempFile
+	/*class TempFile
 	{
 	public:
 
@@ -36,7 +36,7 @@ namespace catalog
 		void release();
 
 		std::optional<os::Fd> fd;
-	};
+	};*/
 
 	struct TableFiles
 	{
