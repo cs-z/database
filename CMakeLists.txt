@@ -6,21 +6,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(database
-    src/aggregate.cpp
-    src/ast.cpp
-    src/check.cpp
-    src/common.cpp
-    src/error.cpp
-    src/expr.cpp
-    src/lexer.cpp
-    src/main.cpp
-    src/op.cpp
-    src/parse.cpp
-    src/token.cpp
-    src/type.cpp
-    src/value.cpp
-)
+set(CMAKE_BUILD_TYPE Debug)
+
+file(GLOB SOURCES "src/*.cpp")
+add_executable(database ${SOURCES})
 
 target_include_directories(database PRIVATE include)
 
