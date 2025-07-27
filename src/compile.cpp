@@ -264,12 +264,12 @@ static ExprPtr compile_expr(const AstExpr &ast, const Columns &columns, std::opt
 		[&columns, context](const AstExpr::DataOp2 &ast) {
 			ExprPtr expr_l = compile_expr(*ast.expr_l, columns, context);
 			ExprPtr expr_r = compile_expr(*ast.expr_r, columns, context);
-			const std::optional<ColumnType> input_type = cast_together({ expr_l->type, expr_r->type }, ast.op.second);
-			if (expr_l->type && input_type && *expr_l->type != *input_type) {
-				expr_l = std::make_unique<Expr>(Expr::DataCast { std::move(expr_l), *input_type });
+			const std::optional<ColumnType> type = cast_together({ expr_l->type, expr_r->type }, ast.op.second);
+			if (expr_l->type && type && *expr_l->type != *type) {
+				expr_l = std::make_unique<Expr>(Expr::DataCast { std::move(expr_l), *type }, *type);
 			}
-			if (expr_r->type && input_type && *expr_r->type != *input_type) {
-				expr_r = std::make_unique<Expr>(Expr::DataCast { std::move(expr_r), *input_type });
+			if (expr_r->type && type && *expr_r->type != *type) {
+				expr_r = std::make_unique<Expr>(Expr::DataCast { std::move(expr_r), *type }, *type);
 			}
 			const std::optional<ColumnType> output_type = op2_compile(ast.op, expr_l->type, expr_r->type);
 			return std::make_unique<Expr>(Expr::DataOp2 { std::move(expr_l), std::move(expr_r), ast.op }, output_type);
@@ -283,13 +283,13 @@ static ExprPtr compile_expr(const AstExpr &ast, const Columns &columns, std::opt
 				throw ClientError { "incompatible operand types", ast.between_text };
 			}
 			if (expr->type && type && *expr->type != *type) {
-				expr = std::make_unique<Expr>(Expr::DataCast { std::move(expr), *type });
+				expr = std::make_unique<Expr>(Expr::DataCast { std::move(expr), *type }, *type);
 			}
 			if (min->type && type && *min->type != *type) {
-				min = std::make_unique<Expr>(Expr::DataCast { std::move(min), *type });
+				min = std::make_unique<Expr>(Expr::DataCast { std::move(min), *type }, *type);
 			}
 			if (max->type && type && *max->type != *type) {
-				max = std::make_unique<Expr>(Expr::DataCast { std::move(max), *type });
+				max = std::make_unique<Expr>(Expr::DataCast { std::move(max), *type }, *type);
 			}
 			return std::make_unique<Expr>(Expr::DataBetween { std::move(expr), std::move(min), std::move(max), ast.negated, ast.between_text }, ColumnType::BOOLEAN);
 		},
@@ -304,11 +304,11 @@ static ExprPtr compile_expr(const AstExpr &ast, const Columns &columns, std::opt
 			}
 			const std::optional<ColumnType> type = cast_together(types, ast.in_text);
 			if (expr->type && type && *expr->type != *type) {
-				expr = std::make_unique<Expr>(Expr::DataCast { std::move(expr), *type });
+				expr = std::make_unique<Expr>(Expr::DataCast { std::move(expr), *type }, type);
 			}
 			for (ExprPtr &element : list) {
 				if (element->type && type && *element->type != *type) {
-					element = std::make_unique<Expr>(Expr::DataCast { std::move(element), *type });
+					element = std::make_unique<Expr>(Expr::DataCast { std::move(element), *type }, type);
 				}
 			}
 			return std::make_unique<Expr>(Expr::DataIn { std::move(expr), std::move(list), ast.negated }, ColumnType::BOOLEAN);

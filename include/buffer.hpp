@@ -87,7 +87,7 @@ namespace buffer
 			, buffer { std::aligned_alloc(PAGE_SIZE.get(), frame_count.get() * PAGE_SIZE.get()) }
 		{
 			ASSERT(buffer);
-			memset(buffer, 0, frame_count.get() * PAGE_SIZE.get()); // TODO: valgrind fails at buffer write
+			memset(buffer, 0, frame_count.get() * PAGE_SIZE.get());
 		}
 
 		~Buffer()
