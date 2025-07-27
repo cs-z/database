@@ -27,18 +27,17 @@ make
 
 You can use the database in two ways:
 
-- **Script Mode**
-
-	```bash
-	./database example.sql
-	```
-
 - **Interactive Console Mode**
 
 	```bash
 	./database
 	```
 
+- **Script Mode**
+
+	```bash
+	./database script.sql
+	```
 
 ## Features
 
@@ -87,7 +86,7 @@ SELECT name, CAST(height * 100 AS INT) AS height_cm FROM users
 WHERE id IN (2, 4);
 ```
 
-```bash
+```
 +------+-----------+
 | NAME | HEIGHT_CM |
 +------+-----------+
@@ -103,7 +102,7 @@ SELECT age, COUNT(*) AS user_count FROM users
 GROUP BY age;
 ```
 
-```bash
+```
 +------+------------+
 | AGE  | USER_COUNT |
 +------+------------+
@@ -120,7 +119,7 @@ SELECT * FROM users
 ORDER BY age, city_id DESC;
 ```
 
-```bash
+```
 +----+-------+------+--------+---------+
 | ID | NAME  | AGE  | HEIGHT | CITY_ID |
 +----+-------+------+--------+---------+
@@ -140,7 +139,7 @@ FROM users u
 INNER JOIN cities c ON u.city_id = c.id;
 ```
 
-```bash
+```
 +-------+--------+
 | USER  | CITY   |
 +-------+--------+
@@ -159,7 +158,7 @@ FROM SYS_COLUMNS AS c JOIN SYS_TABLES AS t ON c.table_id = t.id
 ORDER BY t.name, c.id;
 ```
 
-```bash
+```
 +------------+-------------+-----------+
 | TABLE_NAME | COLUMN_NAME | COLUMN_ID |
 +------------+-------------+-----------+
