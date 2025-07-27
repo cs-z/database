@@ -77,7 +77,7 @@ Token Lexer::next_token()
 	}
 	if (ptr[0] == '-' && ptr[1] == '-') {
 		ptr += 2;
-		while (*ptr != '\r' && *ptr != '\n') {
+		while (*ptr != '\0' && *ptr != '\r' && *ptr != '\n') {
 			ptr++;
 		}
 		return next_token();
@@ -326,7 +326,7 @@ Token Lexer::next_token()
 		if (*ptr == '.') {
 			const char *fraction_begin = ++ptr;
 			u64 fraction = 0;
-			u64 divisor = 10;
+			u64 divisor = 1;
 			while (is_digit(*ptr)) {
 				fraction *= 10;
 				fraction += *ptr++ - '0';
