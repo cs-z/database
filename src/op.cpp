@@ -1,13 +1,13 @@
 #include "op.hpp"
 #include "error.hpp"
 
-[[noreturn]] static void report_op1_type_error(Text op_text, std::optional<ColumnType> type)
+[[noreturn]] static void report_op1_type_error(SourceText op_text, std::optional<ColumnType> type)
 {
 	std::string type_name = type ? column_type_to_string(*type) : "NULL";
 	throw ClientError { "operator not defined on type " + std::move(type_name), op_text };
 }
 
-[[noreturn]] static void report_op2_type_error(Text op_text, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
+[[noreturn]] static void report_op2_type_error(SourceText op_text, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
 {
 	std::string type_l_name = type_l ? column_type_to_string(*type_l) : "NULL";
 	std::string type_r_name = type_r ? column_type_to_string(*type_r) : "NULL";
@@ -58,7 +58,7 @@ int op2_prec(Op2 op)
 	UNREACHABLE();
 }
 
-std::optional<ColumnType> op1_compile(const std::pair<Op1, Text> &op, std::optional<ColumnType> type)
+std::optional<ColumnType> op1_compile(const std::pair<Op1, SourceText> &op, std::optional<ColumnType> type)
 {
 	switch (op.first) {
 		case Op1::Pos:
@@ -157,7 +157,7 @@ const char *op2_cstr(Op2 op)
 	UNREACHABLE();
 }
 
-std::optional<ColumnType> op2_compile(const std::pair<Op2, Text> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
+std::optional<ColumnType> op2_compile(const std::pair<Op2, SourceText> &op, std::optional<ColumnType> type_l, std::optional<ColumnType> type_r)
 {
 	switch (op.first) {
 		case Op2::ArithMul:
@@ -221,7 +221,7 @@ std::optional<ColumnType> op2_compile(const std::pair<Op2, Text> &op, std::optio
 	UNREACHABLE();
 }
 
-ColumnValue op2_eval(const std::pair<Op2, Text> &op, const ColumnValue &value_l, const ColumnValue &value_r)
+ColumnValue op2_eval(const std::pair<Op2, SourceText> &op, const ColumnValue &value_l, const ColumnValue &value_r)
 {
 	ASSERT(value_l.index() == 0 || value_r.index() == 0 || value_l.index() == value_r.index());
 	switch (op.first) {

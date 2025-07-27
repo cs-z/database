@@ -1,7 +1,8 @@
 #include "error.hpp"
 
-void Text::report(const std::string &source) const
+void SourceText::report(const std::string &source) const
 {
+	ASSERT(first && last);
 	const char *padded_first = first;
 	while (padded_first > source.c_str() && padded_first[-1] != '\n' && padded_first[-1] != '\r') {
 		padded_first--;

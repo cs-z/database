@@ -4,42 +4,54 @@
 
 #include "common.hpp"
 
-// stores location in source text
-// used in error reports
-class Text
+// stores location in source text, used for error reports
+class SourceText
 {
 public:
 
-	Text(const char *ptr) : first { ptr }, last { ptr }
+	explicit SourceText()
+		: text {}
+		, first {}
+		, last {}
 	{
-		ASSERT(ptr);
 	}
 
-	Text(const char *begin, const char *end) : first { begin }, last { end - 1 }
+	explicit SourceText(const char *ptr)
+		: text { ptr, ptr + 1 }
+		, first { ptr }
+		, last { ptr }
 	{
-		ASSERT(first && last && first <= last);
 	}
 
-	Text(const Text &other) : first { other.first }, last { other.last } {}
-
-	Text &operator=(const Text &other)
+	explicit SourceText(std::string text, const char *begin, const char *end)
+		: text { std::move(text) }
+		, first { begin }
+		, last { end - 1 }
 	{
-		ASSERT(other.first && other.last && other.first <= other.last);
-		first = other.first;
-		last = other.last;
-		return *this;
+		ASSERT(begin < end);
 	}
 
-	Text operator+(const Text &other) const
+	explicit SourceText(const char *begin, const char *end)
+		: text { begin, end }
+		, first { begin }
+		, last { end - 1 }
+	{
+		ASSERT(begin < end);
+	}
+
+	SourceText operator+(const SourceText &other) const
 	{
 		ASSERT(last < other.first);
-		return { first, other.last };
+		return SourceText { first, other.last };
 	}
+
+	inline const std::string &get() const { return text; }
 
 	void report(const std::string &source) const;
 
 private:
 
+	std::string text;
 	const char *first, *last;
 };
 
@@ -47,10 +59,10 @@ class ClientError : public std::runtime_error
 {
 public:
 	ClientError(std::string message) : std::runtime_error { message } {}
-	ClientError(std::string message, Text text) : std::runtime_error { message }, text { text } {}
+	ClientError(std::string message, SourceText text) : std::runtime_error { message }, text { text } {}
 	void report(const std::string &source) const;
 private:
-	std::optional<Text> text;
+	std::optional<SourceText> text;
 };
 
 class ServerError : public std::runtime_error

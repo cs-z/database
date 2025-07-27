@@ -116,6 +116,18 @@ void value_print(const Value &value)
 	printf(")\n");
 }
 
+std::string value_to_list(const Value &value)
+{
+	std::string list = "(";
+	for (size_t i = 0; i < value.size(); i++) {
+		list += column_value_to_string(value[i], true);
+		if (i + 1< value.size()) {
+			list += ", ";
+		}
+	}
+	return list + ")";
+}
+
 bool value_eual(const Value &a, const Value &b)
 {
 	ASSERT(a.size() == b.size());

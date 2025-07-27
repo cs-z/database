@@ -1,13 +1,14 @@
 #include "expr.hpp"
 
-ColumnValue Expr::eval(const Value &value) const
+ColumnValue Expr::eval(const Value *value) const
 {
 	return std::visit(Overload{
 		[](const Expr::DataConstant &expr) {
 			return expr.value;
 		},
 		[&value](const Expr::DataColumn &expr) {
-			return value.at(expr.column_id.get());
+			ASSERT(value);
+			return value->at(expr.column_id.get());
 		},
 		[&value](const Expr::DataCast &expr) {
 			const ColumnValue column_value = expr.expr->eval(value);
@@ -48,7 +49,8 @@ ColumnValue Expr::eval(const Value &value) const
 			return has_null ? Bool::UNKNOWN : (expr.negated ? Bool::TRUE : Bool::FALSE);
 		},
 		[&value](const Expr::DataFunction &expr) {
-			return value.at(expr.column_id.get());
+			ASSERT(value);
+			return value->at(expr.column_id.get());
 		},
 	}, data);
 }

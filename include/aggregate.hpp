@@ -1,6 +1,5 @@
 #pragma once
 
-#include "compile.hpp"
 #include "iter.hpp"
 
 class Aggregator
@@ -17,6 +16,18 @@ private:
 	ColumnValue max;
 	ColumnValue sum;
 	ColumnValueInteger count;
+};
+
+struct Aggregates
+{
+	struct Aggregate
+	{
+		Function function;
+		ExprPtr arg;
+	};
+	using GroupBy = std::vector<ColumnId>;
+	std::vector<Aggregate> exprs;
+	GroupBy group_by;
 };
 
 struct IterAggregate : Iter

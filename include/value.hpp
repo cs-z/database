@@ -25,4 +25,5 @@ ColumnValue column_value_eval_cast(const ColumnValue &value, ColumnType to);
 using Value = std::vector<ColumnValue>;
 
 void value_print(const Value &value);
+std::string value_to_list(const Value &value);
 bool value_eual(const Value &a, const Value &b);
