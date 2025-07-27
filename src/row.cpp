@@ -226,9 +226,14 @@ namespace row
 
 	int compare(const Type &type, ColumnId column, const u8 *row_l, const u8 *row_r)
 	{
-		// TODO: null values
 		const ColumnPrefix prefix_l = get_prefix(row_l, column);
-		const ColumnPrefix prefix_r = get_prefix(row_l, column);
+		const ColumnPrefix prefix_r = get_prefix(row_r, column);
+		if (prefix_r.offset == 0) {
+			return -1;
+		}
+		if (prefix_l.offset == 0) {
+			return +1;
+		}
 		switch (type.at(column.get())) {
 			case ColumnType::BOOLEAN: {
 				const ColumnValueBoolean column_value_l = *get_column<ColumnValueBoolean>(row_l, prefix_l);
