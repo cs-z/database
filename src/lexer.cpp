@@ -3,11 +3,6 @@
 
 #include <algorithm>
 
-static inline bool is_whitespace(char c)
-{
-	return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-}
-
 static inline bool is_printable(char c)
 {
 	return 0x20 <= c && c <= 0x7E;
@@ -77,7 +72,7 @@ Token Lexer::step_token()
 
 Token Lexer::next_token()
 {
-	while (is_whitespace(*ptr)) {
+	while (std::isspace(*ptr)) {
 		ptr++;
 	}
 	if (ptr[0] == '-' && ptr[1] == '-') {

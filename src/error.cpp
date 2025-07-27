@@ -1,6 +1,29 @@
 #include "error.hpp"
 
-void SourceText::report(const std::string &source) const
+static inline char escape_char(char c)
+{
+	if (0x20 <= c && c <= 0x7E) {
+		return c;
+	}
+	return ' ';
+}
+
+void SourceText::print_escaped() const
+{
+	ASSERT(first && last);
+	bool prev_is_space = false;
+	for (const char *ptr = first; ptr <= last; ptr++) {
+		const char c = escape_char(*ptr);
+		const bool c_is_space = std::isspace(c);
+		if (!prev_is_space || !c_is_space) {
+			std::printf("%c", c);
+		}
+		prev_is_space = c_is_space;
+	}
+	std::printf("\n");
+}
+
+void SourceText::print_error(const std::string &source) const
 {
 	ASSERT(first && last);
 	const char *padded_first = first;
@@ -13,8 +36,7 @@ void SourceText::report(const std::string &source) const
 	}
 	std::fprintf(stderr, "\n | ");
 	for (const char *ptr = padded_first; ptr <= padded_last; ptr++) {
-		const char c = (0x20 <= *ptr && *ptr <= 0x7E) ? *ptr : ' ';
-		std::fprintf(stderr, "%c", c);
+		std::fprintf(stderr, "%c", escape_char(*ptr));
 	}
 	std::fprintf(stderr, "\n | ");
 	for (const char *ptr = padded_first; ptr <= padded_last; ptr++) {
@@ -23,11 +45,11 @@ void SourceText::report(const std::string &source) const
 	std::fprintf(stderr, "\n\n");
 }
 
-void ClientError::report(const std::string &source) const
+void ClientError::print_error(const std::string &source) const
 {
-	std::fprintf(stderr, "\nclient error: %s\n", what());
+	std::fprintf(stderr, "client error: %s\n", what());
 	if (text) {
-		text->report(source);
+		text->print_error(source);
 	}
 }
 
@@ -41,7 +63,7 @@ ServerError::ServerError(const char *function, const std::string &arg, int errnu
 {
 }
 
-void ServerError::report() const
+void ServerError::print_error() const
 {
-	std::fprintf(stderr, "\nserver error: %s\n", what());
+	std::fprintf(stderr, "server error: %s\n", what());
 }

@@ -47,7 +47,8 @@ public:
 
 	inline const std::string &get() const { return text; }
 
-	void report(const std::string &source) const;
+	void print_escaped() const;
+	void print_error(const std::string &source) const;
 
 private:
 
@@ -60,7 +61,7 @@ class ClientError : public std::runtime_error
 public:
 	ClientError(std::string message) : std::runtime_error { message } {}
 	ClientError(std::string message, SourceText text) : std::runtime_error { message }, text { text } {}
-	void report(const std::string &source) const;
+	void print_error(const std::string &source) const;
 private:
 	std::optional<SourceText> text;
 };
@@ -71,5 +72,5 @@ public:
 	ServerError(std::string message) : std::runtime_error { message } {}
 	ServerError(const char *function, int errnum);
 	ServerError(const char *function, const std::string &arg, int errnum);
-	void report() const;
+	void print_error() const;
 };
