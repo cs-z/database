@@ -52,7 +52,7 @@ namespace fst
 
 	};
 
-	static void page_print(const row::Size *page)
+	/*static void page_print(const row::Size *page)
 	{
 		ASSERT(page);
 		Slot index { 1 };
@@ -65,7 +65,7 @@ namespace fst
 			index = index + count;
 			count = count * 2;
 		}
-	}
+	}*/
 
 	static inline row::Size page_get_root(const row::Size *page)
 	{
