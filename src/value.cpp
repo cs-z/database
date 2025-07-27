@@ -39,7 +39,16 @@ std::string column_value_to_string(const ColumnValue &value, bool quote)
 			return std::to_string(value);
 		},
 		[](const ColumnValueReal &value) {
-			return std::to_string(value);
+			const std::string string = std::to_string(value);
+			ASSERT(string.size() > 0);
+			size_t ptr = string.size() - 1;
+			while (ptr > 0 && string[ptr] == '0' && string[ptr - 1] == '0') {
+				ptr--;
+			}
+			if (ptr > 0 && string[ptr] == '0' && string[ptr - 1] != '.') {
+				ptr--;
+			}
+			return string.substr(0, ptr + 1);
 		},
 		[quote](const ColumnValueVarchar &value) {
 			return quote ? ('\'' + value + '\'') : value;
@@ -49,55 +58,56 @@ std::string column_value_to_string(const ColumnValue &value, bool quote)
 
 ColumnValue column_value_eval_cast(const ColumnValue &value, ColumnType to)
 {
-	if (to == ColumnType::VARCHAR) {
-		return column_value_to_string(value, false);
-	}
 	return std::visit(Overload{
-		[](const ColumnValueNull &) -> ColumnValue {
-			UNREACHABLE();
+		[](const ColumnValueNull &value) -> ColumnValue {
+			return value;
 		},
 		[to](const ColumnValueBoolean &value) -> ColumnValue {
 			switch (to) {
 				case ColumnType::INTEGER:
 				case ColumnType::REAL:
-				case ColumnType::VARCHAR:
 					UNREACHABLE();
 				case ColumnType::BOOLEAN:
 					return value;
+				case ColumnType::VARCHAR:
+					return column_value_to_string(value, false);
 			}
 			UNREACHABLE();
 		},
 		[to](const ColumnValueInteger &value) -> ColumnValue {
 			switch (to) {
 				case ColumnType::BOOLEAN:
-				case ColumnType::VARCHAR:
 					UNREACHABLE();
 				case ColumnType::INTEGER:
 					return value;
 				case ColumnType::REAL:
 					return static_cast<ColumnValueReal>(value);
+				case ColumnType::VARCHAR:
+					return column_value_to_string(value, false);
 			}
 			UNREACHABLE();
 		},
 		[to](const ColumnValueReal &value) -> ColumnValue {
 			switch (to) {
 				case ColumnType::BOOLEAN:
-				case ColumnType::VARCHAR:
 					UNREACHABLE();
 				case ColumnType::INTEGER:
 					return static_cast<ColumnValueInteger>(value);
 				case ColumnType::REAL:
 					return value;
+				case ColumnType::VARCHAR:
+					return column_value_to_string(value, false);
 			}
 			UNREACHABLE();
 		},
-		[to](const ColumnValueVarchar &) -> ColumnValue {
+		[to](const ColumnValueVarchar &value) -> ColumnValue {
 			switch (to) {
 				case ColumnType::BOOLEAN:
 				case ColumnType::INTEGER:
 				case ColumnType::REAL:
-				case ColumnType::VARCHAR:
 					UNREACHABLE();
+				case ColumnType::VARCHAR:
+					return value;
 			}
 			UNREACHABLE();
 		},
