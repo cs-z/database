@@ -2,7 +2,7 @@
 
 std::string AstExpr::DataColumn::to_string() const
 {
-	return table ? (table->first + "." + name.first) : name.first;
+	return table ? (table->get() + "." + name.get()) : name.get();
 }
 
 static void print_column(const AstExpr::DataColumn &column)
@@ -75,12 +75,12 @@ void AstQuery::print() const
 				printf("*");
 			},
 			[](const AstSelectList::TableWildcard &element) {
-				printf("%s.*", element.table.first.c_str());
+				printf("%s.*", element.table.get().c_str());
 			},
 			[](const AstSelectList::Expr &element) {
 				element.expr->print();
 				if (element.alias) {
-					printf(" AS %s", element.alias->first.c_str());
+					printf(" AS %s", element.alias->get().c_str());
 				}
 			},
 		}, select.list.elements[i]);
@@ -125,15 +125,18 @@ void AstQuery::print() const
 			}
 		}
 	}
+	if (limit) {
+		printf(" LIMIT %u", *limit);
+	}
 }
 
 void AstSource::print() const
 {
 	std::visit(Overload{
 		[](const DataTable &table) {
-			printf("%s", table.name.first.c_str());
+			printf("%s", table.name.get().c_str());
 			if (table.alias) {
-				printf(" AS %s", table.alias->first.c_str());
+				printf(" AS %s", table.alias->get().c_str());
 			}
 		},
 		[](const DataJoinCross &table) {

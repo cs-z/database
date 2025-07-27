@@ -1,20 +1,22 @@
+#include <algorithm>
+
 #include "parse.hpp"
 
-static std::pair<ColumnType, Text> parse_type(Lexer &lexer)
+static std::pair<ColumnType, SourceText> parse_type(Lexer &lexer)
 {
 	if (lexer.accept(Token::KwInteger)) {
-		const Text text = lexer.step_token().get_text();
+		const SourceText text = lexer.step_token().get_text();
 		return { ColumnType::INTEGER, text };
 	}
 	if (lexer.accept(Token::KwReal)) {
-		const Text text = lexer.step_token().get_text();
+		const SourceText text = lexer.step_token().get_text();
 		return { ColumnType::REAL, text };
 	}
 	if (lexer.accept(Token::KwVarchar)) {
-		const Text text = lexer.step_token().get_text();
+		const SourceText text = lexer.step_token().get_text();
 		return { ColumnType::VARCHAR, text };
 	}
-	lexer.unexpect();
+	lexer.unexpected();
 }
 
 ColumnType parse_type(const std::string &name)
@@ -25,41 +27,39 @@ ColumnType parse_type(const std::string &name)
 	return type;
 }
 
-static std::pair<AstExpr::DataColumn, Text> parse_column(Lexer &lexer)
+static std::pair<AstExpr::DataColumn, SourceText> parse_column(Lexer &lexer)
 {
-	AstIdentifier name = lexer.expect_step(Token::Identifier).take<Token::DataIdentifier>();
+	SourceText name = lexer.expect_step(Token::Identifier).get_text();
 	if (lexer.accept_step(Token::Period)) {
-		AstIdentifier column = lexer.expect_step(Token::Identifier).take<Token::DataIdentifier>();
-		const Text text = name.second + column.second;
-		return { { std::move(name), std::move(column) }, text };
+		SourceText column = lexer.expect_step(Token::Identifier).get_text();
+		SourceText text = name + column;
+		return { { std::move(name), std::move(column) }, std::move(column) };
 	}
-	const Text text = name.second;
-	return { { std::nullopt, std::move(name) }, text };
+	return { { std::nullopt, name }, std::move(name) };
 }
 
 using WildcardOrColumn = std::variant<AstSelectList::Wildcard, AstSelectList::TableWildcard, AstExprPtr>;
 static std::optional<WildcardOrColumn> parse_wildcard_or_column(Lexer &lexer)
 {
 	if (lexer.accept(Token::Asterisk)) {
-		const Text asterisk_text = lexer.step_token().get_text();
-		return { AstSelectList::Wildcard { asterisk_text } };
+		SourceText asterisk_text = lexer.step_token().get_text();
+		return { AstSelectList::Wildcard { std::move(asterisk_text) } };
 	}
 	if (lexer.accept(Token::Identifier)) {
-		AstIdentifier name = lexer.step_token().take<Token::DataIdentifier>();
+		SourceText name = lexer.step_token().get_text();
 		if (lexer.accept_step(Token::Period)) {
 			if (lexer.accept(Token::Asterisk)) {
-				const Text asterisk_text = lexer.step_token().get_text();
-				return { AstSelectList::TableWildcard { std::move(name), asterisk_text } };
+				SourceText asterisk_text = lexer.step_token().get_text();
+				return { AstSelectList::TableWildcard { std::move(name), std::move(asterisk_text) } };
 			}
 			if (lexer.accept(Token::Identifier)) {
-				AstIdentifier column = lexer.step_token().take<Token::DataIdentifier>();
-				const Text text = name.second + column.second;
-				return std::make_unique<AstExpr>(AstExpr::DataColumn { std::move(name), std::move(column) }, text);
+				SourceText column = lexer.step_token().get_text();
+				SourceText text = name + column;
+				return std::make_unique<AstExpr>(AstExpr::DataColumn { std::move(name), std::move(column) }, std::move(text));
 			}
-			lexer.unexpect();
+			lexer.unexpected();
 		}
-		const Text text = name.second;
-		return std::make_unique<AstExpr>(AstExpr::DataColumn { std::nullopt, std::move(name) }, text);
+		return std::make_unique<AstExpr>(AstExpr::DataColumn { std::nullopt, name }, std::move(name));
 	}
 	return std::nullopt;
 }
@@ -75,62 +75,50 @@ static AstExprPtr parse_expr(Lexer &lexer, ExprContext context, int prec = 0, As
 static AstExprPtr parse_expr_primary(Lexer &lexer, ExprContext context, int prec)
 {
 	if (lexer.accept(Token::LParen)) {
-		const Text lparen_text = lexer.step_token().get_text();
+		SourceText lparen_text = lexer.step_token().get_text();
 		AstExprPtr expr = parse_expr(lexer, context);
-		const Text rparen_text = lexer.expect_step(Token::RParen).get_text();
+		SourceText rparen_text = lexer.expect_step(Token::RParen).get_text();
 		expr->text = lparen_text + rparen_text;
 		return expr;
 	}
 	if (lexer.accept(Token::KwNull)) {
-		const Text text = lexer.step_token().get_text();
-		return std::make_unique<AstExpr>(AstExpr::DataConstant { ColumnValueNull {} }, text);
+		SourceText text = lexer.step_token().get_text();
+		return std::make_unique<AstExpr>(AstExpr::DataConstant { ColumnValueNull {} }, std::move(text));
 	}
-	if (lexer.accept(Token::ConstantBoolean)) {
-		auto [value, text] = lexer.step_token().take<Token::DataConstantBoolean>();
-		return std::make_unique<AstExpr>(AstExpr::DataConstant { std::move(value.value) }, text);
-	}
-	if (lexer.accept(Token::ConstantInteger)) {
-		auto [value, text] = lexer.step_token().take<Token::DataConstantInteger>();
-		return std::make_unique<AstExpr>(AstExpr::DataConstant { std::move(value.value) }, text);
-	}
-	if (lexer.accept(Token::ConstantReal)) {
-		auto [value, text] = lexer.step_token().take<Token::DataConstantReal>();
-		return std::make_unique<AstExpr>(AstExpr::DataConstant { std::move(value.value) }, text);
-	}
-	if (lexer.accept(Token::ConstantString)) {
-		auto [value, text] = lexer.step_token().take<Token::DataConstantString>();
-		return std::make_unique<AstExpr>(AstExpr::DataConstant { std::move(value.value) }, text);
+	if (lexer.accept(Token::Constant)) {
+		auto [value, text] = lexer.step_token().take<Token::DataConstant>();
+		return std::make_unique<AstExpr>(AstExpr::DataConstant { std::move(value) }, text);
 	}
 	if (lexer.accept(Token::Identifier)) {
 		auto [column, text] = parse_column(lexer);
 		return std::make_unique<AstExpr>(std::move(column), text);
 	}
 	if (lexer.accept(Token::KwCast)) {
-		const Text cast_text = lexer.step_token().get_text();
+		SourceText cast_text = lexer.step_token().get_text();
 		lexer.expect_step(Token::LParen);
 		AstExprPtr expr = parse_expr(lexer, context);
 		lexer.expect_step(Token::KwAs);
-		const std::pair<ColumnType, Text> to = parse_type(lexer);
-		const Text rparen_text = lexer.expect_step(Token::RParen).get_text();
+		std::pair<ColumnType, SourceText> to = parse_type(lexer);
+		SourceText rparen_text = lexer.expect_step(Token::RParen).get_text();
 		return std::make_unique<AstExpr>(AstExpr::DataCast { std::move(expr), to }, cast_text + rparen_text);
 	}
 	if (prec <= op1_prec(Op1::Pos) && lexer.accept(Token::Op2) && lexer.get_token().get_data<Token::DataOp2>() == Op2::ArithAdd) {
-		const Text op_text = lexer.step_token().get_text();
+		SourceText op_text = lexer.step_token().get_text();
 		AstExprPtr expr = parse_expr(lexer, context, op1_prec(Op1::Pos));
-		const Text text = op_text + expr->text;
-		return std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { Op1::Pos, op_text } }, text);
+		SourceText text = op_text + expr->text;
+		return std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { Op1::Pos, std::move(op_text) } }, std::move(text));
 	}
 	if (prec <= op1_prec(Op1::Neg) && lexer.accept(Token::Op2) && lexer.get_token().get_data<Token::DataOp2>() == Op2::ArithSub) {
-		const Text op_text = lexer.step_token().get_text();
+		SourceText op_text = lexer.step_token().get_text();
 		AstExprPtr expr = parse_expr(lexer, context, op1_prec(Op1::Neg));
-		const Text text = op_text + expr->text;
-		return std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { Op1::Neg, op_text } }, text);
+		SourceText text = op_text + expr->text;
+		return std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { Op1::Neg, std::move(op_text) } }, std::move(text));
 	}
 	if (prec <= op1_prec(Op1::Not) && lexer.accept(Token::KwNot)) {
-		const Text op_text = lexer.step_token().get_text();
+		SourceText op_text = lexer.step_token().get_text();
 		AstExprPtr expr = parse_expr(lexer, context, op1_prec(Op1::Not));
-		const Text text = op_text + expr->text;
-		return std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { Op1::Not, op_text } }, text);
+		SourceText text = op_text + expr->text;
+		return std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { Op1::Not, std::move(op_text) } }, std::move(text));
 	}
 	if (lexer.accept(Token::Function)) {
 		if (context.inside_aggregate) {
@@ -143,18 +131,18 @@ static AstExprPtr parse_expr_primary(Lexer &lexer, ExprContext context, int prec
 		lexer.expect_step(Token::LParen);
 		AstExprPtr arg;
 		if (lexer.accept(Token::Asterisk)) {
-			const Text arg_text = lexer.step_token().get_text();
+			SourceText arg_text = lexer.step_token().get_text();
 			if(function != Function::COUNT) {
-				throw ClientError { "invalid argument", arg_text };
+				throw ClientError { "invalid argument", std::move(arg_text) };
 			}
 		}
 		else {
 			arg = parse_expr(lexer, ExprContext { false, true });
 		}
-		const Text rparen_text = lexer.expect_step(Token::RParen).get_text();
+		SourceText rparen_text = lexer.expect_step(Token::RParen).get_text();
 		return std::make_unique<AstExpr>(AstExpr::DataFunction { function, std::move(arg) }, function_text + rparen_text);
 	}
-	lexer.unexpect();
+	lexer.unexpected();
 }
 
 static AstExprPtr parse_expr(Lexer &lexer, ExprContext context, int prec, AstExprPtr primary)
@@ -168,45 +156,45 @@ static AstExprPtr parse_expr(Lexer &lexer, ExprContext context, int prec, AstExp
 			if (prec_new < prec) {
 				break;
 			}
-			const Text op_text = lexer.step_token().get_text();
+			SourceText op_text = lexer.step_token().get_text();
 			AstExprPtr other = parse_expr(lexer, context, prec_new + 1);
-			const Text text = expr->text + other->text;
-			expr = std::make_unique<AstExpr>(AstExpr::DataOp2 { std::move(expr), std::move(other), { op, op_text } }, text);
+			SourceText text = expr->text + other->text;
+			expr = std::make_unique<AstExpr>(AstExpr::DataOp2 { std::move(expr), std::move(other), { op, std::move(op_text) } }, std::move(text));
 			continue;
 		}
 		if (prec <= op1_prec(Op1::IsNull) && lexer.accept(Token::KwIs)) {
-			const Text is_text = lexer.step_token().get_text();
+			SourceText is_text = lexer.step_token().get_text();
 			const bool negated = lexer.accept_step(Token::KwNot);
-			const Text null_text = lexer.expect_step(Token::KwNull).get_text();
-			const Text op_text = is_text + null_text;
-			const Text text = expr->text + null_text;
-			expr = std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { negated ? Op1::IsNotNull : Op1::IsNull, op_text } }, text);
+			SourceText null_text = lexer.expect_step(Token::KwNull).get_text();
+			SourceText op_text = is_text + null_text;
+			SourceText text = expr->text + null_text;
+			expr = std::make_unique<AstExpr>(AstExpr::DataOp1 { std::move(expr), { negated ? Op1::IsNotNull : Op1::IsNull, std::move(op_text) } }, std::move(text));
 			continue;
 		}
 		if (prec <= op1_prec(Op1::IsNull) && (lexer.accept(Token::KwNot) || lexer.accept(Token::KwBetween) || lexer.accept(Token::KwIn))) {
 			const bool negated = lexer.accept_step(Token::KwNot);
 			if (lexer.accept(Token::KwBetween)) {
-				const Text between_text = lexer.step_token().get_text();
+				SourceText between_text = lexer.step_token().get_text();
 				AstExprPtr min = parse_expr(lexer, context, op2_prec(Op2::LogicAnd) + 1);
 				if (!lexer.accept(Token::Op2) || lexer.get_token().get_data<Token::DataOp2>() != Op2::LogicAnd) {
 					throw ClientError { std::string { "expected " } + op2_cstr(Op2::LogicAnd), lexer.get_token().get_text() };
 				}
 				lexer.step_token();
 				AstExprPtr max = parse_expr(lexer, context, op2_prec(Op2::LogicAnd) + 1);
-				const Text text = expr->text + max->text;
-				expr = std::make_unique<AstExpr>(AstExpr::DataBetween { std::move(expr), std::move(min), std::move(max), negated, between_text }, text);
+				SourceText text = expr->text + max->text;
+				expr = std::make_unique<AstExpr>(AstExpr::DataBetween { std::move(expr), std::move(min), std::move(max), negated, std::move(between_text) }, std::move(text));
 				continue;
 			}
 			if (lexer.accept(Token::KwIn)) {
-				const Text in_text = lexer.step_token().get_text();
+				SourceText in_text = lexer.step_token().get_text();
 				lexer.expect_step(Token::LParen);
 				std::vector<AstExprPtr> list;
 				do {
 					list.push_back(parse_expr(lexer, context));
 				} while (lexer.accept_step(Token::Comma));
-				const Text rparen_text = lexer.expect_step(Token::RParen).get_text();
-				const Text text = expr->text + rparen_text;
-				expr = std::make_unique<AstExpr>(AstExpr::DataIn { std::move(expr), std::move(list), negated, in_text }, text);
+				SourceText rparen_text = lexer.expect_step(Token::RParen).get_text();
+				SourceText text = expr->text + rparen_text;
+				expr = std::make_unique<AstExpr>(AstExpr::DataIn { std::move(expr), std::move(list), negated, std::move(in_text) }, std::move(text));
 				continue;
 			}
 			UNREACHABLE();
@@ -219,9 +207,9 @@ static AstExprPtr parse_expr(Lexer &lexer, ExprContext context, int prec, AstExp
 static AstSelectList::Expr parse_select_list_element_expr(Lexer &lexer, AstExprPtr primary = {})
 {
 	AstExprPtr expr = parse_expr(lexer, ExprContext { true, false }, 0, std::move(primary));
-	std::optional<AstIdentifier> alias;
+	std::optional<SourceText> alias;
 	if (lexer.accept_step(Token::KwAs)) {
-		alias = lexer.expect_step(Token::Identifier).take<Token::DataIdentifier>();
+		alias = lexer.expect_step(Token::Identifier).get_text();
 	}
 	return { std::move(expr), std::move(alias) };
 }
@@ -259,20 +247,20 @@ static AstSourcePtr parse_source(Lexer &lexer);
 static AstSourcePtr parse_source_primary(Lexer &lexer)
 {
 	if (lexer.accept(Token::Identifier)) {
-		AstIdentifier table = lexer.step_token().take<Token::DataIdentifier>();
-		std::optional<AstIdentifier> alias;
+		SourceText table = lexer.step_token().get_text();
+		std::optional<SourceText> alias;
 		if (lexer.accept(Token::Identifier) || lexer.accept_step(Token::KwAs)) {
-			alias = lexer.expect_step(Token::Identifier).take<Token::DataIdentifier>();
+			alias = lexer.expect_step(Token::Identifier).get_text();
 		}
-		const Text text = alias ? table.second + alias->second : table.second;
-		return std::make_unique<AstSource>(AstSource::DataTable { std::move(table), std::move(alias) }, text);
+		SourceText text = alias ? table + *alias : table;
+		return std::make_unique<AstSource>(AstSource::DataTable { std::move(table), std::move(alias) }, std::move(text) );
 	}
 	if (lexer.accept_step(Token::LParen)) {
 		AstSourcePtr source = parse_source(lexer);
 		lexer.expect_step(Token::RParen);
 		return source;
 	}
-	lexer.unexpect();
+	lexer.unexpected();
 }
 
 static AstSourcePtr parse_source(Lexer &lexer)
@@ -282,12 +270,12 @@ static AstSourcePtr parse_source(Lexer &lexer)
 		if (lexer.accept_step(Token::KwCross)) {
 			lexer.expect_step(Token::KwJoin);
 			AstSourcePtr source_r = parse_source_primary(lexer);
-			const Text text = source_l->text + source_r->text;
-			source_l = std::make_unique<AstSource>(AstSource::DataJoinCross { std::move(source_l), std::move(source_r) }, text);
+			SourceText text = source_l->text + source_r->text;
+			source_l = std::make_unique<AstSource>(AstSource::DataJoinCross { std::move(source_l), std::move(source_r) }, std::move(text));
 			continue;
 		}
 		if (lexer.accept(Token::KwJoin) || lexer.accept(Token::KwInner) || lexer.accept(Token::KwLeft) || lexer.accept(Token::KwRight) || lexer.accept(Token::KwFull)) {
-			const Text join_text = lexer.get_token().get_text();
+			SourceText join_text = lexer.get_token().get_text();
 			std::optional<AstSource::DataJoinConditional::Join> join;
 			if (lexer.accept_step(Token::KwInner)) {
 				join = AstSource::DataJoinConditional::Join::INNER;
@@ -308,8 +296,8 @@ static AstSourcePtr parse_source(Lexer &lexer)
 			AstSourcePtr source_r = parse_source_primary(lexer);
 			lexer.expect_step(Token::KwOn);
 			AstExprPtr condition = parse_expr(lexer, ExprContext { false, false });
-			const Text text = join_text + condition->text;
-			source_l = std::make_unique<AstSource>(AstSource::DataJoinConditional { std::move(source_l), std::move(source_r), join, std::move(condition) }, text);
+			SourceText text = join_text + condition->text;
+			source_l = std::make_unique<AstSource>(AstSource::DataJoinConditional { std::move(source_l), std::move(source_r), join, std::move(condition) }, std::move(text));
 			continue;
 		}
 		break;
@@ -331,7 +319,7 @@ static std::optional<AstGroupBy> parse_group_by(Lexer &lexer)
 {
 	if (lexer.accept_step(Token::KwGroup)) {
 		lexer.expect_step(Token::KwBy);
-		std::vector<std::pair<AstExpr::DataColumn, Text>> columns;
+		std::vector<std::pair<AstExpr::DataColumn, SourceText>> columns;
 		do {
 			columns.push_back(parse_column(lexer));
 		} while (lexer.accept_step(Token::Comma));
@@ -355,16 +343,16 @@ static AstSelect parse_select(Lexer &lexer)
 
 static std::variant<AstOrderBy::Index, AstExpr::DataColumn> parse_order_by_column(Lexer &lexer)
 {
-	if (lexer.accept(Token::ConstantInteger)) {
-		auto [index, index_text] = lexer.step_token().take<Token::DataConstantInteger>();
-		ASSERT(index.value >= 0);
-		return AstOrderBy::Index { { row::ColumnId(index.value), index_text } };
+	const ColumnValueInteger *index;
+	if (lexer.accept(Token::Constant) && (index = std::get_if<ColumnValueInteger>(&lexer.get_token().get_data<Token::DataConstant>()))) {
+		SourceText text = lexer.step_token().get_text();
+		return AstOrderBy::Index { { static_cast<ColumnId>(*index), std::move(text) } };
 	}
-	if (lexer.accept(Token::Identifier)) {
+	else if (lexer.accept(Token::Identifier)) {
 		auto [column, column_text_unused] = parse_column(lexer);
 		return column;
 	}
-	lexer.unexpect();
+	lexer.unexpected();
 }
 
 static bool parse_order_by_order(Lexer &lexer)
@@ -393,18 +381,55 @@ static std::optional<AstOrderBy> parse_order_by(Lexer &lexer)
 	return std::nullopt;
 }
 
-AstQuery parse_query(Lexer &lexer)
+static std::optional<unsigned int> parse_limit(Lexer &lexer)
+{
+	if (lexer.accept_step(Token::KwLimit)) {
+		const ColumnValueInteger *index;
+		if (lexer.accept(Token::Constant) && (index = std::get_if<ColumnValueInteger>(&lexer.get_token().get_data<Token::DataConstant>()))) {
+			const unsigned int limit = *index;
+			lexer.step_token();
+			return limit;
+		}
+		lexer.unexpected();
+	}
+	return std::nullopt;
+}
+
+static AstQuery parse_query(Lexer &lexer)
 {
 	AstSelect select = parse_select(lexer);
 	std::optional<AstOrderBy> order_by = parse_order_by(lexer);
-	return { std::move(select), std::move(order_by) };
+	std::optional<unsigned int> limit = parse_limit(lexer);
+	return { std::move(select), std::move(order_by), limit };
 }
 
-AstInsertValue parse_insert_value(Lexer &lexer)
+static AstCreateTable parse_create_table(Lexer &lexer)
+{
+	lexer.expect_step(Token::KwCreate);
+	lexer.expect_step(Token::KwTable);
+	SourceText name = lexer.expect_step(Token::Identifier).get_text();
+	lexer.expect_step(Token::LParen);
+	catalog::TableDef table_def;
+	do {
+		SourceText column_name = lexer.expect_step(Token::Identifier).get_text();
+		const auto iter = std::find_if(table_def.begin(), table_def.end(), [&column_name](const catalog::ColumnDef &column) {
+			return column.name == column_name.get();
+		});
+		if (iter != table_def.end()) {
+			throw ClientError { "column name reused", std::move(column_name) };
+		}
+		auto [column_type, unused] = parse_type(lexer);
+		table_def.push_back({ column_name.get(), column_type });
+	} while (lexer.accept_step(Token::Comma) && !lexer.accept(Token::RParen));
+	lexer.expect_step(Token::RParen);
+	return { std::move(name), std::move(table_def) };
+}
+
+static AstInsertValue parse_insert_value(Lexer &lexer)
 {
 	lexer.expect_step(Token::KwInsert);
 	lexer.expect_step(Token::KwInto);
-	AstIdentifier table = lexer.expect_step(Token::Identifier).take<Token::DataIdentifier>();
+	SourceText table = lexer.expect_step(Token::Identifier).get_text();
 	lexer.expect_step(Token::KwValues);
 	lexer.expect_step(Token::LParen);
 	std::vector<AstExprPtr> exprs;
@@ -413,4 +438,18 @@ AstInsertValue parse_insert_value(Lexer &lexer)
 	} while (lexer.accept_step(Token::Comma));
 	lexer.expect_step(Token::RParen);
 	return { std::move(table), std::move(exprs) };
+}
+
+AstStatement parse_statement(Lexer &lexer)
+{
+	if (lexer.accept(Token::KwCreate)) {
+		return parse_create_table(lexer);
+	}
+	if (lexer.accept(Token::KwInsert)) {
+		return parse_insert_value(lexer);
+	}
+	if (lexer.accept(Token::KwSelect)) {
+		return parse_query(lexer);
+	}
+	lexer.unexpected();
 }

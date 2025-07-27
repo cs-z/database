@@ -17,7 +17,7 @@ public:
 	Token &expect(Token::Tag tag);
 	Token expect_step(Token::Tag tag);
 
-	[[noreturn]] void unexpect();
+	[[noreturn]] void unexpected();
 
 	Token step_token();
 

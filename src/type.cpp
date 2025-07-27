@@ -22,7 +22,7 @@ ColumnType column_type_from_catalog_string(const std::string &name)
 	return parse_type(name);
 }
 
-void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, Text> &to)
+void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, SourceText> &to)
 {
 	if (from) {
 		switch (*from) {

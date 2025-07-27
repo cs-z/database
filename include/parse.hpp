@@ -1,9 +1,7 @@
 #pragma once
 
-#include "lexer.hpp"
 #include "ast.hpp"
+#include "lexer.hpp"
 
 ColumnType parse_type(const std::string &name); // for catalog
-AstQuery parse_query(Lexer &lexer);
-
-AstInsertValue parse_insert_value(Lexer &lexer);
+AstStatement parse_statement(Lexer &lexer);

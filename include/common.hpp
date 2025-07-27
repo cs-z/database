@@ -35,41 +35,49 @@ public:
 	constexpr StrongId() = default;
 	explicit constexpr StrongId(T id) : id { id } {}
 
-	bool operator<(const StrongId &other) const { return id < other.id; }
-	bool operator<(T other) const { return id < other; }
-	bool operator<=(const StrongId &other) const { return id <= other.id; }
-	bool operator<=(T other) const { return id <= other; }
-	bool operator>(const StrongId &other) const { return id > other.id; }
-	bool operator>(T other) const { return id > other; }
-	bool operator>=(const StrongId &other) const { return id >= other.id; }
-	bool operator>=(T other) const { return id >= other; }
-	bool operator==(const StrongId &other) const { return id == other.id; }
-	bool operator==(T other) const { return id == other; }
+	constexpr StrongId(const StrongId &other) : id { other.id } {}
+	StrongId &operator=(const StrongId &other)
+	{
+		id = other.id;
+		return *this;
+	}
 
-	friend StrongId operator+(const StrongId &a, const StrongId &b) { return StrongId { a.id + b.id }; }
-	friend StrongId operator+(const StrongId &a, T b) { return StrongId { a.id + b }; }
-	friend StrongId operator+(T a, const StrongId &b) { return StrongId { a + b.id }; }
+	constexpr bool operator<(const StrongId &other) const { return id < other.id; }
+	constexpr bool operator<(T other) const { return id < other; }
+	constexpr bool operator<=(const StrongId &other) const { return id <= other.id; }
+	constexpr bool operator<=(T other) const { return id <= other; }
+	constexpr bool operator>(const StrongId &other) const { return id > other.id; }
+	constexpr bool operator>(T other) const { return id > other; }
+	constexpr bool operator>=(const StrongId &other) const { return id >= other.id; }
+	constexpr bool operator>=(T other) const { return id >= other; }
+	constexpr bool operator==(const StrongId &other) const { return id == other.id; }
+	constexpr bool operator==(T other) const { return id == other; }
 
-	friend StrongId operator-(const StrongId &a, const StrongId &b) { return StrongId { a.id - b.id }; }
-	friend StrongId operator-(const StrongId &a, T b) { return StrongId { a.id - b }; }
-	friend StrongId operator-(T a, const StrongId &b) { return StrongId { a - b.id }; }
+	friend constexpr StrongId operator+(const StrongId &a, const StrongId &b) { return StrongId { a.id + b.id }; }
+	friend constexpr StrongId operator+(const StrongId &a, T b) { return StrongId { a.id + b }; }
+	friend constexpr StrongId operator+(T a, const StrongId &b) { return StrongId { a + b.id }; }
 
-	friend StrongId operator*(const StrongId &a, const StrongId &b) { return StrongId { a.id * b.id }; }
-	friend StrongId operator*(const StrongId &a, T b) { return StrongId { a.id * b }; }
-	friend StrongId operator*(T a, const StrongId &b) { return StrongId { a * b.id }; }
+	friend constexpr StrongId operator-(const StrongId &a, const StrongId &b) { return StrongId { a.id - b.id }; }
+	friend constexpr StrongId operator-(const StrongId &a, T b) { return StrongId { a.id - b }; }
+	friend constexpr StrongId operator-(T a, const StrongId &b) { return StrongId { a - b.id }; }
 
-	friend StrongId operator/(const StrongId &a, const StrongId &b) { return StrongId { a.id / b.id }; }
-	friend StrongId operator/(const StrongId &a, T b) { return StrongId { a.id / b }; }
-	friend StrongId operator/(T a, const StrongId &b) { return StrongId { a / b.id }; }
+	friend constexpr StrongId operator*(const StrongId &a, const StrongId &b) { return StrongId { a.id * b.id }; }
+	friend constexpr StrongId operator*(const StrongId &a, T b) { return StrongId { a.id * b }; }
+	friend constexpr StrongId operator*(T a, const StrongId &b) { return StrongId { a * b.id }; }
 
-	friend StrongId operator%(const StrongId &a, const StrongId &b) { return StrongId { a.id % b.id }; }
-	friend StrongId operator%(const StrongId &a, T b) { return StrongId { a.id % b }; }
-	friend StrongId operator%(T a, const StrongId &b) { return StrongId { a % b.id }; }
+	friend constexpr StrongId operator/(const StrongId &a, const StrongId &b) { return StrongId { a.id / b.id }; }
+	friend constexpr StrongId operator/(const StrongId &a, T b) { return StrongId { a.id / b }; }
+	friend constexpr StrongId operator/(T a, const StrongId &b) { return StrongId { a / b.id }; }
 
-	StrongId operator++(int) { return StrongId { id++ }; }
-	StrongId operator--(int) { return StrongId { id-- }; }
+	friend constexpr StrongId operator%(const StrongId &a, const StrongId &b) { return StrongId { a.id % b.id }; }
+	friend constexpr StrongId operator%(const StrongId &a, T b) { return StrongId { a.id % b }; }
+	friend constexpr StrongId operator%(T a, const StrongId &b) { return StrongId { a % b.id }; }
 
-	T get() const { return id; }
+	constexpr StrongId operator++(int) { return StrongId { id++ }; }
+	constexpr StrongId operator--(int) { return StrongId { id-- }; }
+
+	constexpr T get() const { return id; }
+	std::string to_string() const { return std::to_string(id); }
 
 private:
 
@@ -88,8 +96,14 @@ namespace std
 	};
 }
 
+struct ColumnTag {};
+using ColumnId = StrongId<ColumnTag, unsigned int>;
+
+struct PageIdTag {};
+using PageId = StrongId<PageIdTag, u32>;
+static constexpr PageId PAGE_SIZE { 1 << 8 }; // TODO
+
 [[noreturn]] void abort_expr(const char *expr, const char *file, long line);
 
 #define ASSERT(expr) static_cast<bool>(expr) ? void (0) : abort_expr(#expr, __FILE__, __LINE__)
 #define UNREACHABLE() abort_expr("UNREACHABLE", __FILE__, __LINE__)
-#define ASSERT_TODO ASSERT

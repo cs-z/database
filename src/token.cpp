@@ -48,19 +48,18 @@ const char *Token::tag_to_cstr(Tag tag)
 		case Tag::KwExists: return "EXISTS";
 		case Tag::KwCast: return "CAST";
 		case Tag::KwNull: return "NULL";
+		case Tag::KwLimit: return "LIMIT";
 		case Tag::LParen: return "(";
 		case Tag::RParen: return ")";
 		case Tag::Period: return ".";
 		case Tag::Comma: return ",";
+		case Tag::Semicolon: return ";";
 		case Tag::Asterisk: return "*";
 		case Tag::Op2: return "an operator";
 		case Tag::Function: return "an aggregation function";
 		case Tag::Identifier: return "an identifier";
-		case Tag::ConstantBoolean: return "a boolean constant";
-		case Tag::ConstantInteger: return "an integer constant";
-		case Tag::ConstantReal: return "a floating-point constant";
-		case Tag::ConstantString: return "a string constant";
-		case Tag::End: return "end of file";
+		case Tag::Constant: return "a constant";
+		case Tag::End: return "end of source";
 	}
 	UNREACHABLE();
 }

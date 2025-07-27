@@ -34,6 +34,8 @@ inline bool column_type_is_arithmetic(ColumnType type)
 }
 
 std::string column_type_to_string(ColumnType type);
-void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, Text> &to);
+void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, SourceText> &to);
 std::string column_type_to_catalog_string(ColumnType type);
 ColumnType column_type_from_catalog_string(const std::string &name);
+
+using Type = std::vector<ColumnType>;
