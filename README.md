@@ -182,7 +182,6 @@ ORDER BY t.name, c.id;
 Planned and in-progress features:
 
 - Set operations: `DISTINCT`, `ALL`, `UNION`, `INTERSECT`, `EXCEPT`
-- `HAVING` clause
 - `DROP`, `DELETE` and `UPDATE` commands
 - Pattern matching with `LIKE`
 - Subqueries and `ALL`, `ANY`, `SOME` expressions

@@ -132,6 +132,7 @@ struct AstSelect
 	std::vector<AstSourcePtr> sources;  // FROM clause
 	AstExprPtr where;                   // WHERE clause: null if missing
 	std::optional<AstGroupBy> group_by; // GROUP BY clause
+	AstExprPtr having;                  // HAVING clause
 };
 
 struct AstOrderBy

@@ -328,6 +328,14 @@ static std::optional<AstGroupBy> parse_group_by(Lexer &lexer)
 	return std::nullopt;
 }
 
+static AstExprPtr parse_having(Lexer &lexer)
+{
+	if (lexer.accept_step(Token::KwHaving)) {
+		return parse_expr(lexer, ExprContext { true, false });
+	}
+	return AstExprPtr {};
+}
+
 static AstSelect parse_select(Lexer &lexer)
 {
 	lexer.expect_step(Token::KwSelect);
@@ -338,7 +346,8 @@ static AstSelect parse_select(Lexer &lexer)
 		where = parse_expr(lexer, ExprContext { false, false });
 	}
 	std::optional<AstGroupBy> group_by = parse_group_by(lexer);
-	return { std::move(list), std::move(sources), std::move(where), std::move(group_by) };
+	AstExprPtr having = parse_having(lexer);
+	return { std::move(list), std::move(sources), std::move(where), std::move(group_by), std::move(having) };
 }
 
 static std::variant<AstOrderBy::Index, AstExpr::DataColumn> parse_order_by_column(Lexer &lexer)

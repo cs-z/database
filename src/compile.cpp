@@ -46,6 +46,7 @@ struct Select
 	SourcePtr source;
 	ExprPtr where;
 	Aggregates aggregates;
+	ExprPtr having;
 	SelectList list;
 };
 
@@ -90,8 +91,6 @@ public:
 			columns_table.push_back(table);
 		}
 	}
-
-	//Columns(const Columns &other) : tables { other.tables }, columns { other.columns }, columns_table { other.columns_table } {}
 
 	std::pair<ColumnId, ColumnId> get_table(const SourceText &name) const
 	{
@@ -211,24 +210,24 @@ static std::optional<ColumnType> cast_together(const std::vector<std::optional<C
 	return type;
 }
 
-struct ExprContent
+struct ExprContext
 {
-	std::unordered_map<ColumnId, SourceText> *nonaggregated_columns;
-	Aggregates *aggregates;
-	bool inside_aggregation;
+	std::unordered_map<ColumnId, SourceText> &nonaggregated_columns;
+	Aggregates &aggregates;
+	const bool inside_aggregation;
 };
 
-static ExprPtr create_nonaggregated_column_expr(ColumnId column_id, ColumnType column_type, SourceText column_text, ExprContent context)
+static ExprPtr create_nonaggregated_column_expr(ColumnId column_id, ColumnType column_type, SourceText column_text, ExprContext context)
 {
-	if (context.nonaggregated_columns && !context.nonaggregated_columns->contains(column_id)) {
-		context.nonaggregated_columns->insert({ column_id, column_text });
+	if (!context.nonaggregated_columns.contains(column_id)) {
+		context.nonaggregated_columns.insert({ column_id, column_text });
 	}
-	if (context.aggregates && context.aggregates->group_by.size() > 0) {
+	if (context.aggregates.group_by.size() > 0) {
 		ColumnId key_id {};
-		while (key_id < context.aggregates->group_by.size() && context.aggregates->group_by.at(key_id.get()) != column_id) {
+		while (key_id < context.aggregates.group_by.size() && context.aggregates.group_by.at(key_id.get()) != column_id) {
 			key_id++;
 		}
-		if (key_id == context.aggregates->group_by.size()) {
+		if (key_id == context.aggregates.group_by.size()) {
 			throw ClientError { "nonaggregated column is not in group by clause", column_text };
 		}
 		return std::make_unique<Expr>(Expr::DataColumn { key_id }, column_type);
@@ -236,7 +235,7 @@ static ExprPtr create_nonaggregated_column_expr(ColumnId column_id, ColumnType c
 	return std::make_unique<Expr>(Expr::DataColumn { column_id }, column_type);
 }
 
-static ExprPtr compile_expr(const AstExpr &ast, const Columns &columns, std::optional<ExprContent> context)
+static ExprPtr compile_expr(const AstExpr &ast, const Columns &columns, std::optional<ExprContext> context)
 {
 	const SourceText text = ast.text;
 	return std::visit(Overload{
@@ -315,12 +314,11 @@ static ExprPtr compile_expr(const AstExpr &ast, const Columns &columns, std::opt
 		},
 		[&columns, context](const AstExpr::DataFunction &ast) {
 			ASSERT(context);
-			ASSERT(context->aggregates);
 			ASSERT(!context->inside_aggregation);
 			ExprPtr arg;
 			std::optional<ColumnType> type;
 			if (ast.arg) {
-				arg = compile_expr(*ast.arg, columns, ExprContent { context->nonaggregated_columns, context->aggregates, true });
+				arg = compile_expr(*ast.arg, columns, ExprContext { context->nonaggregated_columns, context->aggregates, true });
 				switch (ast.function) {
 					case Function::AVG:
 					case Function::SUM:
@@ -345,8 +343,8 @@ static ExprPtr compile_expr(const AstExpr &ast, const Columns &columns, std::opt
 				ASSERT(ast.function == Function::COUNT);
 				type = ColumnType::INTEGER;
 			}
-			const ColumnId column_id (context->aggregates->group_by.size() + context->aggregates->exprs.size());
-			context->aggregates->exprs.push_back({ ast.function, std::move(arg) });
+			const ColumnId column_id (context->aggregates.group_by.size() + context->aggregates.exprs.size());
+			context->aggregates.exprs.push_back({ ast.function, std::move(arg) });
 			return std::make_unique<Expr>(Expr::DataFunction { column_id }, type);
 		},
 	}, ast.data);
@@ -415,7 +413,19 @@ static Aggregates::GroupBy compile_group_by(const Columns &columns, const std::o
 	return group_by;
 }
 
-static std::pair<SelectList, catalog::TableDef> compile_select_list(const Columns &columns, const AstSelectList &ast, Aggregates &aggregates, std::unordered_map<ColumnId, SourceText> &nonaggregated_columns)
+static ExprPtr compile_having(const Columns &columns, const AstExprPtr &ast, ExprContext context)
+{
+	if (!ast) {
+		return ExprPtr {};
+	}
+	ExprPtr expr = compile_expr(*ast, columns, context);
+	if (expr->type != ColumnType::BOOLEAN) {
+		throw ClientError { "condition must be boolean", ast->text };
+	}
+	return expr;
+}
+
+static std::pair<SelectList, catalog::TableDef> compile_select_list(const Columns &columns, const AstSelectList &ast, std::unordered_map<ColumnId, SourceText> &nonaggregated_columns, Aggregates &aggregates)
 {
 	const catalog::TableDef columns_table_def = columns.get_table_def();
 	SelectList list = {};
@@ -426,7 +436,7 @@ static std::pair<SelectList, catalog::TableDef> compile_select_list(const Column
 			[&nonaggregated_columns, &aggregates, &columns, &columns_table_def, &list, &table_def](const AstSelectList::Wildcard &ast_element) {
 				for (ColumnId column_id {}; column_id < columns_table_def.size(); column_id++) {
 					const auto &[column_name, column_type] = columns_table_def[column_id.get()];
-					ExprPtr expr = create_nonaggregated_column_expr(column_id, column_type, ast_element.asterisk_text, ExprContent { &nonaggregated_columns, &aggregates, false });
+					ExprPtr expr = create_nonaggregated_column_expr(column_id, column_type, ast_element.asterisk_text, ExprContext { nonaggregated_columns, aggregates, false });
 					list.exprs.push_back(std::move(expr));
 					list.type.push_back(column_type);
 					list.visible_count++;
@@ -437,7 +447,7 @@ static std::pair<SelectList, catalog::TableDef> compile_select_list(const Column
 				const auto [begin, end] = columns.get_table(ast_element.table);
 				for (ColumnId column_id { begin }; column_id < end; column_id++) {
 					const auto &[column_name, column_type] = columns_table_def[column_id.get()];
-					ExprPtr expr = create_nonaggregated_column_expr(column_id, column_type, ast_element.asterisk_text, ExprContent { &nonaggregated_columns, &aggregates, false });
+					ExprPtr expr = create_nonaggregated_column_expr(column_id, column_type, ast_element.asterisk_text, ExprContext { nonaggregated_columns, aggregates, false });
 					list.exprs.push_back(std::move(expr));
 					list.type.push_back(column_type);
 					list.visible_count++;
@@ -445,7 +455,7 @@ static std::pair<SelectList, catalog::TableDef> compile_select_list(const Column
 				}
 			},
 			[&nonaggregated_columns, &aggregates, &columns, &list, &table_def](const AstSelectList::Expr &ast_element) {
-				ExprPtr expr = compile_expr(*ast_element.expr, columns, ExprContent { &nonaggregated_columns, &aggregates, false });
+				ExprPtr expr = compile_expr(*ast_element.expr, columns, ExprContext { nonaggregated_columns, aggregates, false });
 				const ColumnType column_type = expr->type.value_or(ColumnType::INTEGER);
 				std::string column_name = ast_element.alias ? ast_element.alias->get() : ast_element.expr->to_string();
 				const auto iter = std::find_if(table_def.begin(), table_def.end(), [&column_name](const catalog::ColumnDef &column_def) {
@@ -473,11 +483,12 @@ static std::tuple<Select, Columns, catalog::TableDef> compile_select(const AstSe
 		compile_group_by(columns, ast.group_by),
 	};
 	std::unordered_map<ColumnId, SourceText> nonaggregated_columns;
-	auto [list, table_def] = compile_select_list(columns, ast.list, aggregates, nonaggregated_columns);
+	auto [list, table_def] = compile_select_list(columns, ast.list, nonaggregated_columns, aggregates);
+	ExprPtr having = compile_having(columns, ast.having, ExprContext { nonaggregated_columns, aggregates, false });
 	if (aggregates.exprs.size() > 0 && aggregates.group_by.size() == 0 && nonaggregated_columns.size() > 0) {
 		throw ClientError { "nonaggregated column in aggregation", nonaggregated_columns.begin()->second };
 	}
-	return std::make_tuple(Select { std::move(source), std::move(where), std::move(aggregates), std::move(list) }, std::move(columns), std::move(table_def));
+	return std::make_tuple(Select { std::move(source), std::move(where), std::move(aggregates), std::move(having), std::move(list) }, std::move(columns), std::move(table_def));
 }
 
 static OrderBy compile_order_by(const Columns &columns, SelectList &list, const AstOrderBy &ast)
@@ -545,6 +556,9 @@ static IterPtr create_select_iter(Select &select)
 	}
 	if (select.aggregates.group_by.size() > 0 || select.aggregates.exprs.size() > 0) {
 		source = std::make_unique<IterAggregate>(std::move(source), std::move(select.aggregates));
+	}
+	if (select.having) {
+		source = std::make_unique<IterFilter>(std::move(source), std::move(select.having));
 	}
 	return std::make_unique<IterExpr>(std::move(source), std::move(select.list.exprs), std::move(select.list.type));
 }
