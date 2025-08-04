@@ -39,6 +39,14 @@ public:
 		ASSERT(begin < end);
 	}
 
+	explicit SourceText(const SourceText &begin, const SourceText &end)
+		: text { begin.first, end.first }
+		, first { begin.first }
+		, last { end.first - 1 }
+	{
+		ASSERT(begin.first < end.first);
+	}
+
 	SourceText operator+(const SourceText &other) const
 	{
 		ASSERT(last < other.first);

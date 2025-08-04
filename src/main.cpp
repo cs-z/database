@@ -92,7 +92,8 @@ static void parse_and_execute_file(const std::string &file)
 		while (!lexer.accept(Token::End)) {
 			const SourceText text_begin = lexer.get_token().get_text();
 			AstStatement ast = parse_statement(lexer);
-			const SourceText text = text_begin + lexer.get_token().get_text();
+			const SourceText text_end = lexer.get_token().get_text();
+			const SourceText text { text_begin, text_end };
 			const Statement statement = compile_statement(ast);
 			std::printf("> ");
 			text.print_escaped();
