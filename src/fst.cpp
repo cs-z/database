@@ -11,7 +11,7 @@ namespace fst
 	struct SlotTag {};
 	using Slot = StrongId<SlotTag, u32>;
 
-	static constexpr Slot SLOT_PER_PAGE { PAGE_SIZE.get() / sizeof(row::Size) / 2 };
+	inline constexpr Slot SLOT_PER_PAGE { PAGE_SIZE.get() / sizeof(row::Size) / 2 };
 
 	struct PageHead
 	{

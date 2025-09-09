@@ -7,7 +7,7 @@ namespace buffer
 	struct FrameTag {};
 	using FrameId = StrongId<FrameTag, u32>;
 
-	static constexpr FrameId FRAME_COUNT { 1 << 6 }; // TODO
+	inline constexpr FrameId FRAME_COUNT { 1 << 6 }; // TODO
 
 	void init();
 	void destroy();
