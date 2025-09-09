@@ -27,10 +27,23 @@ template<typename ... Ts>
 struct Overload : Ts... { using Ts::operator()...; };
 template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
 
+template <typename T>
+constexpr T align_up(T value, T align)
+{
+	ASSERT(align > 0);
+	const T rem = value % align;
+	if (rem) {
+		value += align - rem;
+	}
+	return value;
+}
+
 template <typename Tag, typename T>
 class StrongId
 {
 public:
+
+	using Type = T;
 
 	constexpr StrongId() = default;
 	explicit constexpr StrongId(T id) : id { id } {}
@@ -107,3 +120,5 @@ static constexpr PageId PAGE_SIZE { 1 << 8 }; // TODO
 
 #define ASSERT(expr) static_cast<bool>(expr) ? void (0) : abort_expr(#expr, __FILE__, __LINE__)
 #define UNREACHABLE() abort_expr("UNREACHABLE", __FILE__, __LINE__)
+
+#define FLEXIBLE_ARRAY 1

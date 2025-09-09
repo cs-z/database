@@ -74,7 +74,7 @@ namespace row
 		Size free_begin;
 		Size free_end;
 
-		SlotInfo slots[1];
+		SlotInfo slots[FLEXIBLE_ARRAY];
 	};
 
 	struct ColumnPrefix

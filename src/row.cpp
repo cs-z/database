@@ -1,16 +1,5 @@
 #include "row.hpp"
 
-template <typename T>
-constexpr T align_up(T value, T align)
-{
-	ASSERT(align > 0);
-	const T rem = value % align;
-	if (rem) {
-		value += align - rem;
-	}
-	return value;
-}
-
 namespace row
 {
 	void Page::init()
