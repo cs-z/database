@@ -9,7 +9,7 @@ namespace buffer
 	struct Id
 	{
 		catalog::FileId file;
-		PageId page_id;
+		page::Id page_id;
 		bool operator==(const Id &other) const
 		{
 			return file == other.file && page_id == other.page_id;
@@ -163,7 +163,7 @@ namespace buffer
 		}
 	}
 
-	void *request(catalog::FileId file, PageId page_id, bool append, FrameId &frame_out)
+	void *request(catalog::FileId file, page::Id page_id, bool append, FrameId &frame_out)
 	{
 		if (!name_cache.contains(file)) {
 			name_cache[file] = catalog::get_file_name(file);
@@ -205,31 +205,31 @@ namespace buffer
 		std::vector<char> file_data;
 
 		{
-			std::unordered_map<PageId, unsigned int> pins_count;
+			std::unordered_map<page::Id, unsigned int> pins_count;
 			std::vector<buffer::Pin<char>> pins;
 
 			for (unsigned int page_count = 0; page_count < 5'000; page_count++) {
 
 				{
-					const PageId page_id_append { page_count };
+					const page::Id page_id_append { page_count };
 					buffer::Pin<char> page_append { file, page_id_append, true };
 					const char c_append = 'A' + rand() % ('Z' - 'A' + 1);
-					memset(page_append.get_page(), c_append, PAGE_SIZE.get());
+					memset(page_append.get_page(), c_append, page::SIZE);
 					file_data.push_back(c_append);
 				}
 
 				for (unsigned int j = 0; j < 10; j++) {
 
-					const PageId page_id_set(rand() % (page_count + 1));
+					const page::Id page_id_set(rand() % (page_count + 1));
 					buffer::Pin<char> page_set { file, page_id_set };
 					const char c_set = 'A' + rand() % ('Z' - 'A' + 1);
-					memset(page_set.get_page(), c_set, PAGE_SIZE.get());
+					memset(page_set.get_page(), c_set, page::SIZE);
 					file_data.at(page_id_set.get()) = c_set;
 
 					if (rand() % (j + 1) == 0) {
 						while (pins_count.size() + 1 >= buffer::FRAME_COUNT.get()) {
 							const unsigned index = rand() % pins.size();
-							const PageId page_id = pins[index].get_page_id();
+							const page::Id page_id = pins[index].get_page_id();
 							pins.erase(pins.begin() + index);
 							if (--pins_count[page_id] == 0) {
 								pins_count.erase(page_id);
@@ -245,8 +245,8 @@ namespace buffer
 		buffer::destroy();
 
 		const os::Fd fd = os::file_open(catalog::get_file_name(file));
-		for (PageId i {}; i < file_data.size(); i++) {
-			char frame[PAGE_SIZE.get()];
+		for (page::Id i {}; i < file_data.size(); i++) {
+			char frame[page::SIZE];
 			os::file_read(fd, i, frame);
 			ASSERT(frame[0] == file_data[i.get()]);
 		}

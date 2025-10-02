@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "page.hpp"
 
 namespace os
 {
@@ -15,8 +16,8 @@ namespace os
 	Fd file_open(const std::string &name);
 	void file_close(Fd fd);
 
-	void file_read(Fd fd, PageId page_id, void *buffer);
-	void file_write(Fd fd, PageId page_id, const void *buffer);
+	void file_read(Fd fd, page::Id page_id, void *buffer);
+	void file_write(Fd fd, page::Id page_id, const void *buffer);
 
 	class TempFile
 	{

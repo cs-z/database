@@ -27,17 +27,7 @@ template<typename ... Ts>
 struct Overload : Ts... { using Ts::operator()...; };
 template<class... Ts> Overload(Ts...) -> Overload<Ts...>;
 
-template <typename T>
-constexpr T align_up(T value, T align)
-{
-	ASSERT(align > 0);
-	const T rem = value % align;
-	if (rem) {
-		value += align - rem;
-	}
-	return value;
-}
-
+// usef for type safety (typedef or 'using' would not prevent passing argument with mismatching type)
 template <typename Tag, typename T>
 class StrongId
 {
@@ -112,13 +102,20 @@ namespace std
 struct ColumnTag {};
 using ColumnId = StrongId<ColumnTag, unsigned int>;
 
-struct PageIdTag {};
-using PageId = StrongId<PageIdTag, u32>;
-static constexpr PageId PAGE_SIZE { 1 << 8 }; // TODO
-
 [[noreturn]] void abort_expr(const char *expr, const char *file, long line);
 
 #define ASSERT(expr) static_cast<bool>(expr) ? void (0) : abort_expr(#expr, __FILE__, __LINE__)
 #define UNREACHABLE() abort_expr("UNREACHABLE", __FILE__, __LINE__)
 
 #define FLEXIBLE_ARRAY 1
+
+template <typename T>
+constexpr T align_up(T value, T align)
+{
+	ASSERT(align > 0);
+	const T rem = value % align;
+	if (rem) {
+		value += align - rem;
+	}
+	return value;
+}

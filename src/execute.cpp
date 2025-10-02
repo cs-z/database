@@ -49,13 +49,13 @@ static void execute_create_table(const CreateTable &statement)
 
 static void execute_insert_value(const InsertValue &statement)
 {
-	row::Size align, size;
+	page::Offset align, size;
 	const row::Prefix prefix = row::calculate_layout(statement.value, align, size);
-	const row::Size size_padded { size + align - 1 };
+	const page::Offset size_padded = static_cast<page::Offset>(size + align - 1);
 
 	const auto [file_fst, file_dat] = catalog::get_table_files(statement.table_id);
 	const auto [page_id, append] = fst::find_or_append(file_fst, size_padded);
-	const buffer::Pin<row::Page> page { file_dat, page_id, append };
+	const buffer::Pin<page::PageSlotted> page { file_dat, page_id, append };
 	if (append) {
 		page->init();
 	}
@@ -64,7 +64,7 @@ static void execute_insert_value(const InsertValue &statement)
 	u8 * const row = page->insert(align, size);
 	row::write(prefix, statement.value, row);
 
-	const row::Size free_size = page->get_free_size();
+	const page::Offset free_size = page->get_free_size();
 	fst::update(file_fst, page_id, free_size);
 }
 

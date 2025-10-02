@@ -5,7 +5,6 @@
 #include "value.hpp"
 #include "expr.hpp"
 #include "os.hpp"
-#include "row.hpp"
 
 struct Iter;
 using IterPtr = std::unique_ptr<Iter>;
@@ -52,7 +51,7 @@ struct IterExpr : Iter
 struct IterScan : Iter
 {
 	IterScan(catalog::TableId table_id, Type type);
-	IterScan(catalog::FileId file, PageId page_count, Type type);
+	IterScan(catalog::FileId file, page::Id page_count, Type type);
 	~IterScan() override = default;
 
 	void open() override;
@@ -60,17 +59,17 @@ struct IterScan : Iter
 	std::optional<Value> next() override;
 
 	catalog::FileId file;
-	PageId page_count;
+	page::Id page_count;
 
-	PageId page_id;
-	row::Page::Slot slot;
+	page::Id page_id;
+	page::SlotId slot_id;
 
-	buffer::Pin<const row::Page> page;
+	buffer::Pin<const page::PageSlotted> page;
 };
 
 struct IterScanTemp : Iter
 {
-	IterScanTemp(os::Fd file, PageId page_count, Type type);
+	IterScanTemp(os::Fd file, page::Id page_count, Type type);
 	~IterScanTemp() override = default;
 
 	void open() override;
@@ -78,12 +77,12 @@ struct IterScanTemp : Iter
 	std::optional<Value> next() override;
 
 	os::Fd file;
-	PageId page_count;
+	page::Id page_count;
 
-	PageId page_id;
-	row::Page::Slot slot;
+	page::Id page_id;
+	page::SlotId slot_id;
 
-	buffer::Buffer<row::Page> page;
+	buffer::Buffer<page::PageSlotted> page;
 };
 
 struct IterJoinCross : Iter

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "catalog.hpp"
-#include "row.hpp"
+#include "page.hpp"
 
 namespace fst
 {
 	void init(catalog::FileId file);
-	PageId get_page_count(catalog::FileId file);
-	std::pair<PageId, bool> find_or_append(catalog::FileId file, row::Size size);
-	void update(catalog::FileId file, PageId page_id, row::Size size);
+	page::Id get_page_count(catalog::FileId file);
+	std::pair<page::Id, bool> find_or_append(catalog::FileId file, page::Offset size);
+	void update(catalog::FileId file, page::Id page_id, page::Offset size);
 	void test();
 }

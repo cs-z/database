@@ -16,6 +16,16 @@ using ColumnValueInteger = i64;
 using ColumnValueReal = double;
 using ColumnValueVarchar = std::string;
 
+inline int compare_strings(std::string_view a, std::string_view b)
+{
+	const auto size_min = std::min(a.size(), b.size());
+	const int result = memcmp(a.data(), b.data(), size_min);
+	if (result) return result;
+	if (a.size() < b.size()) return -1;
+	if (a.size() > b.size()) return +1;
+	return 0;
+}
+
 using ColumnValue = std::variant<ColumnValueNull, ColumnValueBoolean, ColumnValueInteger, ColumnValueReal, ColumnValueVarchar>;
 
 std::optional<ColumnType> column_value_to_type(const ColumnValue &value);

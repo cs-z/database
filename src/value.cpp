@@ -1,3 +1,5 @@
+#include <string_view>
+
 #include "value.hpp"
 
 std::optional<ColumnType> column_value_to_type(const ColumnValue &value)

@@ -1,6 +1,7 @@
 #include "iter.hpp"
 #include "fst.hpp"
 #include "op.hpp"
+#include "row.hpp"
 
 IterProject::IterProject(IterPtr parent, std::vector<ColumnId> columns)
 	: Iter { map_type(parent->type, columns) }
@@ -54,7 +55,7 @@ IterScan::IterScan(catalog::TableId table_id, Type type)
 	this->page_count = fst::get_page_count(file_fst);
 }
 
-IterScan::IterScan(catalog::FileId file, PageId page_count, Type type)
+IterScan::IterScan(catalog::FileId file, page::Id page_count, Type type)
 	: Iter { std::move(type) }
 	, file { file }
 	, page_count { page_count }
@@ -63,8 +64,8 @@ IterScan::IterScan(catalog::FileId file, PageId page_count, Type type)
 
 void IterScan::open()
 {
-	page_id = PageId {};
-	slot = row::Page::Slot {};
+	page_id = page::Id {};
+	slot_id = page::SlotId {};
 }
 
 void IterScan::close()
@@ -75,18 +76,18 @@ void IterScan::close()
 std::optional<Value> IterScan::next()
 {
 	for (;;) {
-		if (slot == 0) {
+		if (slot_id == 0) {
 			if (page_id == page_count) {
 				return std::nullopt;
 			}
 			page = { file, page_id };
 		}
-		if (slot == page->get_row_count()) {
+		if (slot_id == page->get_row_count()) {
 			page_id++;
-			slot = row::Page::Slot {};
+			slot_id = page::SlotId {};
 			continue;
 		}
-		const u8 * const row = page->get_row(slot++);
+		const u8 * const row = page->get_row(slot_id++);
 		if (!row) {
 			continue;
 		}
@@ -94,7 +95,7 @@ std::optional<Value> IterScan::next()
 	}
 }
 
-IterScanTemp::IterScanTemp(os::Fd file, PageId page_count, Type type)
+IterScanTemp::IterScanTemp(os::Fd file, page::Id page_count, Type type)
 	: Iter { std::move(type) }
 	, file { std::move(file) }
 	, page_count { page_count }
@@ -103,8 +104,8 @@ IterScanTemp::IterScanTemp(os::Fd file, PageId page_count, Type type)
 
 void IterScanTemp::open()
 {
-	page_id = PageId {};
-	slot = row::Page::Slot {};
+	page_id = page::Id {};
+	slot_id = page::SlotId {};
 }
 
 void IterScanTemp::close()
@@ -114,18 +115,18 @@ void IterScanTemp::close()
 std::optional<Value> IterScanTemp::next()
 {
 	for (;;) {
-		if (slot == 0) {
+		if (slot_id == 0) {
 			if (page_id == page_count) {
 				return std::nullopt;
 			}
 			os::file_read(file, page_id, page.get());
 		}
-		if (slot == page->get_row_count()) {
+		if (slot_id == page->get_row_count()) {
 			page_id++;
-			slot = row::Page::Slot {};
+			slot_id = page::SlotId {};
 			continue;
 		}
-		const u8 * const row = page->get_row(slot++);
+		const u8 * const row = page->get_row(slot_id++);
 		if (!row) {
 			continue;
 		}

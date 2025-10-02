@@ -60,18 +60,18 @@ namespace os
 		}
 	}
 
-	static void file_seek(Fd fd, PageId page_id)
+	static void file_seek(Fd fd, page::Id page_id)
 	{
-		const off_t offset = page_id.get() * PAGE_SIZE.get();
+		const off_t offset = page_id.get() * page::SIZE;
 		if (::lseek(fd.get(), offset, SEEK_SET) != offset) {
 			throw ServerError { "lseek", fd.to_string(), errno };
 		}
 	}
 
-	void file_read(Fd fd, PageId page_id, void *buffer)
+	void file_read(Fd fd, page::Id page_id, void *buffer)
 	{
 		file_seek(fd, page_id);
-		const size_t bytes = PAGE_SIZE.get();
+		const size_t bytes = page::SIZE;
 		const ssize_t bytes_returned = ::read(fd.get(), buffer, bytes);
 		if (bytes_returned < 0) {
 			throw ServerError { "read", fd.to_string(), errno };
@@ -81,10 +81,10 @@ namespace os
 		}
 	}
 
-	void file_write(Fd fd, PageId page_id, const void *buffer)
+	void file_write(Fd fd, page::Id page_id, const void *buffer)
 	{
 		file_seek(fd, page_id);
-		const size_t bytes = PAGE_SIZE.get();
+		const size_t bytes = page::SIZE;
 		const ssize_t bytes_returned = ::write(fd.get(), buffer, bytes);
 		if (bytes_returned < 0) {
 			throw ServerError { "write", fd.to_string(), errno };
