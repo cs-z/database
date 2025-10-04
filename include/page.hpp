@@ -14,7 +14,7 @@ namespace page
 	struct SlotIdTag {};
 	using SlotId = StrongId<SlotIdTag, u32>;
 
-	constexpr Offset SIZE { 1 << 7 }; // TODO
+	constexpr Offset SIZE { 1 << 12 }; // TODO
 
 	class PageSlotted
 	{

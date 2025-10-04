@@ -28,13 +28,13 @@ namespace fst
 
 		static constexpr page::Id LEVEL_BEGIN[LEVEL_MAX + 1] =
 		{
-			page::Id{ 1 },
-			page::Id{ 1 } + LEVEL_PAGES[0],
-			page::Id{ 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1],
-			page::Id{ 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2],
-			page::Id{ 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3],
-			page::Id{ 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3] + LEVEL_PAGES[4],
-			page::Id{ 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3] + LEVEL_PAGES[4] + LEVEL_PAGES[5],
+			page::Id { 1 },
+			page::Id { 1 } + LEVEL_PAGES[0],
+			page::Id { 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1],
+			page::Id { 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2],
+			page::Id { 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3],
+			page::Id { 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3] + LEVEL_PAGES[4],
+			page::Id { 1 } + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3] + LEVEL_PAGES[4] + LEVEL_PAGES[5],
 		};
 
 		unsigned int pages;

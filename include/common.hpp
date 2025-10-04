@@ -35,52 +35,50 @@ public:
 
 	using Type = T;
 
-	constexpr StrongId() = default;
-	explicit constexpr StrongId(T id) : id { id } {}
+	inline constexpr StrongId() = default;
+	inline explicit constexpr StrongId(T id) : id { id } {}
 
-	constexpr StrongId(const StrongId &other) : id { other.id } {}
-	StrongId &operator=(const StrongId &other)
-	{
-		id = other.id;
-		return *this;
-	}
+	inline constexpr StrongId(const StrongId &) = default;
+	inline constexpr StrongId(StrongId &&) noexcept = default;
+	inline StrongId &operator=(const StrongId &) = default;
+	inline StrongId &operator=(StrongId &&) noexcept = default;
 
-	constexpr bool operator<(const StrongId &other) const { return id < other.id; }
-	constexpr bool operator<(T other) const { return id < other; }
-	constexpr bool operator<=(const StrongId &other) const { return id <= other.id; }
-	constexpr bool operator<=(T other) const { return id <= other; }
-	constexpr bool operator>(const StrongId &other) const { return id > other.id; }
-	constexpr bool operator>(T other) const { return id > other; }
-	constexpr bool operator>=(const StrongId &other) const { return id >= other.id; }
-	constexpr bool operator>=(T other) const { return id >= other; }
-	constexpr bool operator==(const StrongId &other) const { return id == other.id; }
-	constexpr bool operator==(T other) const { return id == other; }
+	inline constexpr bool operator<(const StrongId &other) const { return id < other.id; }
+	inline constexpr bool operator<(T other) const { return id < other; }
+	inline constexpr bool operator<=(const StrongId &other) const { return id <= other.id; }
+	inline constexpr bool operator<=(T other) const { return id <= other; }
+	inline constexpr bool operator>(const StrongId &other) const { return id > other.id; }
+	inline constexpr bool operator>(T other) const { return id > other; }
+	inline constexpr bool operator>=(const StrongId &other) const { return id >= other.id; }
+	inline constexpr bool operator>=(T other) const { return id >= other; }
+	inline constexpr bool operator==(const StrongId &other) const { return id == other.id; }
+	inline constexpr bool operator==(T other) const { return id == other; }
 
-	friend constexpr StrongId operator+(const StrongId &a, const StrongId &b) { return StrongId { a.id + b.id }; }
-	friend constexpr StrongId operator+(const StrongId &a, T b) { return StrongId { a.id + b }; }
-	friend constexpr StrongId operator+(T a, const StrongId &b) { return StrongId { a + b.id }; }
+	inline friend constexpr StrongId operator+(const StrongId &a, const StrongId &b) { return StrongId { a.id + b.id }; }
+	inline friend constexpr StrongId operator+(const StrongId &a, T b) { return StrongId { a.id + b }; }
+	inline friend constexpr StrongId operator+(T a, const StrongId &b) { return StrongId { a + b.id }; }
 
-	friend constexpr StrongId operator-(const StrongId &a, const StrongId &b) { return StrongId { a.id - b.id }; }
-	friend constexpr StrongId operator-(const StrongId &a, T b) { return StrongId { a.id - b }; }
-	friend constexpr StrongId operator-(T a, const StrongId &b) { return StrongId { a - b.id }; }
+	inline friend constexpr StrongId operator-(const StrongId &a, const StrongId &b) { return StrongId { a.id - b.id }; }
+	inline friend constexpr StrongId operator-(const StrongId &a, T b) { return StrongId { a.id - b }; }
+	inline friend constexpr StrongId operator-(T a, const StrongId &b) { return StrongId { a - b.id }; }
 
-	friend constexpr StrongId operator*(const StrongId &a, const StrongId &b) { return StrongId { a.id * b.id }; }
-	friend constexpr StrongId operator*(const StrongId &a, T b) { return StrongId { a.id * b }; }
-	friend constexpr StrongId operator*(T a, const StrongId &b) { return StrongId { a * b.id }; }
+	inline friend constexpr StrongId operator*(const StrongId &a, const StrongId &b) { return StrongId { a.id * b.id }; }
+	inline friend constexpr StrongId operator*(const StrongId &a, T b) { return StrongId { a.id * b }; }
+	inline friend constexpr StrongId operator*(T a, const StrongId &b) { return StrongId { a * b.id }; }
 
-	friend constexpr StrongId operator/(const StrongId &a, const StrongId &b) { return StrongId { a.id / b.id }; }
-	friend constexpr StrongId operator/(const StrongId &a, T b) { return StrongId { a.id / b }; }
-	friend constexpr StrongId operator/(T a, const StrongId &b) { return StrongId { a / b.id }; }
+	inline friend constexpr StrongId operator/(const StrongId &a, const StrongId &b) { return StrongId { a.id / b.id }; }
+	inline friend constexpr StrongId operator/(const StrongId &a, T b) { return StrongId { a.id / b }; }
+	inline friend constexpr StrongId operator/(T a, const StrongId &b) { return StrongId { a / b.id }; }
 
-	friend constexpr StrongId operator%(const StrongId &a, const StrongId &b) { return StrongId { a.id % b.id }; }
-	friend constexpr StrongId operator%(const StrongId &a, T b) { return StrongId { a.id % b }; }
-	friend constexpr StrongId operator%(T a, const StrongId &b) { return StrongId { a % b.id }; }
+	inline friend constexpr StrongId operator%(const StrongId &a, const StrongId &b) { return StrongId { a.id % b.id }; }
+	inline friend constexpr StrongId operator%(const StrongId &a, T b) { return StrongId { a.id % b }; }
+	inline friend constexpr StrongId operator%(T a, const StrongId &b) { return StrongId { a % b.id }; }
 
-	constexpr StrongId operator++(int) { return StrongId { id++ }; }
-	constexpr StrongId operator--(int) { return StrongId { id-- }; }
+	inline constexpr StrongId operator++(int) { return StrongId { id++ }; }
+	inline constexpr StrongId operator--(int) { return StrongId { id-- }; }
 
-	constexpr T get() const { return id; }
-	std::string to_string() const { return std::to_string(id); }
+	inline constexpr T get() const { return id; }
+	inline std::string to_string() const { return std::to_string(id); }
 
 private:
 
