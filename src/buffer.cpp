@@ -6,6 +6,8 @@
 
 namespace buffer
 {
+	constexpr FrameId FRAME_COUNT { 1 << 10 }; // TODO
+
 	struct Id
 	{
 		catalog::FileId file;
@@ -32,24 +34,24 @@ namespace buffer
 	};
 
 	static std::unique_ptr<FrameInfo[]> frame_infos;
-	static Buffer frames { FrameId { FRAME_COUNT } };
+	static Buffer frames { FRAME_COUNT };
 
-	static std::unordered_map<Id, FrameId,IdHash> ids_used;
+	static std::unordered_map<Id, FrameId, IdHash> ids_used;
 
 	static std::list<FrameId> free_list;
-	//static std::unique_ptr<std::list<FrameId>::iterator[]> free_list_iters;
+	static std::unordered_map<FrameId, std::list<FrameId>::iterator> free_list_iters;
 
-	static std::unordered_map<catalog::FileId, std::string> name_cache;
-	static std::unordered_map<catalog::FileId, os::Fd> fd_cache;
+	static std::unordered_map<catalog::FileId, os::Fd> fd_cache; // TODO: move to file layer
 
 	static os::Fd get_fd(catalog::FileId file)
 	{
-		if (fd_cache.contains(file)) {
-			return fd_cache.at(file);
+		const auto iter = fd_cache.find(file);
+		if (iter == fd_cache.end()) {
+			const auto name = catalog::get_file_name(file);
+			const os::Fd fd = os::file_open(name);
+			return fd_cache[file] = fd;
 		}
-		const std::string name = name_cache.at(file);
-		const os::Fd fd = os::file_open(name);
-		return fd_cache[file] = fd;
+		return iter->second;
 	}
 
 	static void input_frame(FrameId frame, Id id, bool append)
@@ -96,13 +98,11 @@ namespace buffer
 		ASSERT(frame_info.id);
 		if (frame_info.pins == 0) {
 			// TODO: slow asserts
-			ASSERT(std::find(free_list.cbegin(), free_list.cend(), frame) != free_list.cend());
+			//ASSERT(std::find(free_list.cbegin(), free_list.cend(), frame) != free_list.cend());
 			//ASSERT_T(free_list_iters.contains(frame)); // TODO
-			//const auto iter = free_list_iters[frame];
-			// TODO: slow
-			//free_list.erase(iter);
-			free_list.remove(frame);
-			//free_list_iters.erase(frame); // TODO
+			const auto iter = free_list_iters.at(frame);
+			free_list.erase(iter);
+			free_list_iters.erase(frame); // TODO: optimize: don't walk tree twice
 		}
 		frame_info.pins++;
 	}
@@ -117,10 +117,10 @@ namespace buffer
 		frame_info.dirty = frame_info.dirty || dirty;
 		if (frame_info.pins == 0) {
 			// TODO: slow asserts
-			ASSERT(std::find(free_list.cbegin(), free_list.cend(), frame) == free_list.cend());
+			//ASSERT(std::find(free_list.cbegin(), free_list.cend(), frame) == free_list.cend());
 			//ASSERT_T(!free_list_iters.contains(frame));
 			free_list.push_back(frame);
-			//free_list_iters[frame] = --free_list.end();
+			free_list_iters[frame] = --free_list.end();
 		}
 	}
 
@@ -128,11 +128,11 @@ namespace buffer
 	{
 		ids_used.clear();
 		free_list.clear();
+		free_list_iters.clear();
 		frame_infos = std::make_unique<FrameInfo[]>(FRAME_COUNT.get());
-		//free_list_iters = std::make_unique<std::list<FrameId>::iterator[]>(FRAME_COUNT);
 		for (FrameId frame {}; frame < FRAME_COUNT; frame++) {
 			free_list.push_back(frame);
-			//free_list_iters[frame] = --free_list.end();
+			free_list_iters[frame] = --free_list.end();
 		}
 	}
 
@@ -144,7 +144,6 @@ namespace buffer
 		for (auto [file, fd] : fd_cache) {
 			os::file_close(fd);
 		}
-		name_cache.clear();
 		fd_cache.clear();
 	}
 
@@ -156,25 +155,23 @@ namespace buffer
 				ouput_frame(frame);
 			}
 		}
-		name_cache.erase(file);
-		if (fd_cache.contains(file)) {
-			os::file_close(fd_cache.at(file));
-			fd_cache.erase(file);
+		const auto iter = fd_cache.find(file);
+		if (iter != fd_cache.end()) {
+			os::file_close(iter->second);
+			fd_cache.erase(iter);
 		}
 	}
 
 	void *request(catalog::FileId file, page::Id page_id, bool append, FrameId &frame_out)
 	{
-		if (!name_cache.contains(file)) {
-			name_cache[file] = catalog::get_file_name(file);
-		}
 		const Id id = { file, page_id };
 		const auto iter = ids_used.find(id);
 		if (iter == ids_used.end()) {
 			ASSERT(!free_list.empty());
-			frame_out = FrameId { free_list.front() };
+			frame_out = free_list.front();
 			ouput_frame(frame_out);
 			input_frame(frame_out, id, append);
+			//TODO: optimize: in/out both access ids_used, do once
 		}
 		else {
 			frame_out = iter->second;

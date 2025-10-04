@@ -8,8 +8,6 @@ namespace buffer
 	struct FrameTag {};
 	using FrameId = StrongId<FrameTag, u32>;
 
-	constexpr FrameId FRAME_COUNT { 1 << 6 }; // TODO
-
 	void init();
 	void destroy();
 	void flush(catalog::FileId file);
@@ -22,33 +20,45 @@ namespace buffer
 	{
 	public:
 
-		Pin() : frame {}, page_id {}, page {} {}
+		Pin() : file {}, frame {}, page_id {}, page {} {}
 
 		Pin(catalog::FileId file, page::Id page_id, bool append = false)
-			: page_id { page_id }
+			: file { file }
+			, page_id { page_id }
 			, page { reinterpret_cast<PageT *>(request(file, page_id, append, frame)) }
 		{
+		}
+
+		operator bool() const
+		{
+			return page != nullptr;
 		}
 
 		Pin(const Pin &) = delete;
 		Pin &operator=(const Pin &) = delete;
 
-		Pin(Pin &&other)
+		template <typename PageOtherT = PageT>
+		Pin(Pin<PageOtherT> &&other)
 		{
+			file = other.file;
 			frame = other.frame;
 			page_id = other.page_id;
-			page = other.page;
+			page = reinterpret_cast<PageT *>(other.page);
+			other.file = {};
 			other.frame = {};
 			other.page_id = {};
 			other.page = {};
 		}
 
-		Pin &operator=(Pin &&other)
+		template <typename PageOtherT = PageT>
+		Pin &operator=(Pin<PageOtherT> &&other)
 		{
 			release();
+			file = other.file;
 			frame = other.frame;
 			page_id = other.page_id;
-			page = other.page;
+			page = reinterpret_cast<PageT *>(other.page);
+			other.file = {};
 			other.frame = {};
 			other.page_id = {};
 			other.page = {};
@@ -60,6 +70,14 @@ namespace buffer
 			release();
 		}
 
+		// create new pin using the same file
+		template <typename PageResultT = PageT>
+		inline Pin<PageResultT> shift(page::Id page_id, bool append = false) const
+		{
+			return { file, page_id, append };
+		}
+
+		inline catalog::FileId get_file() const { return file; }
 		inline page::Id get_page_id() const { return page_id; }
 		inline PageT *get_page() const { return page; }
 		inline PageT *operator->() const { return page; }
@@ -73,9 +91,13 @@ namespace buffer
 			}
 		}
 
+		catalog::FileId file;
 		FrameId frame;
 		page::Id page_id;
 		PageT *page;
+
+		template <typename>
+		friend class Pin;
 	};
 
 	template <typename PageT = void>
