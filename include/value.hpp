@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "common.hpp"
 #include "type.hpp"
 
