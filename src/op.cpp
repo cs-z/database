@@ -342,13 +342,13 @@ ColumnValue op2_eval(const std::pair<Op2, SourceText> &op, const ColumnValue &va
 					const ColumnValueVarchar &b = std::get<ColumnValueVarchar>(value_r);
 					switch (op.first) {
 						case Op2::CompL:
-							return a < b ? Bool::TRUE : Bool::FALSE;
+							return compare_strings(a, b) < 0 ? Bool::TRUE : Bool::FALSE;
 						case Op2::CompLe:
-							return a <= b ? Bool::TRUE : Bool::FALSE;
+							return compare_strings(a, b) <= 0 ? Bool::TRUE : Bool::FALSE;
 						case Op2::CompG:
-							return a > b ? Bool::TRUE : Bool::FALSE;
+							return compare_strings(a, b) > 0 ? Bool::TRUE : Bool::FALSE;
 						case Op2::CompGe:
-							return a >= b ? Bool::TRUE : Bool::FALSE;
+							return compare_strings(a, b) >= 0 ? Bool::TRUE : Bool::FALSE;
 						default:
 							UNREACHABLE();
 					}
@@ -387,7 +387,7 @@ ColumnValue op2_eval(const std::pair<Op2, SourceText> &op, const ColumnValue &va
 				[&value_r](const ColumnValueVarchar &value) -> ColumnValue {
 					const ColumnValueVarchar &a = value;
 					const ColumnValueVarchar &b = std::get<ColumnValueVarchar>(value_r);
-					return a == b ? Bool::TRUE : Bool::FALSE;
+					return compare_strings(a, b) == 0 ? Bool::TRUE : Bool::FALSE;
 				},
 			}, value_l);
 		}
@@ -423,7 +423,7 @@ ColumnValue op2_eval(const std::pair<Op2, SourceText> &op, const ColumnValue &va
 				[&value_r](const ColumnValueVarchar &value) -> ColumnValue {
 					const ColumnValueVarchar &a = value;
 					const ColumnValueVarchar &b = std::get<ColumnValueVarchar>(value_r);
-					return a != b ? Bool::TRUE : Bool::FALSE;
+					return compare_strings(a, b) != 0 ? Bool::TRUE : Bool::FALSE;
 				},
 			}, value_l);
 		}

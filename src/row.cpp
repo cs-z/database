@@ -152,15 +152,7 @@ namespace row
 		}
 		switch (type.at(column.get())) {
 			case ColumnType::BOOLEAN: {
-				const ColumnValueBoolean column_value_l = *get_column<ColumnValueBoolean>(row_l, prefix_l);
-				const ColumnValueBoolean column_value_r = *get_column<ColumnValueBoolean>(row_r, prefix_r);
-				if (column_value_l < column_value_r) {
-					return -1;
-				}
-				if (column_value_l > column_value_r) {
-					return +1;
-				}
-				return 0;
+				UNREACHABLE();
 			}
 			case ColumnType::INTEGER: {
 				const ColumnValueInteger column_value_l = *get_column<ColumnValueInteger>(row_l, prefix_l);

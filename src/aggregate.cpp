@@ -50,8 +50,12 @@ void Aggregator::feed(const ColumnValue &value)
 				this->max = value;
 			}
 			else {
-				this->min = std::min(std::get<ColumnValueVarchar>(this->min), value);
-				this->max = std::max(std::get<ColumnValueVarchar>(this->max), value);
+				if (compare_strings(value, std::get<ColumnValueVarchar>(this->min)) < 0) {
+					this->min = value;
+				}
+				if (compare_strings(value, std::get<ColumnValueVarchar>(this->max)) > 0) {
+					this->max = value;
+				}
 			}
 			this->count++;
 		},
