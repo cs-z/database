@@ -33,7 +33,7 @@ Type IterProject::map_type(const Type &type, const std::vector<ColumnId> &column
 {
 	Type new_type;
 	for (ColumnId column : columns) {
-		new_type.push_back(type.at(column.get()));
+		new_type.push(type.at(column.get()));
 	}
 	return new_type;
 }
@@ -65,7 +65,7 @@ IterScan::IterScan(catalog::FileId file, page::Id page_count, Type type)
 void IterScan::open()
 {
 	page_id = page::Id {};
-	slot_id = page::SlotId {};
+	entry_id = page::EntryId {};
 }
 
 void IterScan::close()
@@ -76,22 +76,22 @@ void IterScan::close()
 std::optional<Value> IterScan::next()
 {
 	for (;;) {
-		if (slot_id == 0) {
+		if (entry_id == 0) {
 			if (page_id == page_count) {
 				return std::nullopt;
 			}
 			page = { file, page_id };
 		}
-		if (slot_id == page->get_row_count()) {
+		if (entry_id == page->get_entry_count()) {
 			page_id++;
-			slot_id = page::SlotId {};
+			entry_id = page::EntryId {};
 			continue;
 		}
-		const u8 * const row = page->get_row(slot_id++);
-		if (!row) {
+		const u8 * const entry = page->get_entry(entry_id++);
+		if (!entry) {
 			continue;
 		}
-		return row::read(type, row);
+		return row::read(type, entry);
 	}
 }
 
@@ -105,7 +105,7 @@ IterScanTemp::IterScanTemp(os::Fd file, page::Id page_count, Type type)
 void IterScanTemp::open()
 {
 	page_id = page::Id {};
-	slot_id = page::SlotId {};
+	entry_id = page::EntryId {};
 }
 
 void IterScanTemp::close()
@@ -115,22 +115,22 @@ void IterScanTemp::close()
 std::optional<Value> IterScanTemp::next()
 {
 	for (;;) {
-		if (slot_id == 0) {
+		if (entry_id == 0) {
 			if (page_id == page_count) {
 				return std::nullopt;
 			}
 			os::file_read(file, page_id, page.get());
 		}
-		if (slot_id == page->get_row_count()) {
+		if (entry_id == page->get_entry_count()) {
 			page_id++;
-			slot_id = page::SlotId {};
+			entry_id = page::EntryId {};
 			continue;
 		}
-		const u8 * const row = page->get_row(slot_id++);
-		if (!row) {
+		const u8 * const entry = page->get_entry(entry_id++);
+		if (!entry) {
 			continue;
 		}
-		return row::read(type, row);
+		return row::read(type, entry);
 	}
 }
 

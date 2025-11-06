@@ -5,11 +5,10 @@
 #include "os.hpp"
 
 // FREE SPACE TREE: stores free space of data pages, one entry per page
-// TODO: abstract slotted pages
 
 namespace fst
 {
-	constexpr page::SlotId SLOT_PER_PAGE { page::SIZE / sizeof(page::Offset) / 2 };
+	constexpr page::EntryId ENTRIES_PER_PAGE { page::SIZE / sizeof(page::Offset) / 2 };
 
 	struct PageHead
 	{
@@ -19,11 +18,11 @@ namespace fst
 		{
 			static_cast<page::Id>(0),
 			static_cast<page::Id>(1),
-			static_cast<page::Id>(SLOT_PER_PAGE.get()),
-			static_cast<page::Id>(SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get()),
-			static_cast<page::Id>(SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get()),
-			static_cast<page::Id>(SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get()),
-			static_cast<page::Id>(SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get() * SLOT_PER_PAGE.get()),
+			static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
+			static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
+			static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
+			static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
+			static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
 		};
 
 		static constexpr page::Id LEVEL_BEGIN[LEVEL_MAX + 1] =
@@ -50,20 +49,20 @@ namespace fst
 
 	};
 
-	/*static void page_print(const page::Offset *page)
-	{
-		ASSERT(page);
-		page::SlotId index { 1 };
-		page::SlotId count { 1 };
-		while (count <= SLOT_PER_PAGE) {
-			for (page::SlotId i {}; i < count; i++) {
-				printf("%u ", page[(index + i).get()]);
-			}
-			printf("\n");
-			index = index + count;
-			count = count * 2;
-		}
-	}*/
+	// static void page_print(const page::Offset *page)
+	// {
+	// 	ASSERT(page);
+	// 	page::EntryId index { 1 };
+	// 	page::EntryId count { 1 };
+	// 	while (count <= ENTRIES_PER_PAGE) {
+	// 		for (page::EntryId i {}; i < count; i++) {
+	// 			printf("%u ", page[(index + i).get()]);
+	// 		}
+	// 		printf("\n");
+	// 		index = index + count;
+	// 		count = count * 2;
+	// 	}
+	// }
 
 	static inline page::Offset page_get_root(const page::Offset *page)
 	{
@@ -77,11 +76,11 @@ namespace fst
 		memset(page, 0, page::SIZE);
 	}
 
-	static bool page_set(page::Offset *page, page::SlotId slot_id, page::Offset size)
+	static bool page_set(page::Offset *page, page::EntryId entry_id, page::Offset size)
 	{
 		ASSERT(page);
-		ASSERT(slot_id < SLOT_PER_PAGE);
-		page::SlotId index = SLOT_PER_PAGE + slot_id;
+		ASSERT(entry_id < ENTRIES_PER_PAGE);
+		page::EntryId index = ENTRIES_PER_PAGE + entry_id;
 		while (index > 0 && page[index.get()] != size) {
 			page[index.get()] = size;
 			index = index / 2;
@@ -90,15 +89,15 @@ namespace fst
 		return index == 0;
 	}
 
-	static page::SlotId page_get(const page::Offset *page, page::Offset size)
+	static page::EntryId page_get(const page::Offset *page, page::Offset size)
 	{
 		ASSERT(page);
 		ASSERT(size > 0);
 		ASSERT(page_get_root(page) >= size);
-		page::SlotId index { 1 };
-		while (index < SLOT_PER_PAGE) {
-			const page::SlotId index_l = index * 2;
-			const page::SlotId index_r = index * 2 + 1;
+		page::EntryId index { 1 };
+		while (index < ENTRIES_PER_PAGE) {
+			const page::EntryId index_l = index * 2;
+			const page::EntryId index_r = index * 2 + 1;
 			const page::Offset size_l = page[index_l.get()];
 			const page::Offset size_r = page[index_r.get()];
 			// TODO: best fit or worst fit
@@ -112,9 +111,9 @@ namespace fst
 			}
 			UNREACHABLE();
 		}
-		ASSERT(SLOT_PER_PAGE <= index && index < 2 * SLOT_PER_PAGE);
+		ASSERT(ENTRIES_PER_PAGE <= index && index < 2 * ENTRIES_PER_PAGE);
 		ASSERT(page[index.get()] >= size);
-		return index - SLOT_PER_PAGE;
+		return index - ENTRIES_PER_PAGE;
 	}
 
 	void init(catalog::FileId file)
@@ -132,7 +131,7 @@ namespace fst
 	static page::Id append(catalog::FileId file, page::Offset value)
 	{
 		const buffer::Pin<PageHead> page_head { file, page::Id {} };
-		if (page_head->pages % SLOT_PER_PAGE == 0) {
+		if (page_head->pages % ENTRIES_PER_PAGE == 0) {
 			if (page_head->bottom == PageHead::LEVEL_PAGES[page_head->levels]) {
 				ASSERT(page_head->levels < PageHead::LEVEL_MAX);
 				for (page::Id page_id {}; page_id < PageHead::LEVEL_PAGES[page_head->levels]; page_id++) {
@@ -168,10 +167,10 @@ namespace fst
 
 		unsigned int level = page_head->levels;
 		while (level > 0) {
-			const page::SlotId slot_id = static_cast<page::SlotId>(page_id.get() %  SLOT_PER_PAGE.get());
-			page_id = page_id / SLOT_PER_PAGE.get();
+			const page::EntryId entry_id = static_cast<page::EntryId>(page_id.get() %  ENTRIES_PER_PAGE.get());
+			page_id = page_id / ENTRIES_PER_PAGE.get();
 			const buffer::Pin<page::Offset> page { file, page::Id { PageHead::LEVEL_BEGIN[level] + page_id } };
-			if (page_set(page.get_page(), slot_id, size)) {
+			if (page_set(page.get_page(), entry_id, size)) {
 				size = page_get_root(page.get_page());
 			}
 			else {
@@ -194,8 +193,8 @@ namespace fst
 		page::Id page_id { page_get(page.get_page(), page::Offset { value }).get() };
 		for (unsigned int level = 2; level <= page_head->levels; level++) {
 			const buffer::Pin<const page::Offset> page { file, page::Id { PageHead::LEVEL_BEGIN[level] + page_id } };
-			const page::SlotId slot_id = page_get(page.get_page(), value);
-			page_id = page_id * static_cast<page::Id>(SLOT_PER_PAGE.get()) + static_cast<page::Id>(slot_id.get());
+			const page::EntryId entry_id = page_get(page.get_page(), value);
+			page_id = page_id * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) + static_cast<page::Id>(entry_id.get());
 			ASSERT(page_id < page_head->pages);
 		}
 		return page_id;

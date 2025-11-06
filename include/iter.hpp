@@ -62,9 +62,9 @@ struct IterScan : Iter
 	page::Id page_count;
 
 	page::Id page_id;
-	page::SlotId slot_id;
+	page::EntryId entry_id;
 
-	buffer::Pin<const page::PageSlotted> page;
+	buffer::Pin<const page::Slotted<>> page;
 };
 
 struct IterScanTemp : Iter
@@ -80,9 +80,9 @@ struct IterScanTemp : Iter
 	page::Id page_count;
 
 	page::Id page_id;
-	page::SlotId slot_id;
+	page::EntryId entry_id;
 
-	buffer::Buffer<page::PageSlotted> page;
+	buffer::Buffer<page::Slotted<>> page;
 };
 
 struct IterJoinCross : Iter

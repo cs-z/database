@@ -54,25 +54,25 @@ public:
 	inline constexpr bool operator==(const StrongId &other) const { return id == other.id; }
 	inline constexpr bool operator==(T other) const { return id == other; }
 
-	inline friend constexpr StrongId operator+(const StrongId &a, const StrongId &b) { return StrongId { a.id + b.id }; }
-	inline friend constexpr StrongId operator+(const StrongId &a, T b) { return StrongId { a.id + b }; }
-	inline friend constexpr StrongId operator+(T a, const StrongId &b) { return StrongId { a + b.id }; }
+	inline friend constexpr StrongId operator+(const StrongId &a, const StrongId &b) { return static_cast<StrongId>(a.id + b.id); }
+	inline friend constexpr StrongId operator+(const StrongId &a, T b) { return static_cast<StrongId>(a.id + b); }
+	inline friend constexpr StrongId operator+(T a, const StrongId &b) { return static_cast<StrongId>(a + b.id); }
 
-	inline friend constexpr StrongId operator-(const StrongId &a, const StrongId &b) { return StrongId { a.id - b.id }; }
-	inline friend constexpr StrongId operator-(const StrongId &a, T b) { return StrongId { a.id - b }; }
-	inline friend constexpr StrongId operator-(T a, const StrongId &b) { return StrongId { a - b.id }; }
+	inline friend constexpr StrongId operator-(const StrongId &a, const StrongId &b) { return static_cast<StrongId>(a.id - b.id); }
+	inline friend constexpr StrongId operator-(const StrongId &a, T b) { return static_cast<StrongId>(a.id - b); }
+	inline friend constexpr StrongId operator-(T a, const StrongId &b) { return static_cast<StrongId>(a - b.id); }
 
-	inline friend constexpr StrongId operator*(const StrongId &a, const StrongId &b) { return StrongId { a.id * b.id }; }
-	inline friend constexpr StrongId operator*(const StrongId &a, T b) { return StrongId { a.id * b }; }
-	inline friend constexpr StrongId operator*(T a, const StrongId &b) { return StrongId { a * b.id }; }
+	inline friend constexpr StrongId operator*(const StrongId &a, const StrongId &b) { return static_cast<StrongId>(a.id * b.id); }
+	inline friend constexpr StrongId operator*(const StrongId &a, T b) { return static_cast<StrongId>(a.id * b); }
+	inline friend constexpr StrongId operator*(T a, const StrongId &b) { return static_cast<StrongId>(a * b.id); }
 
-	inline friend constexpr StrongId operator/(const StrongId &a, const StrongId &b) { return StrongId { a.id / b.id }; }
-	inline friend constexpr StrongId operator/(const StrongId &a, T b) { return StrongId { a.id / b }; }
-	inline friend constexpr StrongId operator/(T a, const StrongId &b) { return StrongId { a / b.id }; }
+	inline friend constexpr StrongId operator/(const StrongId &a, const StrongId &b) { return static_cast<StrongId>(a.id / b.id); }
+	inline friend constexpr StrongId operator/(const StrongId &a, T b) { return static_cast<StrongId>(a.id / b); }
+	inline friend constexpr StrongId operator/(T a, const StrongId &b) { return static_cast<StrongId>(a / b.id); }
 
-	inline friend constexpr StrongId operator%(const StrongId &a, const StrongId &b) { return StrongId { a.id % b.id }; }
-	inline friend constexpr StrongId operator%(const StrongId &a, T b) { return StrongId { a.id % b }; }
-	inline friend constexpr StrongId operator%(T a, const StrongId &b) { return StrongId { a % b.id }; }
+	inline friend constexpr StrongId operator%(const StrongId &a, const StrongId &b) { return static_cast<StrongId>(a.id % b.id); }
+	inline friend constexpr StrongId operator%(const StrongId &a, T b) { return static_cast<StrongId>(a.id % b); }
+	inline friend constexpr StrongId operator%(T a, const StrongId &b) { return static_cast<StrongId>(a % b.id); }
 
 	inline constexpr StrongId operator++(int) { return StrongId { id++ }; }
 	inline constexpr StrongId operator--(int) { return StrongId { id-- }; }
@@ -90,7 +90,7 @@ namespace std
 	template <typename Tag, typename T>
 	struct hash<StrongId<Tag, T>>
 	{
-		size_t operator()(const StrongId<Tag, T>& id) const
+		std::size_t operator()(const StrongId<Tag, T>& id) const
 		{
 			return std::hash<T>{}(id.get());
 		}
@@ -114,6 +114,17 @@ constexpr T align_up(T value, T align)
 	const T rem = value % align;
 	if (rem) {
 		value += align - rem;
+	}
+	return value;
+}
+
+template <typename T>
+constexpr T align_down(T value, T align)
+{
+	ASSERT(align > 0);
+	const T rem = value % align;
+	if (rem) {
+		value -= rem;
 	}
 	return value;
 }
