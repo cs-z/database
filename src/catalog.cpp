@@ -9,7 +9,7 @@ namespace catalog
 	static const std::string SYS_STATS = "SYS_STATS";
 	static const TableId SYS_STATS_ID = TableId { 0 };
 	static const std::pair<FileId, FileId> SYS_STATS_FILES = std::make_pair(FileId { 0 }, FileId { 1 });
-	static const TableDef SYS_STATS_DEF =
+	static const NamedColumns SYS_STATS_COLUMNS =
 	{
 		{ "FILE_COUNTER", ColumnType::INTEGER },
 		{ "TABLE_COUNTER", ColumnType::INTEGER },
@@ -18,7 +18,7 @@ namespace catalog
 	static const std::string SYS_FILES = "SYS_FILES";
 	static const TableId SYS_FILES_ID = TableId { 1 };
 	static const std::pair<FileId, FileId> SYS_FILES_FILES = std::make_pair(FileId { 2 }, FileId { 3 });
-	static const TableDef SYS_FILES_DEF =
+	static const NamedColumns SYS_FILES_COLUMNS =
 	{
 		{ "ID", ColumnType::INTEGER },
 		{ "NAME", ColumnType::VARCHAR },
@@ -27,7 +27,7 @@ namespace catalog
 	static const std::string SYS_TABLES = "SYS_TABLES";
 	static const TableId SYS_TABLES_ID = TableId { 2 };
 	static const std::pair<FileId, FileId> SYS_TABLES_FILES = std::make_pair(FileId { 4 }, FileId { 5 });
-	static const TableDef SYS_TABLES_DEF =
+	static const NamedColumns SYS_TABLES_COLUMNS =
 	{
 		{ "ID", ColumnType::INTEGER },
 		{ "NAME", ColumnType::VARCHAR },
@@ -38,7 +38,7 @@ namespace catalog
 	static const std::string SYS_COLUMNS = "SYS_COLUMNS";
 	static const TableId SYS_COLUMNS_ID = TableId { 3 };
 	static const std::pair<FileId, FileId> SYS_COLUMNS_FILES = std::make_pair(FileId { 6 }, FileId { 7 });
-	static const TableDef SYS_COLUMNS_DEF =
+	static const NamedColumns SYS_COLUMNS_COLUMNS =
 	{
 		{ "TABLE_ID", ColumnType::INTEGER },
 		{ "ID", ColumnType::INTEGER },
@@ -121,24 +121,24 @@ namespace catalog
 		ASSERT(execute_internal_statement(statement).size() == 0);
 	}
 
-	static TableDef read_columns(TableId table_id)
+	static NamedColumns read_columns(TableId table_id)
 	{
 		const std::string statement = "SELECT NAME, TYPE FROM " + SYS_COLUMNS + " WHERE TABLE_ID = " + table_id.to_string() + " ORDER BY ID";
 		std::vector<Value> values = execute_internal_statement(statement);
 		ASSERT(values.size() > 0);
-		TableDef table_def;
+		NamedColumns columns;
 		for (Value &value : values) {
 			ColumnValueVarchar &column_name = std::get<ColumnValueVarchar>(value.at(0));
 			ColumnValueVarchar &column_type = std::get<ColumnValueVarchar>(value.at(1));
-			table_def.push_back({ std::move(column_name), column_type_from_catalog_string(std::move(column_type)) });
+			columns.emplace_back(std::move(column_name), column_type_from_catalog_string(std::move(column_type)));
 		}
-		return table_def;
+		return columns;
 	}
 
-	static void write_columns(TableId table_id, TableDef table_def)
+	static void write_columns(TableId table_id, NamedColumns columns)
 	{
-		for (ColumnId column_id {}; column_id < table_def.size(); column_id++) {
-			const auto &[column_name, column_type] = table_def[column_id.get()];
+		for (ColumnId column_id {}; column_id < columns.size(); column_id++) {
+			const auto &[column_name, column_type] = columns[column_id.get()];
 			const Value value = {
 				ColumnValueInteger { table_id.get() },
 				ColumnValueInteger { column_id.get() },
@@ -165,19 +165,31 @@ namespace catalog
 		return read_file(file);
 	}
 
-	std::optional<std::pair<TableId, TableDef>> find_table(const std::string &table_name)
+	std::optional<std::pair<TableId, Type>> find_table(const std::string &table_name)
+	{
+		// TODO: avoid copy
+		auto table = find_table_named(table_name);
+		if (!table) return std::nullopt;
+		Type type;
+		for (const auto &[column_name, column_type] : table->second) {
+			type.push(column_type);
+		}
+		return std::make_pair(table->first, std::move(type));
+	}
+
+	std::optional<std::pair<TableId, NamedColumns>> find_table_named(const std::string &table_name)
 	{
 		if (table_name == SYS_STATS) {
-			return std::make_pair(SYS_STATS_ID, SYS_STATS_DEF);
+			return std::make_pair(SYS_STATS_ID, SYS_STATS_COLUMNS);
 		}
 		if (table_name == SYS_FILES) {
-			return std::make_pair(SYS_FILES_ID, SYS_FILES_DEF);
+			return std::make_pair(SYS_FILES_ID, SYS_FILES_COLUMNS);
 		}
 		if (table_name == SYS_TABLES) {
-			return std::make_pair(SYS_TABLES_ID, SYS_TABLES_DEF);
+			return std::make_pair(SYS_TABLES_ID, SYS_TABLES_COLUMNS);
 		}
 		if (table_name == SYS_COLUMNS) {
-			return std::make_pair(SYS_COLUMNS_ID, SYS_COLUMNS_DEF);
+			return std::make_pair(SYS_COLUMNS_ID, SYS_COLUMNS_COLUMNS);
 		}
 		const std::optional<TableId> table_id = read_table(table_name);
 		if (!table_id) {
@@ -186,9 +198,18 @@ namespace catalog
 		return std::make_pair(*table_id, read_columns(*table_id));
 	}
 
-	std::pair<TableId, TableDef> get_table(const SourceText &table_name)
+	std::pair<TableId, Type> get_table(const SourceText &table_name)
 	{
-		std::optional<std::pair<TableId, TableDef>> table = find_table(table_name.get());
+		auto table = find_table(table_name.get());
+		if (!table) {
+			throw ClientError { "table does not exist", table_name };
+		}
+		return std::move(*table);
+	}
+
+	std::pair<TableId, NamedColumns> get_table_named(const SourceText &table_name)
+	{
+		auto table = find_table_named(table_name.get());
 		if (!table) {
 			throw ClientError { "table does not exist", table_name };
 		}
@@ -228,11 +249,11 @@ namespace catalog
 		fst::init(files.first);
 	}
 
-	void create_table(std::string table_name, TableDef table_def)
+	void create_table(std::string table_name, NamedColumns columns)
 	{
 		const auto [id, files] = create_table_ids();
 		create_table_files(files, table_name, true);
 		write_table(id, std::move(table_name), files);
-		write_columns(id, std::move(table_def));
+		write_columns(id, std::move(columns));
 	}
 }

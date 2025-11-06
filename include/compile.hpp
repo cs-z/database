@@ -5,22 +5,24 @@
 #include "catalog.hpp"
 #include "ast.hpp"
 #include "iter.hpp"
+#include "type.hpp"
 
 struct CreateTable
 {
 	std::string table_name;
-	catalog::TableDef table_def;
+	catalog::NamedColumns columns;
 };
 
 struct InsertValue
 {
 	catalog::TableId table_id;
+	Type type; // TODO: avoid copy
 	Value value;
 };
 
 struct Query
 {
-	catalog::TableDef table_def;
+	catalog::NamedColumns columns;
 	IterPtr iter;
 	std::optional<unsigned int> limit;
 };

@@ -62,13 +62,13 @@ public:
 
 	Columns() = default;
 
-	Columns(SourceText table, catalog::TableDef table_def)
+	Columns(SourceText table, catalog::NamedColumns table_columns)
 	{
-		for (catalog::ColumnDef &column_def : table_def) {
-			columns.push_back(std::move(column_def));
+		for (auto &table_column : table_columns) {
+			columns.push_back(std::move(table_column));
 			columns_table.push_back(table.get());
 		}
-		tables.push_back({ std::move(table), { ColumnId {}, ColumnId (table_def.size()) } });
+		tables.push_back({ std::move(table), { ColumnId {}, ColumnId (table_columns.size()) } });
 	}
 
 	Columns(const Columns &columns_l, const Columns &columns_r)
@@ -83,8 +83,8 @@ public:
 			tables.push_back({ table.name, columns });
 		}
 		columns = columns_l.columns;
-		for (const catalog::ColumnDef &column_def : columns_r.columns) {
-			columns.push_back(column_def);
+		for (const auto &column : columns_r.columns) {
+			columns.push_back(column);
 		}
 		columns_table = columns_l.columns_table;
 		for (const std::string &table : columns_r.columns_table) {
@@ -107,14 +107,14 @@ public:
 		if (column.table) {
 			const auto [begin, end] = get_table(*column.table);
 			for (ColumnId column_id { begin }; column_id < end; column_id++) {
-				if (columns[column_id.get()].name == column.name.get()) {
+				if (columns[column_id.get()].first == column.name.get()) {
 					ids.push_back(column_id);
 				}
 			}
 		}
 		else {
 			for (ColumnId column_id {}; column_id < columns.size(); column_id++) {
-				if (columns[column_id.get()].name == column.name.get()) {
+				if (columns[column_id.get()].first == column.name.get()) {
 					ids.push_back(column_id);
 				}
 			}
@@ -126,30 +126,30 @@ public:
 			throw ClientError { "column name is ambiguous", column.name };
 		}
 		const ColumnId id = ids.front();
-		return { id, columns[id.get()].type };
+		return { id, columns[id.get()].second };
 	}
 
-	catalog::TableDef get_table_def() const
+	catalog::NamedColumns get_table_columns() const
 	{
 		std::unordered_map<std::string, int> multiplicity;
-		for (const catalog::ColumnDef &column_def : columns) {
-			multiplicity[column_def.name]++;
+		for (const auto &[name, type] : columns) {
+			multiplicity[name]++;
 		}
-		catalog::TableDef table_def;
-		for (size_t column_id = 0; column_id < columns.size(); column_id++) {
+		catalog::NamedColumns table_columns;
+		for (std::size_t column_id = 0; column_id < columns.size(); column_id++) {
 			const auto &[column_name, column_type] = columns[column_id];
 			std::string prefix = multiplicity[column_name] > 1 ? (columns_table[column_id] + ".") : "";
 			std::string name = std::move(prefix) + column_name;
-			table_def.push_back({ std::move(name), column_type });
+			table_columns.push_back({ std::move(name), column_type });
 		}
-		return table_def;
+		return table_columns;
 	}
 
 	Type get_type() const
 	{
 		Type type;
-		for (const catalog::ColumnDef &column_def : columns) {
-			type.push_back(column_def.type);
+		for (const auto &[column_name, column_type] : columns) {
+			type.push(column_type);
 		}
 		return type;
 	}
@@ -173,7 +173,7 @@ private:
 	};
 
 	std::vector<Table> tables;
-	std::vector<catalog::ColumnDef> columns;
+	std::vector<catalog::NamedColumn> columns;
 	std::vector<std::string> columns_table;
 };
 
@@ -354,8 +354,8 @@ static std::pair<SourcePtr, Columns> compile_source(const AstSource &ast)
 {
 	return std::visit(Overload{
 		[](const AstSource::DataTable &ast) {
-			auto [table_id, table_def] = catalog::get_table(ast.name);
-			Columns columns { ast.alias.value_or(ast.name), std::move(table_def) };
+			auto [table_id, table_columns] = catalog::get_table_named(ast.name);
+			Columns columns { ast.alias.value_or(ast.name), std::move(table_columns) };
 			return std::make_pair(std::make_unique<Source>(Source::DataTable { table_id }, columns.get_type()), std::move(columns));
 		},
 		[](const AstSource::DataJoinCross &ast) {
@@ -381,7 +381,7 @@ static std::pair<SourcePtr, Columns> compile_sources(const std::vector<AstSource
 {
 	ASSERT(asts.size() > 0);
 	std::pair<SourcePtr, Columns> result = compile_source(*asts[0]);
-	for (size_t i = 1; i < asts.size(); i++) {
+	for (std::size_t i = 1; i < asts.size(); i++) {
 		std::pair<SourcePtr, Columns> other = compile_source(*asts[i]);
 		Columns columns { std::move(result.second), std::move(other.second) };
 		result = std::make_pair(std::make_unique<Source>(Source::DataJoinCross { std::move(result.first), std::move(other.first) }, columns.get_type()), std::move(columns));
@@ -425,56 +425,56 @@ static ExprPtr compile_having(const Columns &columns, const AstExprPtr &ast, Exp
 	return expr;
 }
 
-static std::pair<SelectList, catalog::TableDef> compile_select_list(const Columns &columns, const AstSelectList &ast, std::unordered_map<ColumnId, SourceText> &nonaggregated_columns, Aggregates &aggregates)
+static std::pair<SelectList, catalog::NamedColumns> compile_select_list(const Columns &columns, const AstSelectList &ast, std::unordered_map<ColumnId, SourceText> &nonaggregated_columns, Aggregates &aggregates)
 {
-	const catalog::TableDef columns_table_def = columns.get_table_def();
+	const catalog::NamedColumns column_names = columns.get_table_columns();
 	SelectList list = {};
-	catalog::TableDef table_def;
+	catalog::NamedColumns table_columns;
 	for (const AstSelectList::Element &ast_element : ast.elements) {
 		// TODO: capture list too long
 		std::visit(Overload{
-			[&nonaggregated_columns, &aggregates, &columns, &columns_table_def, &list, &table_def](const AstSelectList::Wildcard &ast_element) {
-				for (ColumnId column_id {}; column_id < columns_table_def.size(); column_id++) {
-					const auto &[column_name, column_type] = columns_table_def[column_id.get()];
+			[&nonaggregated_columns, &aggregates, &columns, &column_names, &list, &table_columns](const AstSelectList::Wildcard &ast_element) {
+				for (ColumnId column_id {}; column_id < column_names.size(); column_id++) {
+					const auto &[column_name, column_type] = column_names[column_id.get()];
 					ExprPtr expr = create_nonaggregated_column_expr(column_id, column_type, ast_element.asterisk_text, ExprContext { nonaggregated_columns, aggregates, false });
 					list.exprs.push_back(std::move(expr));
-					list.type.push_back(column_type);
+					list.type.push(column_type);
 					list.visible_count++;
-					table_def.push_back({ column_name, column_type });
+					table_columns.push_back({ column_name, column_type });
 				}
 			},
-			[&nonaggregated_columns, &aggregates, &columns, &columns_table_def, &list, &table_def](const AstSelectList::TableWildcard &ast_element) {
+			[&nonaggregated_columns, &aggregates, &columns, &column_names, &list, &table_columns](const AstSelectList::TableWildcard &ast_element) {
 				const auto [begin, end] = columns.get_table(ast_element.table);
 				for (ColumnId column_id { begin }; column_id < end; column_id++) {
-					const auto &[column_name, column_type] = columns_table_def[column_id.get()];
+					const auto &[column_name, column_type] = column_names[column_id.get()];
 					ExprPtr expr = create_nonaggregated_column_expr(column_id, column_type, ast_element.asterisk_text, ExprContext { nonaggregated_columns, aggregates, false });
 					list.exprs.push_back(std::move(expr));
-					list.type.push_back(column_type);
+					list.type.push(column_type);
 					list.visible_count++;
-					table_def.push_back({ column_name, column_type });
+					table_columns.push_back({ column_name, column_type });
 				}
 			},
-			[&nonaggregated_columns, &aggregates, &columns, &list, &table_def](const AstSelectList::Expr &ast_element) {
+			[&nonaggregated_columns, &aggregates, &columns, &list, &table_columns](const AstSelectList::Expr &ast_element) {
 				ExprPtr expr = compile_expr(*ast_element.expr, columns, ExprContext { nonaggregated_columns, aggregates, false });
 				const ColumnType column_type = expr->type.value_or(ColumnType::INTEGER);
 				std::string column_name = ast_element.alias ? ast_element.alias->get() : ast_element.expr->to_string();
-				const auto iter = std::find_if(table_def.begin(), table_def.end(), [&column_name](const catalog::ColumnDef &column_def) {
-					return column_def.name == column_name;
+				const auto iter = std::find_if(table_columns.begin(), table_columns.end(), [&column_name](const auto &column) {
+					return column.first == column_name;
 				});
-				if (iter != table_def.end()) {
+				if (iter != table_columns.end()) {
 					throw ClientError { "column name or alias collision", ast_element.alias.value_or(ast_element.expr->text) };
 				}
 				list.exprs.push_back(std::move(expr));
-				list.type.push_back(column_type);
+				list.type.push(column_type);
 				list.visible_count++;
-				table_def.push_back({ std::move(column_name), column_type });
+				table_columns.push_back({ std::move(column_name), column_type });
 			},
 		}, ast_element);
 	}
-	return std::make_pair(std::move(list), std::move(table_def));
+	return std::make_pair(std::move(list), std::move(table_columns));
 }
 
-static std::tuple<Select, Columns, catalog::TableDef> compile_select(const AstSelect &ast)
+static std::tuple<Select, Columns, catalog::NamedColumns> compile_select(const AstSelect &ast)
 {
 	auto [source, columns] = compile_sources(ast.sources);
 	ExprPtr where = compile_where(columns, ast.where);
@@ -483,12 +483,12 @@ static std::tuple<Select, Columns, catalog::TableDef> compile_select(const AstSe
 		compile_group_by(columns, ast.group_by),
 	};
 	std::unordered_map<ColumnId, SourceText> nonaggregated_columns;
-	auto [list, table_def] = compile_select_list(columns, ast.list, nonaggregated_columns, aggregates);
+	auto [list, table_columns] = compile_select_list(columns, ast.list, nonaggregated_columns, aggregates);
 	ExprPtr having = compile_having(columns, ast.having, ExprContext { nonaggregated_columns, aggregates, false });
 	if (aggregates.exprs.size() > 0 && aggregates.group_by.size() == 0 && nonaggregated_columns.size() > 0) {
 		throw ClientError { "nonaggregated column in aggregation", nonaggregated_columns.begin()->second };
 	}
-	return std::make_tuple(Select { std::move(source), std::move(where), std::move(aggregates), std::move(having), std::move(list) }, std::move(columns), std::move(table_def));
+	return std::make_tuple(Select { std::move(source), std::move(where), std::move(aggregates), std::move(having), std::move(list) }, std::move(columns), std::move(table_columns));
 }
 
 static OrderBy compile_order_by(const Columns &columns, SelectList &list, const AstOrderBy &ast)
@@ -518,7 +518,7 @@ static OrderBy compile_order_by(const Columns &columns, SelectList &list, const 
 				else {
 					const ColumnId extra_id (list.exprs.size());
 					list.exprs.push_back(std::make_unique<Expr>(Expr::DataColumn { column_id }, column_type));
-					list.type.push_back(column_type);
+					list.type.push(column_type);
 					return extra_id;
 				}
 			},
@@ -579,13 +579,13 @@ static IterPtr create_query_iter(QueryTodo &query)
 
 static Query compile_query(const AstQuery &ast)
 {
-	auto [select, columns, table_def] = compile_select(ast.select);
+	auto [select, columns, table_columns] = compile_select(ast.select);
 	std::optional<OrderBy> order_by;
 	if (ast.order_by) {
 		order_by = compile_order_by(columns, select.list, *ast.order_by);
 	}
 	QueryTodo query { std::move(select), std::move(order_by) };
-	return { std::move(table_def), create_query_iter(query), ast.limit };
+	return { std::move(table_columns), create_query_iter(query), ast.limit };
 }
 
 static CreateTable compile_create_table(AstCreateTable &ast)
@@ -594,25 +594,25 @@ static CreateTable compile_create_table(AstCreateTable &ast)
 	if (catalog::find_table(table_name)) {
 		throw ClientError { "table already exists", std::move(ast.name) };
 	}
-	return { table_name, std::move(ast.table_def) };
+	return { table_name, std::move(ast.columns) };
 }
 
 static InsertValue compile_insert_value(AstInsertValue &ast)
 {
-	const auto [table_id, table_def] = catalog::get_table(ast.table);
-	if (ast.exprs.size() != table_def.size()) {
+	const auto [table_id, type] = catalog::get_table(ast.table);
+	if (ast.exprs.size() != type.size()) {
 		throw ClientError { "column number mismatch" };
 	}
 	Value value;
 	Columns columns;
-	for (size_t i = 0; i < table_def.size(); i++) {
+	for (std::size_t i = 0; i < type.size(); i++) {
 		ExprPtr expr = compile_expr(*ast.exprs[i], columns, std::nullopt);
-		if (expr->type && *expr->type != table_def[i].type) {
+		if (expr->type && *expr->type != type.at(i)) {
 			throw ClientError { "column type mismatch", ast.exprs[i]->text };
 		}
 		value.push_back(expr->eval(nullptr));
 	}
-	return { table_id, std::move(value) };
+	return { table_id, std::move(type), std::move(value) };
 }
 
 Statement compile_statement(AstStatement &ast)

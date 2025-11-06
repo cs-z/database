@@ -1,5 +1,6 @@
 #include "type.hpp"
 #include "parse.hpp"
+#include "row.hpp"
 
 std::string column_type_to_string(ColumnType type)
 {
@@ -69,4 +70,27 @@ void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, So
 		}
 	}
 	throw ClientError { "invalid cast from " + (from ? column_type_to_string(*from) : "NULL") + " to " + column_type_to_string(to.first), to.second };
+}
+
+Type::Type() : align { alignof(row::ColumnPrefix) }
+{
+}
+
+void Type::push(ColumnType column)
+{
+	switch (column) {
+		case ColumnType::BOOLEAN:
+			align = std::max<page::Offset>(align, alignof(ColumnValueBoolean));
+			break;
+		case ColumnType::INTEGER:
+			align = std::max<page::Offset>(align, alignof(ColumnValueInteger));
+			break;
+		case ColumnType::REAL:
+			align = std::max<page::Offset>(align, alignof(ColumnValueReal));
+			break;
+		case ColumnType::VARCHAR:
+			align = std::max<page::Offset>(align, alignof(char));
+			break;
+	}
+	columns.push_back(column);
 }

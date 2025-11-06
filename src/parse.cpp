@@ -418,20 +418,20 @@ static AstCreateTable parse_create_table(Lexer &lexer)
 	lexer.expect_step(Token::KwTable);
 	SourceText name = lexer.expect_step(Token::Identifier).get_text();
 	lexer.expect_step(Token::LParen);
-	catalog::TableDef table_def;
+	catalog::NamedColumns columns;
 	do {
 		SourceText column_name = lexer.expect_step(Token::Identifier).get_text();
-		const auto iter = std::find_if(table_def.begin(), table_def.end(), [&column_name](const catalog::ColumnDef &column) {
-			return column.name == column_name.get();
+		const auto iter = std::find_if(columns.begin(), columns.end(), [&column_name](const catalog::NamedColumn &column) {
+			return column.first == column_name.get();
 		});
-		if (iter != table_def.end()) {
+		if (iter != columns.end()) {
 			throw ClientError { "column name reused", std::move(column_name) };
 		}
 		auto [column_type, unused] = parse_type(lexer);
-		table_def.push_back({ column_name.get(), column_type });
+		columns.push_back({ column_name.get(), column_type });
 	} while (lexer.accept_step(Token::Comma) && !lexer.accept(Token::RParen));
 	lexer.expect_step(Token::RParen);
-	return { std::move(name), std::move(table_def) };
+	return { std::move(name), std::move(columns) };
 }
 
 static AstInsertValue parse_insert_value(Lexer &lexer)

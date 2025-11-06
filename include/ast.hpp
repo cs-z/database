@@ -160,7 +160,7 @@ struct AstQuery
 struct AstCreateTable
 {
 	SourceText name;
-	catalog::TableDef table_def;
+	catalog::NamedColumns columns;
 };
 
 struct AstInsertValue

@@ -2,6 +2,7 @@
 
 #include "common.hpp"
 #include "error.hpp"
+#include "page.hpp"
 
 enum class ColumnType
 {
@@ -38,4 +39,20 @@ void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, So
 std::string column_type_to_catalog_string(ColumnType type);
 ColumnType column_type_from_catalog_string(const std::string &name);
 
-using Type = std::vector<ColumnType>;
+class Type
+{
+public:
+
+	Type();
+	void push(ColumnType column);
+
+	inline page::Offset get_align() const { return align; }
+	inline std::size_t size() const { return columns.size(); }
+	inline ColumnType at(std::size_t index) const { return columns.at(index); }
+
+private:
+
+	page::Offset align;
+	std::vector<ColumnType> columns;
+
+};
