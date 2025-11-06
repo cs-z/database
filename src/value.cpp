@@ -41,7 +41,7 @@ std::string column_value_to_string(const ColumnValue &value, bool quote)
 		[](const ColumnValueReal &value) {
 			const std::string string = std::to_string(value);
 			ASSERT(string.size() > 0);
-			size_t ptr = string.size() - 1;
+			std::size_t ptr = string.size() - 1;
 			while (ptr > 0 && string[ptr] == '0' && string[ptr - 1] == '0') {
 				ptr--;
 			}
@@ -117,19 +117,19 @@ ColumnValue column_value_eval_cast(const ColumnValue &value, ColumnType to)
 void value_print(const Value &value)
 {
 	printf("(");
-	for (size_t i = 0; i < value.size(); i++) {
+	for (std::size_t i = 0; i < value.size(); i++) {
 		printf("%s", column_value_to_string(value[i], true).c_str());
 		if (i + 1 < value.size()) {
 			printf(", ");
 		}
 	}
-	printf(")\n");
+	printf(")");
 }
 
 std::string value_to_list(const Value &value)
 {
 	std::string list = "(";
-	for (size_t i = 0; i < value.size(); i++) {
+	for (std::size_t i = 0; i < value.size(); i++) {
 		list += column_value_to_string(value[i], true);
 		if (i + 1< value.size()) {
 			list += ", ";
@@ -138,10 +138,10 @@ std::string value_to_list(const Value &value)
 	return list + ")";
 }
 
-bool value_eual(const Value &a, const Value &b)
+bool value_equal(const Value &a, const Value &b)
 {
 	ASSERT(a.size() == b.size());
-	for (size_t i = 0; i < a.size(); i++) {
+	for (std::size_t i = 0; i < a.size(); i++) {
 		if (a[i] != b[i]) {
 			return false;
 		}
