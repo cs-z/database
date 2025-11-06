@@ -3,33 +3,10 @@
 
 namespace row
 {
-	page::Offset calculate_align(const Type &type)
+	Prefix calculate_layout(const Value &value)
 	{
-		page::Offset align = alignof(ColumnPrefix);
-		for (ColumnType column_type : type) {
-			switch (column_type) {
-				case ColumnType::BOOLEAN:
-					align = std::max<page::Offset>(align, alignof(ColumnValueBoolean));
-					break;
-				case ColumnType::INTEGER:
-					align = std::max<page::Offset>(align, alignof(ColumnValueInteger));
-					break;
-				case ColumnType::REAL:
-					align = std::max<page::Offset>(align, alignof(ColumnValueReal));
-					break;
-				case ColumnType::VARCHAR:
-					align = std::max<page::Offset>(align, alignof(char));
-					break;
-			}
-		}
-		return align;
-	}
-
-	Prefix calculate_layout(const Value &value, page::Offset &align_out, page::Offset &size_out)
-	{
-		align_out = alignof(ColumnPrefix);
-		size_out = value.size() * sizeof(ColumnPrefix);
 		Prefix prefix;
+		prefix.size = value.size() * sizeof(ColumnPrefix);
 		for (const ColumnValue &column_value : value) {
 			const auto [column_align, column_size] = std::visit(Overload{
 				[](const ColumnValueNull &) {
@@ -58,10 +35,9 @@ namespace row
 					return std::make_pair(column_align, column_size);
 				},
 			}, column_value);
-			align_out = std::max<page::Offset>(align_out, column_align);
-			size_out = align_up(size_out, column_align);
-			prefix.push_back({ column_size ? size_out : page::Offset {}, column_size });
-			size_out += column_size;
+			prefix.size = align_up(prefix.size, column_align);
+			prefix.columns.push_back({ column_size ? prefix.size : page::Offset {}, column_size });
+			prefix.size += column_size;
 		}
 		return prefix;
 	}
@@ -75,8 +51,8 @@ namespace row
 
 	void write(const Prefix &prefix, const Value &value, u8 *row)
 	{
-		ASSERT(prefix.size() == value.size());
-		memcpy(row, prefix.data(), prefix.size() * sizeof(ColumnPrefix));
+		ASSERT(prefix.columns.size() == value.size());
+		memcpy(row, prefix.columns.data(), prefix.columns.size() * sizeof(ColumnPrefix));
 		for (ColumnId column_id {}; column_id < value.size(); column_id++) {
 			std::visit(Overload{
 				[&prefix](const ColumnValueNull &) {
@@ -117,7 +93,7 @@ namespace row
 				value.push_back(ColumnValueNull {});
 				continue;
 			}
-			switch (type[column_id.get()]) {
+			switch (type.at(column_id.get())) {
 				case ColumnType::BOOLEAN: {
 					value.push_back(*get_column<ColumnValueBoolean>(row, prefix));
 					break;
@@ -180,6 +156,50 @@ namespace row
 				const char *column_value_l = get_column<char>(row_l, prefix_l);
 				const char *column_value_r = get_column<char>(row_r, prefix_r);
 				return compare_strings({ column_value_l, prefix_l.size }, { column_value_r, prefix_r.size });
+			}
+		}
+		UNREACHABLE();
+	}
+
+	int compare(const Type &type, ColumnId column, const u8 *row_l, const Value &row_r)
+	{
+		const ColumnPrefix prefix_l = get_prefix(row_l, column);
+		const ColumnValue &value_r = row_r.at(column.get());
+		if (std::holds_alternative<ColumnValueNull>(value_r)) {
+			return -1;
+		}
+		if (prefix_l.offset == 0) {
+			return +1;
+		}
+		switch (type.at(column.get())) {
+			case ColumnType::BOOLEAN: {
+				UNREACHABLE();
+			}
+			case ColumnType::INTEGER: {
+				const ColumnValueInteger column_value_l = *get_column<ColumnValueInteger>(row_l, prefix_l);
+				const ColumnValueInteger column_value_r = std::get<ColumnValueInteger>(value_r);
+				if (column_value_l < column_value_r) {
+					return -1;
+				}
+				if (column_value_l > column_value_r) {
+					return +1;
+				}
+				return 0;
+			}
+			case ColumnType::REAL: {
+				const ColumnValueReal column_value_l = *get_column<ColumnValueReal>(row_l, prefix_l);
+				const ColumnValueReal column_value_r = std::get<ColumnValueReal>(value_r);
+				if (column_value_l < column_value_r) {
+					return -1;
+				}
+				if (column_value_l > column_value_r) {
+					return +1;
+				}
+				return 0;
+			}
+			case ColumnType::VARCHAR: {
+				const char *column_value_l = get_column<char>(row_l, prefix_l);
+				return compare_strings({ column_value_l, prefix_l.size }, std::get<ColumnValueVarchar>(value_r));
 			}
 		}
 		UNREACHABLE();

@@ -14,13 +14,17 @@ namespace row
 		page::Offset size;
 	};
 
-	using Prefix = std::vector<ColumnPrefix>;
+	struct Prefix
+	{
+		page::Offset size;
+		std::vector<ColumnPrefix> columns;
+	};
 
-	page::Offset calculate_align(const Type &type);
-	Prefix calculate_layout(const Value &value, page::Offset &align_out, page::Offset &size_out);
+	Prefix calculate_layout(const Value &value);
 
 	void write(const Prefix &prefix, const Value &value, u8 *row);
 	Value read(const Type &type, const u8 *row);
 
 	int compare(const Type &type, ColumnId column, const u8 *row_l, const u8 *row_r);
+	int compare(const Type &type, ColumnId column, const u8 *row_l, const Value &row_r);
 }

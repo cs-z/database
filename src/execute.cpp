@@ -44,31 +44,31 @@ std::vector<Value> execute_internal_statement(const std::string &source)
 
 static void execute_create_table(const CreateTable &statement)
 {
-	catalog::create_table(statement.table_name, statement.table_def);
+	catalog::create_table(statement.table_name, statement.columns);
 }
 
 static void execute_insert_value(const InsertValue &statement)
 {
-	page::Offset align, size;
-	const row::Prefix prefix = row::calculate_layout(statement.value, align, size);
-	const page::Offset size_padded = static_cast<page::Offset>(size + align - 1);
+	const row::Prefix prefix = row::calculate_layout(statement.value);
+	const page::Offset align = statement.type.get_align();
+	const page::Offset size_padded = prefix.size + align - 1;
 
 	const auto [file_fst, file_dat] = catalog::get_table_files(statement.table_id);
 	const auto [page_id, append] = fst::find_or_append(file_fst, size_padded);
-	const buffer::Pin<page::PageSlotted> page { file_dat, page_id, append };
+	const buffer::Pin<page::Slotted<>> page { file_dat, page_id, append };
 	if (append) {
-		page->init();
+		page->init({});
 	}
-	ASSERT(page->get_free_size() >= size_padded);
 
-	u8 * const row = page->insert(align, size);
+	page::Offset free_size;
+	u8 * const row = page->insert(align, prefix.size, {}, &free_size);
+	ASSERT(row);
 	row::write(prefix, statement.value, row);
 
-	const page::Offset free_size = page->get_free_size();
 	fst::update(file_fst, page_id, free_size);
 }
 
-static std::string pad(const std::string &string, size_t width, bool left)
+static std::string pad(const std::string &string, std::size_t width, bool left)
 {
 	ASSERT(string.size() <= width);
 	const std::string space(width - string.size(), ' ');
@@ -98,16 +98,16 @@ static void execute_query(const Query &query)
 	const std::chrono::duration<double, std::milli> time_delta = time_end - time_start;
 
 	std::vector<std::vector<std::string>> rows;
-	std::vector<size_t> max_sizes;
+	std::vector<std::size_t> max_sizes;
 
-	for (const auto &[name, type] : query.table_def) {
+	for (const auto &[name, type] : query.columns) {
 		max_sizes.push_back(name.size());
 	}
 
 	for (const Value &value : values) {
-		ASSERT(value.size() == query.table_def.size());
+		ASSERT(value.size() == query.columns.size());
 		std::vector<std::string> strings;
-		for (size_t i = 0; i < query.table_def.size(); i++) {
+		for (std::size_t i = 0; i < query.columns.size(); i++) {
 			std::string string = column_value_to_string(value[i], false);
 			max_sizes[i] = std::max(max_sizes[i], string.size());
 			strings.push_back(std::move(string));
@@ -115,33 +115,33 @@ static void execute_query(const Query &query)
 		rows.push_back(std::move(strings));
 	}
 
-	for (size_t i = 0; i < query.table_def.size(); i++) {
+	for (std::size_t i = 0; i < query.columns.size(); i++) {
 		const std::string string(max_sizes[i] + 2, '-');
 		std::printf("+%s", string.c_str());
 	}
 	std::printf("+\n");
 
-	for (size_t i = 0; i < query.table_def.size(); i++) {
-		const std::string string = pad(query.table_def[i].name, max_sizes[i], true);
+	for (std::size_t i = 0; i < query.columns.size(); i++) {
+		const std::string string = pad(query.columns[i].first, max_sizes[i], true);
 		std::printf("| %s ", string.c_str());
 	}
 	std::printf("|\n");
 
-	for (size_t i = 0; i < query.table_def.size(); i++) {
+	for (std::size_t i = 0; i < query.columns.size(); i++) {
 		const std::string string(max_sizes[i] + 2, '-');
 		std::printf("+%s", string.c_str());
 	}
 	std::printf("+\n");
 
 	for (const std::vector<std::string> &row : rows) {
-		for (size_t i = 0; i < query.table_def.size(); i++) {
-			const std::string string = pad(row[i], max_sizes[i], !column_type_is_arithmetic(query.table_def[i].type));
+		for (std::size_t i = 0; i < query.columns.size(); i++) {
+			const std::string string = pad(row[i], max_sizes[i], !column_type_is_arithmetic(query.columns[i].second));
 			std::printf("| %s ", string.c_str());
 		}
 		std::printf("|\n");
 	}
 
-	for (size_t i = 0; i < query.table_def.size(); i++) {
+	for (std::size_t i = 0; i < query.columns.size(); i++) {
 		const std::string string(max_sizes[i] + 2, '-');
 		std::printf("+%s", string.c_str());
 	}
@@ -164,11 +164,3 @@ void execute_statement(const Statement &statement)
 		},
 	}, statement);
 }
-
-/*void execute_query(const std::string &source)
-{
-
-	std::printf("rows: %u\n", count);
-	std::printf("time: %.1lf ms\n", time_delta.count());
-	std::printf("\n");
-}*/
