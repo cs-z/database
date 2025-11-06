@@ -46,7 +46,7 @@ std::string AstExpr::to_string() const
 			}
 			string += " IN ";
 			string += "(";
-			for (size_t i = 0; i < expr.list.size(); i++) {
+			for (std::size_t i = 0; i < expr.list.size(); i++) {
 				string += expr.list[i]->to_string();
 				if (i + 1 < expr.list.size()) {
 					string += ", ";
@@ -69,7 +69,7 @@ void AstExpr::print() const
 void AstQuery::print() const
 {
 	printf("SELECT ");
-	for (size_t i = 0; i < select.list.elements.size(); i++) {
+	for (std::size_t i = 0; i < select.list.elements.size(); i++) {
 		std::visit(Overload{
 			[](const AstSelectList::Wildcard &) {
 				printf("*");
@@ -89,7 +89,7 @@ void AstQuery::print() const
 		}
 	}
 	printf (" FROM ");
-	for (size_t i = 0; i < select.sources.size(); i++) {
+	for (std::size_t i = 0; i < select.sources.size(); i++) {
 		select.sources[i]->print();
 		if (i + 1< select.sources.size()) {
 			printf(", ");
@@ -101,7 +101,7 @@ void AstQuery::print() const
 	}
 	if (select.group_by) {
 		printf(" GROUP BY ");
-		for (size_t i = 0; i < select.group_by->columns.size(); i++) {
+		for (std::size_t i = 0; i < select.group_by->columns.size(); i++) {
 			print_column(select.group_by->columns[i].first);
 			if (i + 1< select.group_by->columns.size()) {
 				printf(", ");
@@ -110,7 +110,7 @@ void AstQuery::print() const
 	}
 	if (order_by) {
 		printf(" ORDER BY ");
-		for (size_t i = 0; i < order_by->columns.size(); i++) {
+		for (std::size_t i = 0; i < order_by->columns.size(); i++) {
 			std::visit(Overload{
 				[](const AstOrderBy::Index &column) {
 					printf("%u", column.index.first.get());

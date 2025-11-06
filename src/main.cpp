@@ -42,14 +42,14 @@ int main(int argc, const char **argv)
 
 static std::string trim(const std::string &text)
 {
-	size_t begin = 0;
+	std::size_t begin = 0;
     while (begin < text.size() && std::isspace(text[begin])) {
 		begin++;
     }
     if (begin == text.size()) {
 		return "";
 	}
-    size_t end = text.size() - 1;
+    std::size_t end = text.size() - 1;
     while (end > begin && std::isspace(text[end])) {
 		end--;
     }

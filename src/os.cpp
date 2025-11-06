@@ -71,12 +71,12 @@ namespace os
 	void file_read(Fd fd, page::Id page_id, void *buffer)
 	{
 		file_seek(fd, page_id);
-		const size_t bytes = page::SIZE;
+		const std::size_t bytes = page::SIZE;
 		const ssize_t bytes_returned = ::read(fd.get(), buffer, bytes);
 		if (bytes_returned < 0) {
 			throw ServerError { "read", fd.to_string(), errno };
 		}
-		if (static_cast<size_t>(bytes_returned) < bytes) {
+		if (static_cast<std::size_t>(bytes_returned) < bytes) {
 			throw ServerError { "less bytes returned in read(" + fd.to_string() + "): " + std::to_string(bytes_returned) + " < " + std::to_string(bytes) };
 		}
 	}
@@ -84,12 +84,12 @@ namespace os
 	void file_write(Fd fd, page::Id page_id, const void *buffer)
 	{
 		file_seek(fd, page_id);
-		const size_t bytes = page::SIZE;
+		const std::size_t bytes = page::SIZE;
 		const ssize_t bytes_returned = ::write(fd.get(), buffer, bytes);
 		if (bytes_returned < 0) {
 			throw ServerError { "write", fd.to_string(), errno };
 		}
-		if (static_cast<size_t>(bytes_returned) < bytes) {
+		if (static_cast<std::size_t>(bytes_returned) < bytes) {
 			throw ServerError { "less bytes returned in write(" + fd.to_string() + "): " + std::to_string(bytes_returned) + " < " + std::to_string(bytes) };
 		}
 	}
@@ -124,12 +124,12 @@ namespace os
 	unsigned int random()
 	{
 		unsigned int value = {};
-		const size_t bytes = sizeof(value);
+		const std::size_t bytes = sizeof(value);
 		const ssize_t bytes_returned = ::getrandom(&value, bytes, 0);
 		if (bytes_returned < 0) {
 			throw ServerError { "getrandom", errno };
 		}
-		if (static_cast<size_t>(bytes_returned) < bytes) {
+		if (static_cast<std::size_t>(bytes_returned) < bytes) {
 			throw ServerError { "less bytes returned in getrandom(): " + std::to_string(bytes_returned) + " < " + std::to_string(bytes) };
 		}
 		return value;

@@ -144,10 +144,10 @@ std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupB
 	}
 
 	const bool should_return_null = !current_key && !value_key;
-	const bool key_changed = current_key && value_key && !value_eual(*current_key, *value_key);
+	const bool key_changed = current_key && value_key && !value_equal(*current_key, *value_key);
 	const bool should_return_value = (current_key && !value_key) || key_changed;
 	const bool should_init = !current_key || key_changed;
-	const bool should_feed = static_cast<bool>(value_key);
+	const bool should_feed = value_key.has_value();
 
 	std::optional<std::optional<Value>> result;
 
@@ -158,7 +158,7 @@ std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupB
 	if (should_return_value) {
 		ASSERT(current_key);
 		Value result_value = std::move(*current_key);
-		for (size_t i = 0; i < aggregates.exprs.size(); i++) {
+		for (std::size_t i = 0; i < aggregates.exprs.size(); i++) {
 			if (aggregates.exprs[i].arg) {
 				result_value.push_back(aggregators[i].get(aggregates.exprs[i].function));
 			}
@@ -181,7 +181,7 @@ std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupB
 
 	if (should_feed) {
 		ASSERT(value);
-		for (size_t i = 0; i < aggregates.exprs.size(); i++) {
+		for (std::size_t i = 0; i < aggregates.exprs.size(); i++) {
 			if (aggregates.exprs[i].arg) {
 				const ColumnValue column_value = aggregates.exprs[i].arg->eval(&*value);
 				aggregators[i].feed(column_value);
@@ -220,7 +220,7 @@ std::optional<Value> IterAggregate::next()
 			if (!value) {
 				break;
 			}
-			for (size_t i = 0; i < aggregates.exprs.size(); i++) {
+			for (std::size_t i = 0; i < aggregates.exprs.size(); i++) {
 				if (aggregates.exprs[i].arg) {
 					const ColumnValue column_value = aggregates.exprs[i].arg->eval(&*value);
 					aggregators[i].feed(column_value);
@@ -229,7 +229,7 @@ std::optional<Value> IterAggregate::next()
 			count++;
 		}
 		Value result;
-		for (size_t i = 0; i < aggregates.exprs.size(); i++) {
+		for (std::size_t i = 0; i < aggregates.exprs.size(); i++) {
 			if (aggregates.exprs[i].arg) {
 				result.push_back(aggregators[i].get(aggregates.exprs[i].function));
 			}

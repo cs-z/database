@@ -20,9 +20,9 @@ namespace buffer
 
 	struct IdHash
 	{
-		size_t operator()(const Id &id) const
+		std::size_t operator()(const Id &id) const
 		{
-			return (static_cast<size_t>(id.file.get()) << 32) | id.page_id.get();
+			return (static_cast<std::size_t>(id.file.get()) << 32) | id.page_id.get();
 		}
 	};
 
@@ -102,7 +102,7 @@ namespace buffer
 			//ASSERT_T(free_list_iters.contains(frame)); // TODO
 			const auto iter = free_list_iters.at(frame);
 			free_list.erase(iter);
-			free_list_iters.erase(frame); // TODO: optimize: don't walk tree twice
+			free_list_iters.erase(frame); // TODO: optimize: cache access by key 'frame'
 		}
 		frame_info.pins++;
 	}
