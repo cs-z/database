@@ -9,7 +9,7 @@
 
 static std::string trim(const std::string &text);
 static void parse_and_execute_statement(const std::string &source);
-static void parse_and_execute_file(const std::string &file);
+static void parse_and_execute_file(const std::string &file_name);
 
 int main(int argc, const char **argv)
 {
@@ -79,13 +79,13 @@ static void parse_and_execute_statement(const std::string &source)
 	}
 }
 
-static void parse_and_execute_file(const std::string &file)
+static void parse_and_execute_file(const std::string &file_name)
 {
 	std::string source;
 	try {
-		std::ifstream stream { file };
+		std::ifstream stream { file_name };
 		if (!stream) {
-			throw ClientError { "failed to open file: " + file };
+			throw ClientError { "failed to open file: " + file_name };
 		}
 		source = { std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>() };
 		Lexer lexer { source };
@@ -95,8 +95,8 @@ static void parse_and_execute_file(const std::string &file)
 			const SourceText text_end = lexer.get_token().get_text();
 			const SourceText text { text_begin, text_end };
 			const Statement statement = compile_statement(ast);
-			std::printf("> ");
-			text.print_escaped();
+			//std::printf("> ");
+			//text.print_escaped();
 			execute_statement(statement);
 			lexer.accept_step(Token::Semicolon);
 		}

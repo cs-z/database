@@ -44,7 +44,7 @@ std::vector<Value> execute_internal_statement(const std::string &source)
 
 static void execute_create_table(const CreateTable &statement)
 {
-	catalog::create_table(statement.table_name, statement.columns);
+	catalog::create_table(statement.name, statement.columns);
 }
 
 static void execute_insert_value(const InsertValue &statement)
@@ -53,7 +53,7 @@ static void execute_insert_value(const InsertValue &statement)
 	const page::Offset align = statement.type.get_align();
 	const page::Offset size_padded = prefix.size + align - 1;
 
-	const auto [file_fst, file_dat] = catalog::get_table_files(statement.table_id);
+	const auto [file_fst, file_dat] = catalog::get_table_file_ids(statement.table_id);
 	const auto [page_id, append] = fst::find_or_append(file_fst, size_padded);
 	const buffer::Pin<page::Slotted<>> page { file_dat, page_id, append };
 	if (append) {
@@ -152,7 +152,7 @@ static void execute_query(const Query &query)
 
 void execute_statement(const Statement &statement)
 {
-	return std::visit(Overload {
+	std::visit(Overload {
 		[](const CreateTable &statement) {
 			execute_create_table(statement);
 		},

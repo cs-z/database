@@ -14,7 +14,7 @@ enum class Bool
 
 using ColumnValueNull = std::monostate;
 using ColumnValueBoolean = Bool;
-using ColumnValueInteger = i64;
+using ColumnValueInteger = i64; // TODO: javascript i63
 using ColumnValueReal = double;
 using ColumnValueVarchar = std::string;
 

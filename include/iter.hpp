@@ -5,61 +5,98 @@
 #include "value.hpp"
 #include "expr.hpp"
 #include "os.hpp"
+#include "fst.hpp"
 
-struct Iter;
-using IterPtr = std::unique_ptr<Iter>;
-
-struct Iter
+class IterBase
 {
-	Iter(Type type) : type { std::move(type) } {}
-	virtual ~Iter() = default;
+public:
+
+	IterBase(Type type)
+		: type { std::move(type) }
+	{
+	}
+	virtual ~IterBase() = default;
+
 	virtual void open() = 0;
+	virtual void restart() = 0;
 	virtual void close() = 0;
 	virtual std::optional<Value> next() = 0;
-	const Type type;
+
+	Type type;
 };
 
-struct IterProject : Iter
+using Iter = std::unique_ptr<IterBase>;
+
+class IterProject : public IterBase
 {
-	IterProject(IterPtr parent, std::vector<ColumnId> columns);
+public:
+
+	IterProject(Iter &&parent, std::vector<ColumnId> &&columns)
+		: IterBase { map_type(parent->type, columns) }
+		, parent { std::move(parent) }
+		, columns { std::move(columns) }
+	{
+	}
 	~IterProject() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	Type map_type(const Type &type, const std::vector<ColumnId> &columns);
-	Value map_value(Value &value, const std::vector<ColumnId> &columns);
+private:
 
-	IterPtr parent;
+	static Type map_type(const Type &type, const std::vector<ColumnId> &columns);
+	static Value map_value(Value &&value, const std::vector<ColumnId> &columns);
+
+	Iter parent;
 	const std::vector<ColumnId> columns;
 };
 
-struct IterExpr : Iter
+class IterExpr : public IterBase
 {
-	IterExpr(IterPtr parent, std::vector<ExprPtr> exprs, Type type);
+public:
+
+	IterExpr(Iter &&parent, std::vector<ExprPtr> &&exprs, Type &&type)
+		: IterBase { std::move(type) }
+		, parent { std::move(parent) }
+		, exprs { std::move(exprs) }
+	{
+	}
 	~IterExpr() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	IterPtr parent;
+private:
+
+	Iter parent;
 	const std::vector<ExprPtr> exprs;
 };
 
-struct IterScan : Iter
+class IterScan : public IterBase
 {
-	IterScan(catalog::TableId table_id, Type type);
-	IterScan(catalog::FileId file, page::Id page_count, Type type);
+public:
+
+	IterScan(catalog::FileIds file_ids, Type &&type)
+		: IterBase { std::move(type) }
+		, file_id { file_ids.dat }
+		, page_count { fst::get_page_count(file_ids.fst) }
+	{
+	}
 	~IterScan() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	catalog::FileId file;
-	page::Id page_count;
+private:
+
+	const catalog::FileId file_id;
+	const page::Id page_count;
 
 	page::Id page_id;
 	page::EntryId entry_id;
@@ -67,17 +104,28 @@ struct IterScan : Iter
 	buffer::Pin<const page::Slotted<>> page;
 };
 
-struct IterScanTemp : Iter
+// TODO: remove
+class IterScanTemp : public IterBase
 {
-	IterScanTemp(os::Fd file, page::Id page_count, Type type);
+public:
+
+	IterScanTemp(os::TempFile &&file, page::Id page_count, Type &&type)
+		: IterBase { std::move(type) }
+		, file { std::move(file) }
+		, page_count { page_count }
+	{
+	}
 	~IterScanTemp() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	os::Fd file;
-	page::Id page_count;
+private:
+
+	const os::TempFile file;
+	const page::Id page_count;
 
 	page::Id page_id;
 	page::EntryId entry_id;
@@ -85,41 +133,71 @@ struct IterScanTemp : Iter
 	buffer::Buffer<page::Slotted<>> page;
 };
 
-struct IterJoinCross : Iter
+class IterJoinCross : public IterBase
 {
-	IterJoinCross(IterPtr iter_l, IterPtr iter_r, Type type);
+public:
+
+	IterJoinCross(Iter &&iter_l, Iter &&iter_r, Type &&type)
+		: IterBase { std::move(type) }
+		, iter_l { std::move(iter_l) }
+		, iter_r { std::move(iter_r) }
+	{
+	}
 	~IterJoinCross() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	IterPtr iter_l, iter_r;
+private:
+
+	Iter iter_l, iter_r;
 	std::optional<Value> value_l;
 };
 
-struct IterJoinQualified : Iter
+class IterJoinQualified : public IterBase
 {
-	IterJoinQualified(IterPtr iter_l, IterPtr iter_r, Type type, ExprPtr condition);
+public:
+
+	IterJoinQualified(Iter &&iter_l, Iter &&iter_r, ExprPtr &&condition, Type &&type)
+		: IterBase { type }
+		, parent { std::make_unique<IterJoinCross>(std::move(iter_l), std::move(iter_r), std::move(type)) } // TODO
+		, condition { std::move(condition) }
+	{
+	}
 	~IterJoinQualified() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	IterPtr parent;
+private:
+
+	Iter parent;
 	const ExprPtr condition;
 };
 
-struct IterFilter : Iter
+class IterFilter : public IterBase
 {
-	IterFilter(IterPtr parent, ExprPtr condition);
+public:
+
+	IterFilter(Iter &&parent, ExprPtr &&condition)
+		: IterBase { parent->type }
+		, parent { std::move(parent) }
+		, condition { std::move(condition) }
+	{
+	}
 	~IterFilter() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	IterPtr parent;
+private:
+
+	Iter parent;
 	const ExprPtr condition;
 };

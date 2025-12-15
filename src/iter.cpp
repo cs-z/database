@@ -1,18 +1,15 @@
 #include "iter.hpp"
-#include "fst.hpp"
 #include "op.hpp"
 #include "row.hpp"
-
-IterProject::IterProject(IterPtr parent, std::vector<ColumnId> columns)
-	: Iter { map_type(parent->type, columns) }
-	, parent { std::move(parent) }
-	, columns { std::move(columns) }
-{
-}
 
 void IterProject::open()
 {
 	parent->open();
+}
+
+void IterProject::restart()
+{
+	parent->restart();
 }
 
 void IterProject::close()
@@ -26,7 +23,7 @@ std::optional<Value> IterProject::next()
 	if (!value) {
 		return std::nullopt;
 	}
-	return map_value(*value, columns);
+	return map_value(std::move(*value), columns);
 }
 
 Type IterProject::map_type(const Type &type, const std::vector<ColumnId> &columns)
@@ -38,7 +35,7 @@ Type IterProject::map_type(const Type &type, const std::vector<ColumnId> &column
 	return new_type;
 }
 
-Value IterProject::map_value(Value &value, const std::vector<ColumnId> &columns)
+Value IterProject::map_value(Value &&value, const std::vector<ColumnId> &columns)
 {
 	Value new_value;
 	for (ColumnId column : columns) {
@@ -47,103 +44,14 @@ Value IterProject::map_value(Value &value, const std::vector<ColumnId> &columns)
 	return new_value;
 }
 
-IterScan::IterScan(catalog::TableId table_id, Type type)
-	: Iter { std::move(type) }
-{
-	const auto [file_fst, file_dat] = catalog::get_table_files(table_id);
-	this->file = file_dat;
-	this->page_count = fst::get_page_count(file_fst);
-}
-
-IterScan::IterScan(catalog::FileId file, page::Id page_count, Type type)
-	: Iter { std::move(type) }
-	, file { file }
-	, page_count { page_count }
-{
-}
-
-void IterScan::open()
-{
-	page_id = page::Id {};
-	entry_id = page::EntryId {};
-}
-
-void IterScan::close()
-{
-	page = {};
-}
-
-std::optional<Value> IterScan::next()
-{
-	for (;;) {
-		if (entry_id == 0) {
-			if (page_id == page_count) {
-				return std::nullopt;
-			}
-			page = { file, page_id };
-		}
-		if (entry_id == page->get_entry_count()) {
-			page_id++;
-			entry_id = page::EntryId {};
-			continue;
-		}
-		const u8 * const entry = page->get_entry(entry_id++);
-		if (!entry) {
-			continue;
-		}
-		return row::read(type, entry);
-	}
-}
-
-IterScanTemp::IterScanTemp(os::Fd file, page::Id page_count, Type type)
-	: Iter { std::move(type) }
-	, file { std::move(file) }
-	, page_count { page_count }
-{
-}
-
-void IterScanTemp::open()
-{
-	page_id = page::Id {};
-	entry_id = page::EntryId {};
-}
-
-void IterScanTemp::close()
-{
-}
-
-std::optional<Value> IterScanTemp::next()
-{
-	for (;;) {
-		if (entry_id == 0) {
-			if (page_id == page_count) {
-				return std::nullopt;
-			}
-			os::file_read(file, page_id, page.get());
-		}
-		if (entry_id == page->get_entry_count()) {
-			page_id++;
-			entry_id = page::EntryId {};
-			continue;
-		}
-		const u8 * const entry = page->get_entry(entry_id++);
-		if (!entry) {
-			continue;
-		}
-		return row::read(type, entry);
-	}
-}
-
-IterExpr::IterExpr(IterPtr parent, std::vector<ExprPtr> exprs, Type type)
-	: Iter { std::move(type) }
-	, parent { std::move(parent) }
-	, exprs { std::move(exprs) }
-{
-}
-
 void IterExpr::open()
 {
 	parent->open();
+}
+
+void IterExpr::restart()
+{
+	parent->restart();
 }
 
 void IterExpr::close()
@@ -158,23 +66,98 @@ std::optional<Value> IterExpr::next()
 		return std::nullopt;
 	}
 	Value result;
-	for (const auto &expr : exprs) {
+	for (const ExprPtr &expr : exprs) {
 		result.push_back(expr->eval(&*value));
 	}
 	return result;
 }
 
-IterJoinCross::IterJoinCross(IterPtr iter_l, IterPtr iter_r, Type type)
-	: Iter { std::move(type) }
-	, iter_l { std::move(iter_l) }
-	, iter_r { std::move(iter_r) }
+void IterScan::open()
 {
+	page_id = {};
+	entry_id = {};
+}
+
+void IterScan::restart()
+{
+	open();
+}
+
+void IterScan::close()
+{
+	page = {};
+}
+
+std::optional<Value> IterScan::next()
+{
+	for (;;) {
+		if (entry_id == 0) {
+			if (page_id == page_count) {
+				return std::nullopt;
+			}
+			page = { file_id, page_id };
+		}
+		if (entry_id == page->get_entry_count()) {
+			page_id++;
+			entry_id = page::EntryId {};
+			continue;
+		}
+		const u8 * const entry = page->get_entry(entry_id++);
+		if (!entry) {
+			continue;
+		}
+		return row::read(type, entry);
+	}
+}
+
+void IterScanTemp::open()
+{
+	page_id = {};
+	entry_id = {};
+}
+
+void IterScanTemp::restart()
+{
+	open();
+}
+
+void IterScanTemp::close()
+{
+}
+
+std::optional<Value> IterScanTemp::next()
+{
+	for (;;) {
+		if (entry_id == 0) {
+			if (page_id == page_count) {
+				return std::nullopt;
+			}
+			file.read(page_id, page.get());
+		}
+		if (entry_id == page->get_entry_count()) {
+			page_id++;
+			entry_id = page::EntryId {};
+			continue;
+		}
+		const u8 * const entry = page->get_entry(entry_id++);
+		if (!entry) {
+			continue;
+		}
+		return row::read(type, entry);
+	}
 }
 
 void IterJoinCross::open()
 {
 	iter_l->open();
 	iter_r->open();
+	value_l = iter_l->next();
+}
+
+void IterJoinCross::restart()
+{
+	iter_l->restart();
+	iter_r->restart();
 	value_l = iter_l->next();
 }
 
@@ -192,8 +175,7 @@ std::optional<Value> IterJoinCross::next()
 		}
 		std::optional<Value> value_r = iter_r->next();
 		if (!value_r) {
-			iter_r->close();
-			iter_r->open();
+			iter_r->restart();
 			value_l = iter_l->next();
 			continue;
 		}
@@ -204,16 +186,14 @@ std::optional<Value> IterJoinCross::next()
 	}
 }
 
-IterJoinQualified::IterJoinQualified(IterPtr iter_l, IterPtr iter_r, Type type, ExprPtr condition)
-	: Iter { type }
-	, parent { std::make_unique<IterJoinCross>(std::move(iter_l), std::move(iter_r), std::move(type)) } // TODO
-	, condition { std::move(condition) }
-{
-}
-
 void IterJoinQualified::open()
 {
 	parent->open();
+}
+
+void IterJoinQualified::restart()
+{
+	parent->restart();
 }
 
 void IterJoinQualified::close()
@@ -236,16 +216,14 @@ std::optional<Value> IterJoinQualified::next()
 	}
 }
 
-IterFilter::IterFilter(IterPtr parent, ExprPtr condition)
-	: Iter { parent->type }
-	, parent { std::move(parent) }
-	, condition { std::move(condition) }
-{
-}
-
 void IterFilter::open()
 {
 	parent->open();
+}
+
+void IterFilter::restart()
+{
+	parent->restart();
 }
 
 void IterFilter::close()

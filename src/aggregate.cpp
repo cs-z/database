@@ -97,32 +97,42 @@ ColumnValue Aggregator::get(Function function)
 	UNREACHABLE();
 }
 
-IterAggregate::IterAggregate(IterPtr parent, Aggregates aggregates)
-	: Iter { parent->type }
+static Iter create_iter(Iter &&parent, const Aggregates &aggregates)
+{
+	if (aggregates.group_by.size() > 0) {
+		OrderBy order_by;
+		for (ColumnId column_id : aggregates.group_by) {
+			order_by.columns.push_back({ column_id, true });
+		}
+		return std::make_unique<IterSort>(std::move(parent), std::move(order_by));
+	}
+	else {
+		return parent;
+	}
+}
+
+IterAggregate::IterAggregate(Iter &&parent, Aggregates &&aggregates)
+	: IterBase { parent->type }
+	, parent { create_iter(std::move(parent), aggregates) }
 	, aggregates { std::move(aggregates) }
 	, aggregators { this->aggregates.exprs.size() }
 {
-	if (this->aggregates.group_by.size() > 0) {
-		OrderBy order_by;
-		for (ColumnId column_id : this->aggregates.group_by) {
-			order_by.columns.push_back({ column_id, true });
-		}
-		iter = std::make_unique<IterSort>(std::move(parent), std::move(order_by));
-	}
-	else {
-		iter = std::move(parent);
-	}
 }
 
 void IterAggregate::open()
 {
 	done = false;
-	iter->open();
+	parent->open();
+}
+
+void IterAggregate::restart()
+{
+	open();
 }
 
 void IterAggregate::close()
 {
-	iter->close();
+	parent->close();
 }
 
 std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupBy &group_by, const std::optional<Value> &value)
@@ -200,7 +210,7 @@ std::optional<Value> IterAggregate::next()
 	}
 	if (aggregates.group_by.size() > 0) {
 		for (;;) {
-			const std::optional<Value> value = iter->next();
+			const std::optional<Value> value = parent->next();
 			if (!value) {
 				done = true;
 			}
@@ -216,7 +226,7 @@ std::optional<Value> IterAggregate::next()
 		}
 		count = 0;
 		for (;;) {
-			const std::optional<Value> value = iter->next();
+			const std::optional<Value> value = parent->next();
 			if (!value) {
 				break;
 			}

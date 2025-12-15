@@ -14,17 +14,27 @@ struct OrderBy
 	std::vector<Column> columns;
 };
 
-struct IterSort : Iter
+class IterSort : public IterBase
 {
-	IterSort(IterPtr parent, OrderBy columns);
+public:
+
+	IterSort(Iter parent, OrderBy columns)
+		: IterBase { parent->type }
+		, parent { std::move(parent) }
+		, columns { std::move(columns) }
+	{
+	}
 	~IterSort() override = default;
+
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
-	IterPtr parent;
+private:
+
+	Iter parent;
 	const OrderBy columns;
 
-	std::optional<os::TempFile> sorted_file;
-	IterPtr sorted_iter;
+	Iter sorted_iter;
 };

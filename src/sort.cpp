@@ -4,6 +4,9 @@
 #include "buffer.hpp"
 #include "row.hpp"
 
+// TODO: should temp files use buffer?
+// TODO: don't create temp files for small sorts (like column lookup)
+
 // K-way merge sort
 
 static constexpr unsigned int K = 2; // TODO
@@ -72,7 +75,7 @@ public:
 				if (page_id == page_end) {
 					return nullptr;
 				}
-				os::file_read(file->get(), page_id, page.get());
+				file->read(page_id, page.get());
 			}
 			if (entry_id == page->get_entry_count()) {
 				page_id++;
@@ -136,7 +139,7 @@ private:
 	void write()
 	{
 		if (page->get_entry_count() > 0) {
-			os::file_write(file.get(), page_id++, page.get());
+			file.write(page_id++, page.get());
 		}
 		page->init({});
 	}
@@ -175,7 +178,7 @@ public:
 		ASSERT(entry_w < SECTION_PER_PAGE);
 		buffer_w.get()[(entry_w++).get()] = section;
 		if (entry_w == SECTION_PER_PAGE) {
-			os::file_write(file.get(), page::Id { page_w++ }, buffer_w.get());
+			file.write(page::Id { page_w++ }, buffer_w.get());
 			entry_w = page::EntryId {};
 		}
 	}
@@ -184,7 +187,7 @@ public:
 	{
 		size--;
 		if (entry_r == 0 || entry_r == SECTION_PER_PAGE) {
-			os::file_read(file.get(), page_r++, buffer_r.get());
+			file.read(page_r++, buffer_r.get());
 			entry_r = page::EntryId {};
 		}
 		return buffer_r.get()[(entry_r++).get()];
@@ -193,7 +196,7 @@ public:
 	void flush()
 	{
 		if (entry_w > 0) {
-			os::file_write(file.get(), page_w++, buffer_w.get());
+			file.write(page_w++, buffer_w.get());
 			entry_w = page::EntryId {};
 		}
 		page_r = page_begin;
@@ -294,7 +297,7 @@ static os::TempFile merge_sorted_pages(const Type &type, const OrderBy &order_by
 	return file_src;
 }
 
-static os::TempFile merge_sort(IterPtr iter, const OrderBy &order_by, page::Id &page_count_out)
+static os::TempFile merge_sort(Iter iter, const OrderBy &order_by, page::Id &page_count_out)
 {
 	os::TempFile file;
 
@@ -319,7 +322,7 @@ static os::TempFile merge_sort(IterPtr iter, const OrderBy &order_by, page::Id &
 			u8 * const entry = page->insert(align, prefix.size, {});
 			if (!entry) {
 				sort_page(type, order_by, page.get());
-				os::file_write(file.get(), page_id++, page.get());
+				file.write(page_id++, page.get());
 				page->init({});
 				continue;
 			}
@@ -331,28 +334,28 @@ static os::TempFile merge_sort(IterPtr iter, const OrderBy &order_by, page::Id &
 
 	if (page->get_entry_count() > 0) {
 		sort_page(type, order_by, page.get());
-		os::file_write(file.get(), page_id++, page.get());
+		file.write(page_id++, page.get());
 	}
 
 	page_count_out = page_id;
 	return merge_sorted_pages(type, order_by, std::move(file), page_count_out);
 }
 
-IterSort::IterSort(IterPtr parent, OrderBy columns)
-	: Iter { parent->type }
-	, parent { std::move(parent) }
-	, columns { std::move(columns) }
-{
-}
-
 void IterSort::open()
 {
-	if (!sorted_file) {
-		page::Id page_count;
-		sorted_file = merge_sort(std::move(parent), columns, page_count);
-		sorted_iter = std::make_unique<IterScanTemp>(sorted_file->get(), page_count, type);
-	}
+	//puts("SORTING");
+	ASSERT(!sorted_iter);
+	page::Id page_count;
+	os::TempFile file = merge_sort(std::move(parent), columns, page_count);
+	Type type_clone = type; // TODO
+	sorted_iter = std::make_unique<IterScanTemp>(std::move(file), page_count, std::move(type_clone));
 	sorted_iter->open();
+}
+
+void IterSort::restart()
+{
+	ASSERT(sorted_iter);
+	sorted_iter->restart();
 }
 
 void IterSort::close()

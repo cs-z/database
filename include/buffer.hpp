@@ -10,9 +10,9 @@ namespace buffer
 
 	void init();
 	void destroy();
-	void flush(catalog::FileId file);
+	void flush(catalog::FileId file_id);
 
-	void *request(catalog::FileId file, page::Id page_id, bool append, FrameId &frame_out);
+	void *request(catalog::FileId file_id, page::Id page_id, bool append, FrameId &frame_out);
 	void release(FrameId frame, bool dirty);
 
 	template <typename PageT>
@@ -20,12 +20,12 @@ namespace buffer
 	{
 	public:
 
-		Pin() : file {}, frame {}, page_id {}, page {} {}
+		Pin() : file_id {}, frame {}, page_id {}, page {} {}
 
-		Pin(catalog::FileId file, page::Id page_id, bool append = false)
-			: file { file }
+		Pin(catalog::FileId file_id, page::Id page_id, bool append = false)
+			: file_id { file_id }
 			, page_id { page_id }
-			, page { reinterpret_cast<PageT *>(request(file, page_id, append, frame)) }
+			, page { reinterpret_cast<PageT *>(request(file_id, page_id, append, frame)) }
 		{
 		}
 
@@ -40,11 +40,11 @@ namespace buffer
 		template <typename PageOtherT = PageT>
 		Pin(Pin<PageOtherT> &&other)
 		{
-			file = other.file;
+			file_id = other.file_id;
 			frame = other.frame;
 			page_id = other.page_id;
 			page = reinterpret_cast<PageT *>(other.page);
-			other.file = {};
+			other.file_id = {};
 			other.frame = {};
 			other.page_id = {};
 			other.page = {};
@@ -54,11 +54,11 @@ namespace buffer
 		Pin &operator=(Pin<PageOtherT> &&other)
 		{
 			release();
-			file = other.file;
+			file_id = other.file_id;
 			frame = other.frame;
 			page_id = other.page_id;
 			page = reinterpret_cast<PageT *>(other.page);
-			other.file = {};
+			other.file_id = {};
 			other.frame = {};
 			other.page_id = {};
 			other.page = {};
@@ -74,10 +74,10 @@ namespace buffer
 		template <typename PageResultT = PageT>
 		inline Pin<PageResultT> shift(page::Id page_id, bool append = false) const
 		{
-			return { file, page_id, append };
+			return { file_id, page_id, append };
 		}
 
-		inline catalog::FileId get_file() const { return file; }
+		inline catalog::FileId get_file_id() const { return file_id; }
 		inline page::Id get_page_id() const { return page_id; }
 		inline PageT *get_page() const { return page; }
 		inline PageT *operator->() const { return page; }
@@ -91,7 +91,7 @@ namespace buffer
 			}
 		}
 
-		catalog::FileId file;
+		catalog::FileId file_id;
 		FrameId frame;
 		page::Id page_id;
 		PageT *page;

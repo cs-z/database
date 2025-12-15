@@ -5,25 +5,38 @@
 
 namespace os
 {
-	struct FdTag {};
-	using Fd = StrongId<FdTag, int>;
-
 	bool file_exists(const std::string &name);
-
 	void file_create(const std::string &name);
 	void file_remove(const std::string &name);
 
-	Fd file_open(const std::string &name);
-	void file_close(Fd fd);
+	class File
+	{
+	public:
 
-	void file_read(Fd fd, page::Id page_id, void *buffer);
-	void file_write(Fd fd, page::Id page_id, const void *buffer);
+		File(const std::string &name);
+		~File();
+
+		File(const File &) = delete;
+		File& operator=(const File &) = delete;
+
+		File(File &&) = delete;
+		File& operator=(File &&) = delete;
+
+		void read(page::Id page_id, void *buffer) const;
+		void write(page::Id page_id, const void *buffer) const;
+
+	private:
+
+		const int fd;
+
+	};
 
 	class TempFile
 	{
 	public:
 
 		TempFile();
+		~TempFile();
 
 		TempFile(TempFile &&other)
 		{
@@ -33,7 +46,7 @@ namespace os
 
 		TempFile &operator=(TempFile &&other)
 		{
-			release();
+			ASSERT(!fd); // TODO
 			fd = other.fd;
 			other.fd = std::nullopt;
 			return *this;
@@ -42,18 +55,12 @@ namespace os
 		TempFile(const TempFile &) = delete;
 		TempFile &operator=(const TempFile &) = delete;
 
-		~TempFile()
-		{
-			release();
-		}
-
-		inline os::Fd get() const { return fd.value(); }
+		void read(page::Id page_id, void *buffer) const;
+		void write(page::Id page_id, const void *buffer) const;
 
 	private:
 
-		void release();
-
-		std::optional<os::Fd> fd;
+		std::optional<int> fd;
 	};
 
 	unsigned int random();

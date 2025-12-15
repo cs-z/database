@@ -528,29 +528,29 @@ static OrderBy compile_order_by(const Columns &columns, SelectList &list, const 
 	return order_by;
 }
 
-static IterPtr create_source_iter(Source &source)
+static Iter create_source_iter(Source &source)
 {
 	Type &type = source.type;
 	return std::visit(Overload{
-		[&type](Source::DataTable &source) -> IterPtr {
-			return std::make_unique<IterScan>(source.table_id, std::move(type));
+		[&type](Source::DataTable &source) -> Iter {
+			return std::make_unique<IterScan>(catalog::get_table_file_ids(source.table_id), std::move(type));
 		},
-		[&type](Source::DataJoinCross &source) -> IterPtr {
-			IterPtr iter_l = create_source_iter(*source.source_l);
-			IterPtr iter_r = create_source_iter(*source.source_r);
+		[&type](Source::DataJoinCross &source) -> Iter {
+			Iter iter_l = create_source_iter(*source.source_l);
+			Iter iter_r = create_source_iter(*source.source_r);
 			return std::make_unique<IterJoinCross>(std::move(iter_l), std::move(iter_r), std::move(type));
 		},
-		[&type](Source::DataJoinConditional &source) -> IterPtr {
-			IterPtr iter_l = create_source_iter(*source.source_l);
-			IterPtr iter_r = create_source_iter(*source.source_r);
-			return std::make_unique<IterJoinQualified>(std::move(iter_l), std::move(iter_r), std::move(type), std::move(source.condition));
+		[&type](Source::DataJoinConditional &source) -> Iter {
+			Iter iter_l = create_source_iter(*source.source_l);
+			Iter iter_r = create_source_iter(*source.source_r);
+			return std::make_unique<IterJoinQualified>(std::move(iter_l), std::move(iter_r), std::move(source.condition), std::move(type));
 		},
 	}, source.data);
 }
 
-static IterPtr create_select_iter(Select &select)
+static Iter create_select_iter(Select &select)
 {
-	IterPtr source = create_source_iter(*select.source);
+	Iter source = create_source_iter(*select.source);
 	if (select.where) {
 		source = std::make_unique<IterFilter>(std::move(source), std::move(select.where));
 	}
@@ -563,9 +563,9 @@ static IterPtr create_select_iter(Select &select)
 	return std::make_unique<IterExpr>(std::move(source), std::move(select.list.exprs), std::move(select.list.type));
 }
 
-static IterPtr create_query_iter(QueryTodo &query)
+static Iter create_query_iter(QueryTodo &query)
 {
-	IterPtr iter = create_select_iter(query.select);
+	Iter iter = create_select_iter(query.select);
 	if (query.order_by) {
 		iter = std::make_unique<IterSort>(std::move(iter), std::move(*query.order_by));
 		std::vector<ColumnId> columns;
@@ -590,11 +590,11 @@ static Query compile_query(const AstQuery &ast)
 
 static CreateTable compile_create_table(AstCreateTable &ast)
 {
-	const std::string &table_name = ast.name.get();
-	if (catalog::find_table(table_name)) {
+	const std::string &name = ast.name.get();
+	if (catalog::find_table(name)) {
 		throw ClientError { "table already exists", std::move(ast.name) };
 	}
-	return { table_name, std::move(ast.columns) };
+	return { name, std::move(ast.columns) };
 }
 
 static InsertValue compile_insert_value(AstInsertValue &ast)

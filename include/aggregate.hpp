@@ -30,23 +30,27 @@ struct Aggregates
 	GroupBy group_by;
 };
 
-struct IterAggregate : Iter
+class IterAggregate : public IterBase
 {
-	IterAggregate(IterPtr parent, Aggregates aggregates);
+public:
+
+	IterAggregate(Iter &&parent, Aggregates &&aggregates);
 	~IterAggregate() override = default;
 
 	void open() override;
+	void restart() override;
 	void close() override;
 	std::optional<Value> next() override;
 
+private:
+
 	std::optional<std::optional<Value>> feed(const Aggregates::GroupBy &group_by, const std::optional<Value> &value);
 
-	const Aggregates aggregates;
+	Iter parent;
 
+	const Aggregates aggregates;
 	std::optional<Value> current_key;
 	std::vector<Aggregator> aggregators;
 	ColumnValueInteger count;
 	bool done;
-
-	IterPtr iter;
 };

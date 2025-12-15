@@ -9,7 +9,7 @@
 
 struct CreateTable
 {
-	std::string table_name;
+	std::string name;
 	catalog::NamedColumns columns;
 };
 
@@ -23,7 +23,7 @@ struct InsertValue
 struct Query
 {
 	catalog::NamedColumns columns;
-	IterPtr iter;
+	Iter iter;
 	std::optional<unsigned int> limit;
 };
 
