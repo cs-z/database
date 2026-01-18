@@ -7,218 +7,216 @@
 
 namespace page
 {
-	using Offset = u16;
-	constexpr Offset SIZE { 1 << 8 }; // TODO
+using Offset = u16;
+constexpr Offset SIZE{1 << 8};  // TODO
 
-	struct IdTag {};
-	using Id = StrongId<IdTag, u32>;
+struct IdTag
+{
+};
+using Id = StrongId<IdTag, u32>;
 
-	struct EntryIdTag {};
-	using EntryId = StrongId<EntryIdTag, u16>;
+struct EntryIdTag
+{
+};
+using EntryId = StrongId<EntryIdTag, u16>;
 
-	template <typename Header = std::monostate, typename EntryInfo = std::monostate>
-	class Slotted
-	{
-	public:
+template <typename Header = std::monostate, typename EntryInfo = std::monostate> class Slotted
+{
+  public:
+    struct Slot
+    {
+        Offset    offset;
+        Offset    size;
+        EntryInfo info;
+    };
 
-		struct Slot
-		{
-			Offset offset;
-			Offset size;
-			EntryInfo info;
-		};
+    [[nodiscard]] inline EntryId get_entry_count() const { return entry_count; }
 
-		[[nodiscard]] inline EntryId get_entry_count() const
-		{
-			return entry_count;
-		}
+    [[nodiscard]] Header& get_header() { return header; }
 
-		[[nodiscard]] Header &get_header()
-		{
-			return header;
-		}
+    [[nodiscard]] const Header& get_header() const { return header; }
 
-		[[nodiscard]] const Header &get_header() const
-		{
-			return header;
-		}
+    [[nodiscard]] EntryInfo& get_entry_info(EntryId entry_id)
+    {
+        ASSERT(entry_id < entry_count);
+        return slots[entry_id.get()].info;
+    }
 
-		[[nodiscard]] EntryInfo &get_entry_info(EntryId entry_id)
-		{
-			ASSERT(entry_id < entry_count);
-			return slots[entry_id.get()].info;
-		}
+    [[nodiscard]] const EntryInfo& get_entry_info(EntryId entry_id) const
+    {
+        ASSERT(entry_id < entry_count);
+        return slots[entry_id.get()].info;
+    }
 
-		[[nodiscard]] const EntryInfo &get_entry_info(EntryId entry_id) const
-		{
-			ASSERT(entry_id < entry_count);
-			return slots[entry_id.get()].info;
-		}
+    [[nodiscard]] inline const u8* get_entry(EntryId entry_id) const
+    {
+        ASSERT(entry_id < entry_count);
+        const Slot& slot = slots[entry_id.get()];
+        return get_entry(slot);
+    }
 
-		[[nodiscard]] inline const u8 *get_entry(EntryId entry_id) const
-		{
-			ASSERT(entry_id < entry_count);
-			const Slot &slot = slots[entry_id.get()];
-			return get_entry(slot);
-		}
+    [[nodiscard]] inline const u8* get_entry(EntryId entry_id, Offset& size_out) const
+    {
+        ASSERT(entry_id < entry_count);
+        const Slot& slot = slots[entry_id.get()];
+        size_out         = slot.size;
+        return get_entry(slot);
+    }
 
-		[[nodiscard]] inline const u8 *get_entry(EntryId entry_id, Offset &size_out) const
-		{
-			ASSERT(entry_id < entry_count);
-			const Slot &slot = slots[entry_id.get()];
-			size_out = slot.size;
-			return get_entry(slot);
-		}
+    [[nodiscard]] inline const u8* get_entry(const Slot& slot) const
+    {
+        return get_pointer(slot.offset);
+    }
 
-		[[nodiscard]] inline const u8 *get_entry(const Slot &slot) const
-		{
-			return get_pointer(slot.offset);
-		}
+    [[nodiscard]] inline u8* get_entry(const Slot& slot) { return get_pointer(slot.offset); }
 
-		[[nodiscard]] inline u8 *get_entry(const Slot &slot)
-		{
-			return get_pointer(slot.offset);
-		}
+    [[nodiscard]] inline auto begin()
+    {
+        return slots.begin();  // TODO
+    }
 
-		[[nodiscard]] inline auto begin()
-		{
-			return slots.begin(); // TODO
-		}
+    [[nodiscard]] inline auto end()
+    {
+        return slots.end();  // TODO
+    }
 
-		[[nodiscard]] inline auto end()
-		{
-			return slots.end(); // TODO
-		}
+    [[nodiscard]] inline auto cbegin() const
+    {
+        return slots.cbegin();  // TODO
+    }
 
-		[[nodiscard]] inline auto cbegin() const
-		{
-			return slots.cbegin(); // TODO
-		}
+    [[nodiscard]] inline auto cend() const
+    {
+        return slots.cend();  // TODO
+    }
 
-		[[nodiscard]] inline auto cend() const
-		{
-			return slots.cend(); // TODO
-		}
+    void init(Header header)
+    {
+        this->header      = std::move(header);
+        this->entry_count = EntryId{};
+        this->free_begin  = offsetof(Slotted, slots);
+        this->free_end    = SIZE;
+    }
 
-		void init(Header header)
-		{
-			this->header = std::move(header);
-			this->entry_count = EntryId {};
-			this->free_begin = offsetof(Slotted, slots);
-			this->free_end = SIZE;
-		}
+    [[nodiscard]] u8* insert(Offset align, Offset size, EntryInfo info,
+                             Offset* free_size_out = nullptr)
+    {
+        const auto offset = insert_entry(align, size);
+        if (!offset)
+        {
+            return nullptr;
+        }
+        ASSERT(*offset % align == 0);
 
-		[[nodiscard]] u8 *insert(Offset align, Offset size, EntryInfo info, Offset *free_size_out = nullptr)
-		{
-			const auto offset = insert_entry(align, size);
-			if (!offset) {
-				return nullptr;
-			}
-			ASSERT(*offset % align == 0);
+        const EntryId entry_id = entry_count++;
+        slots[entry_id.get()]  = Slot{*offset, size, std::move(info)};
 
-			const EntryId entry_id = entry_count++;
-			slots[entry_id.get()] = Slot { *offset, size, std::move(info) };
+        if (free_size_out != nullptr)
+        {
+            *free_size_out = free_end - free_begin;
+        }
 
-			if (free_size_out != nullptr) {
-				*free_size_out = free_end - free_begin;
-			}
+        return get_pointer(*offset);
+    }
 
-			return get_pointer(*offset);
-		}
+    // insert to specific position, shift slots beyond this position
+    [[nodiscard]] u8* insert(Offset align, Offset size, EntryInfo info, EntryId entry_id)
+    {
+        const auto offset = insert_entry(align, size);
+        if (!offset)
+        {
+            return nullptr;
+        }
+        ASSERT(*offset % align == 0);
 
-		// insert to specific position, shift slots beyond this position
-		[[nodiscard]] u8 *insert(Offset align, Offset size, EntryInfo info, EntryId entry_id)
-		{
-			const auto offset = insert_entry(align, size);
-			if (!offset) {
-				return nullptr;
-			}
-			ASSERT(*offset % align == 0);
+        memmove(&slots[entry_id.get()] + 1, &slots[entry_id.get()],
+                (entry_count - entry_id).get() * sizeof(Slot));
+        slots[entry_id.get()] = Slot{*offset, size, std::move(info)};
+        entry_count++;
 
-			memmove(&slots[entry_id.get()] + 1, &slots[entry_id.get()], (entry_count - entry_id).get() * sizeof(Slot));
-			slots[entry_id.get()] = Slot { *offset, size, std::move(info) };
-			entry_count++;
+        return get_pointer(*offset);
+    }
 
-			return get_pointer(*offset);
-		}
+    void remove_beyond(EntryId new_entry_count)
+    {
+        ASSERT(new_entry_count <= entry_count);
+        entry_count = new_entry_count;
+        free_begin  = offsetof(Slotted, slots) + entry_count.get() * sizeof(Slot);
+    }
 
-		void remove_beyond(EntryId new_entry_count)
-		{
-			ASSERT(new_entry_count <= entry_count);
-			entry_count = new_entry_count;
-			free_begin = offsetof(Slotted, slots) + entry_count.get() * sizeof(Slot);
-		}
+    // shift entries to the end of the page
+    void shift(Offset align)
+    {
+        std::vector<std::tuple<Offset, Offset, EntryId>> entries;
+        for (EntryId entry_id{}; entry_id < entry_count; entry_id++)
+        {
+            const Slot& slot = slots[entry_id.get()];
+            ASSERT(slot.offset % align == 0);
+            entries.push_back({slot.offset, slot.size, entry_id});
+        }
+        std::sort(entries.begin(), entries.end());
 
-		// shift entries to the end of the page
-		void shift(Offset align)
-		{
-			std::vector<std::tuple<Offset, Offset, EntryId>> entries;
-			for (EntryId entry_id {}; entry_id < entry_count; entry_id++) {
-				const Slot &slot = slots[entry_id.get()];
-				ASSERT(slot.offset % align == 0);
-				entries.push_back({ slot.offset, slot.size, entry_id });
-			}
-			std::sort(entries.begin(), entries.end());
+        free_end = SIZE;
+        for (auto it = entries.rbegin(); it != entries.rend(); ++it)
+        {  // NOLINT(modernize-loop-convert)
+            auto [offset, size, entry_id] = *it;
 
-			free_end = SIZE;
-			for (auto it = entries.rbegin(); it != entries.rend(); ++it) { // NOLINT(modernize-loop-convert)
-				auto [offset, size, entry_id] = *it;
+            ASSERT(free_end > size);
+            free_end -= size;
+            free_end = align_down(free_end, align);
 
-				ASSERT(free_end > size);
-				free_end -= size;
-				free_end = align_down(free_end, align);
+            if (free_end != offset)
+            {
+                ASSERT(free_end > offset);
+                const u8* src = get_pointer(offset);
+                u8*       dst = get_pointer(free_end);
+                memmove(dst, src, size);
+                slots[entry_id.get()].offset = free_end;
+            }
+        }
+    }
 
-				if (free_end != offset) {
-					ASSERT(free_end > offset);
-					const u8 *src = get_pointer(offset);
-					u8 *dst = get_pointer(free_end);
-					memmove(dst, src, size);
-					slots[entry_id.get()].offset = free_end;
-				}
-			}
-		}
+  private:
+    Header header;
 
-	private:
+    EntryId                          entry_count;
+    Offset                           free_begin, free_end;
+    std::array<Slot, FLEXIBLE_ARRAY> slots;
 
-		Header header;
+    [[nodiscard]] inline u8* get_pointer(Offset offset)
+    {
+        return reinterpret_cast<u8*>(this) + offset;
+    }
 
-		EntryId entry_count;
-		Offset free_begin, free_end;
-		std::array<Slot, FLEXIBLE_ARRAY> slots;
+    [[nodiscard]] inline const u8* get_pointer(Offset offset) const
+    {
+        return reinterpret_cast<const u8*>(this) + offset;
+    }
 
-		[[nodiscard]] inline u8 *get_pointer(Offset offset)
-		{
-			return reinterpret_cast<u8 *>(this) + offset;
-		}
+    [[nodiscard]] std::optional<Offset> insert_entry(Offset align, Offset size)
+    {
+        ASSERT(align > 0);
+        ASSERT(size > 0);
 
-		[[nodiscard]] inline const u8 *get_pointer(Offset offset) const
-		{
-			return reinterpret_cast<const u8 *>(this) + offset;
-		}
+        if (free_end < size)
+        {
+            return std::nullopt;
+        }
 
-		[[nodiscard]] std::optional<Offset> insert_entry(Offset align, Offset size)
-		{
-			ASSERT(align > 0);
-			ASSERT(size > 0);
+        const auto free_begin_new = free_begin + sizeof(Slot);
+        const auto free_end_new   = align_down<Offset>(free_end - size, align);
 
-			if (free_end < size) {
-				return std::nullopt;
-			}
+        if (free_begin_new > free_end_new)
+        {
+            return std::nullopt;
+        }
 
-			const auto free_begin_new = free_begin + sizeof(Slot);
-			const auto free_end_new = align_down<Offset>(free_end - size, align);
+        free_begin = free_begin_new;
+        free_end   = free_end_new;
 
-			if (free_begin_new > free_end_new) {
-				return std::nullopt;
-			}
+        ASSERT(free_end % align == 0);
+        return free_end;
+    }
+};
 
-			free_begin = free_begin_new;
-			free_end = free_end_new;
-
-			ASSERT(free_end % align == 0);
-			return free_end;
-		}
-
-	};
-
-}
+}  // namespace page

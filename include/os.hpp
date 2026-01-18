@@ -5,63 +5,58 @@
 
 namespace os
 {
-	bool file_exists(const std::string &name);
-	void file_create(const std::string &name);
-	void file_remove(const std::string &name);
+bool file_exists(const std::string& name);
+void file_create(const std::string& name);
+void file_remove(const std::string& name);
 
-	class File
-	{
-	public:
+class File
+{
+  public:
+    File(const std::string& name);
+    ~File() noexcept;
 
-		File(const std::string &name);
-		~File() noexcept;
+    File(const File&)            = delete;
+    File& operator=(const File&) = delete;
 
-		File(const File &) = delete;
-		File& operator=(const File &) = delete;
+    File(File&&)            = delete;
+    File& operator=(File&&) = delete;
 
-		File(File &&) = delete;
-		File& operator=(File &&) = delete;
+    void read(page::Id page_id, void* buffer) const;
+    void write(page::Id page_id, const void* buffer) const;
 
-		void read(page::Id page_id, void *buffer) const;
-		void write(page::Id page_id, const void *buffer) const;
+  private:
+    const int fd;
+};
 
-	private:
+class TempFile
+{
+  public:
+    TempFile();
+    ~TempFile() noexcept;
 
-		const int fd;
+    TempFile(TempFile&& other) noexcept
+    {
+        fd       = other.fd;
+        other.fd = std::nullopt;
+    }
 
-	};
+    TempFile& operator=(TempFile&& other) noexcept
+    {
+        ASSERT(!fd);  // TODO
+        fd       = other.fd;
+        other.fd = std::nullopt;
+        return *this;
+    }
 
-	class TempFile
-	{
-	public:
+    TempFile(const TempFile&)            = delete;
+    TempFile& operator=(const TempFile&) = delete;
 
-		TempFile();
-		~TempFile() noexcept;
+    void read(page::Id page_id, void* buffer) const;
+    void write(page::Id page_id, const void* buffer) const;
 
-		TempFile(TempFile &&other) noexcept
-		{
-			fd = other.fd;
-			other.fd = std::nullopt;
-		}
+  private:
+    std::optional<int> fd;
+};
 
-		TempFile &operator=(TempFile &&other) noexcept
-		{
-			ASSERT(!fd); // TODO
-			fd = other.fd;
-			other.fd = std::nullopt;
-			return *this;
-		}
-
-		TempFile(const TempFile &) = delete;
-		TempFile &operator=(const TempFile &) = delete;
-
-		void read(page::Id page_id, void *buffer) const;
-		void write(page::Id page_id, const void *buffer) const;
-
-	private:
-
-		std::optional<int> fd;
-	};
-
-	unsigned int random();
-}
+unsigned int random();
+}  // namespace os

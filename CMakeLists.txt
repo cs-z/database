@@ -8,7 +8,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE SOURCES
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/include/*.hpp"
+)
+
 add_executable(database ${SOURCES})
 
 target_include_directories(database PRIVATE
@@ -22,14 +26,12 @@ target_compile_options(database PRIVATE
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    # sanitizer
     target_compile_options(database PRIVATE
         -fsanitize=address
     )
     target_link_options(database PRIVATE
         -fsanitize=address
     )
-    # clang-tidy
     find_program(CLANG_TIDY_EXE NAMES clang-tidy)
     if (CLANG_TIDY_EXE)
         set_target_properties(database PROPERTIES
@@ -37,3 +39,15 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         )
     endif()
 endif()
+
+add_custom_target(formatCheck
+    COMMAND ${CMAKE_COMMAND} -E echo "Checking code formatting..."
+    COMMAND clang-format --dry-run --Werror ${SOURCES}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+add_custom_target(formatFix
+    COMMAND ${CMAKE_COMMAND} -E echo "Fixing code formatting..."
+    COMMAND clang-format -i ${SOURCES}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
