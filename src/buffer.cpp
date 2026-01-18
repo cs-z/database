@@ -206,7 +206,7 @@ void test()
     const unsigned int seed = os::random();
     srand(seed);
 
-    printf("testing buffer\n");
+    std::printf("testing buffer\n");
 
     init();
     catalog::init();
@@ -269,6 +269,6 @@ void test()
         ASSERT(frame[0] == file_data[i.get()]);
     }
 
-    printf("testing buffer done\n");
+    std::printf("testing buffer done\n");
 }
 }  // namespace buffer

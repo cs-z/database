@@ -73,7 +73,6 @@ static std::string read_file(FileId file_id)
 {
     const std::string statement =
         "SELECT NAME FROM " + TABLE_FILES.name + " WHERE ID = " + file_id.to_string();
-    puts(statement.c_str());
     std::vector<Value> values = execute_internal_statement(statement);
     ASSERT(values.size() == 1);
     auto& name = std::get<ColumnValueVarchar>(values.front().at(0));

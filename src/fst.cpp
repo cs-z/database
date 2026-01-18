@@ -66,9 +66,9 @@ struct PageHead
 // 	page::EntryId count { 1 };
 // 	while (count <= ENTRIES_PER_PAGE) {
 // 		for (page::EntryId i {}; i < count; i++) {
-// 			printf("%u ", page[(index + i).get()]);
+// 			std::printf("%u ", page[(index + i).get()]);
 // 		}
-// 		printf("\n");
+// 		std::printf("\n");
 // 		index = index + count;
 // 		count = count * 2;
 // 	}
@@ -252,7 +252,7 @@ void test()
     const unsigned int seed = os::random();
     srand(seed);
 
-    printf("testing fst\n");
+    std::printf("testing fst\n");
 
     buffer::init();
     catalog::init();
@@ -284,6 +284,6 @@ void test()
 
     buffer::destroy();
 
-    printf("testing fst done\n");
+    std::printf("testing fst done\n");
 }
 }  // namespace fst

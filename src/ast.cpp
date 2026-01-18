@@ -7,7 +7,7 @@ std::string AstExpr::DataColumn::to_string() const
 
 static void print_column(const AstExpr::DataColumn& column)
 {
-    printf("%s", column.to_string().c_str());
+    std::printf("%s", column.to_string().c_str());
 }
 
 std::string AstExpr::to_string() const
@@ -71,81 +71,82 @@ std::string AstExpr::to_string() const
 
 void AstExpr::print() const
 {
-    printf("%s", to_string().c_str());
+    std::printf("%s", to_string().c_str());
 }
 
 void AstQuery::print() const
 {
-    printf("SELECT ");
+    std::printf("SELECT ");
     for (std::size_t i = 0; i < select.list.elements.size(); i++)
     {
         std::visit(
             Overload{
-                [](const AstSelectList::Wildcard&) { printf("*"); },
+                [](const AstSelectList::Wildcard&) { std::printf("*"); },
                 [](const AstSelectList::TableWildcard& element)
-                { printf("%s.*", element.table.get().c_str()); },
+                { std::printf("%s.*", element.table.get().c_str()); },
                 [](const AstSelectList::Expr& element)
                 {
                     element.expr->print();
                     if (element.alias)
                     {
-                        printf(" AS %s", element.alias->get().c_str());
+                        std::printf(" AS %s", element.alias->get().c_str());
                     }
                 },
             },
             select.list.elements[i]);
         if (i + 1 < select.list.elements.size())
         {
-            printf(", ");
+            std::printf(", ");
         }
     }
-    printf(" FROM ");
+    std::printf(" FROM ");
     for (std::size_t i = 0; i < select.sources.size(); i++)
     {
         select.sources[i]->print();
         if (i + 1 < select.sources.size())
         {
-            printf(", ");
+            std::printf(", ");
         }
     }
     if (select.where)
     {
-        printf(" WHERE ");
+        std::printf(" WHERE ");
         select.where->print();
     }
     if (select.group_by)
     {
-        printf(" GROUP BY ");
+        std::printf(" GROUP BY ");
         for (std::size_t i = 0; i < select.group_by->columns.size(); i++)
         {
             print_column(select.group_by->columns[i].first);
             if (i + 1 < select.group_by->columns.size())
             {
-                printf(", ");
+                std::printf(", ");
             }
         }
     }
     if (order_by)
     {
-        printf(" ORDER BY ");
+        std::printf(" ORDER BY ");
         for (std::size_t i = 0; i < order_by->columns.size(); i++)
         {
             std::visit(
                 Overload{
-                    [](const AstOrderBy::Index& column) { printf("%u", column.index.first.get()); },
+                    [](const AstOrderBy::Index& column)
+                    { std::printf("%u", column.index.first.get()); },
                     [](const AstExpr::DataColumn& column) { print_column(column); },
                 },
                 order_by->columns[i].column);
-            printf(" %s", order_by->columns[i].asc ? " ASC" : " DESC");
+            std::printf(" %s", order_by->columns[i].asc ? " ASC" : " DESC");
             if (i + 1 < order_by->columns.size())
             {
-                printf(", ");
+                std::printf(", ");
             }
         }
     }
     if (limit)
     {
-        printf(" LIMIT %u", *limit);
+        std::printf(" LIMIT %u", *limit);
     }
 }
 
@@ -155,47 +156,47 @@ void AstSource::print() const
         Overload{
             [](const DataTable& table)
             {
-                printf("%s", table.name.get().c_str());
+                std::printf("%s", table.name.get().c_str());
                 if (table.alias)
                 {
-                    printf(" AS %s", table.alias->get().c_str());
+                    std::printf(" AS %s", table.alias->get().c_str());
                 }
             },
             [](const DataJoinCross& table)
             {
-                printf("(");
+                std::printf("(");
                 table.source_l->print();
-                printf(" CROSS JOIN ");
+                std::printf(" CROSS JOIN ");
                 table.source_r->print();
-                printf(")");
+                std::printf(")");
             },
             [](const DataJoinConditional& table)
             {
-                printf("(");
+                std::printf("(");
                 table.source_l->print();
                 if (table.join)
                 {
                     switch (*table.join)
                     {
                     case DataJoinConditional::Join::INNER:
-                        printf(" INNER");
+                        std::printf(" INNER");
                         break;
                     case DataJoinConditional::Join::LEFT:
-                        printf(" LEFT OUTER");
+                        std::printf(" LEFT OUTER");
                         break;
                     case DataJoinConditional::Join::RIGHT:
-                        printf(" RIGHT OUTER");
+                        std::printf(" RIGHT OUTER");
                         break;
                     case DataJoinConditional::Join::FULL:
-                        printf(" FULL OUTER");
+                        std::printf(" FULL OUTER");
                         break;
                     }
                 }
-                printf(" JOIN ");
+                std::printf(" JOIN ");
                 table.source_r->print();
-                printf(" ON ");
+                std::printf(" ON ");
                 table.condition->print();
-                printf(")");
+                std::printf(")");
             },
         },
         data);

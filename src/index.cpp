@@ -317,27 +317,26 @@ static void print_recursive(buffer::Pin<const Header> page, const Type &key_type
 {
     if (page->is_leaf) {
         buffer::Pin<const Leaf> leaf = std::move(page);
-        for (int i = 0; i < tabs; i++) printf("  ");
-        printf("[");
+        for (int i = 0; i < tabs; i++) std::printf("  ");
+        std::printf("[");
         for (page::EntryId i = {}; i < leaf->get_entry_count(); i++) {
             const Value key = row::read(key_type, leaf->get_entry(i));
             const auto value = leaf->get_entry_info(i);
             value_print(key);
-            printf(": %u", value);
+            std::printf(": %u", value);
             if (i + 1 < leaf->get_entry_count()) {
-                printf(", ");
+                std::printf(", ");
             }
         }
-        printf("]\n");
+        std::printf("]\n");
     }
     else {
         buffer::Pin<const Inner> inner = std::move(page);
         print_recursive({ inner.get_file_id(), inner->get_header().leftmost_child }, key_type, tabs
 + 1); for (page::EntryId i = {}; i < inner->get_entry_count(); i++) { for (int i = 0; i < tabs; i++)
-printf("  "); if (i == 0) printf("{"); const Value key = row::read(key_type, inner->get_entry(i));
-            value_print(key);
-            if (i + 1 == inner->get_entry_count()) printf("}");
-            printf("\n");
+printf("  "); if (i == 0) std::printf("{"); const Value key = row::read(key_type,
+inner->get_entry(i)); value_print(key); if (i + 1 == inner->get_entry_count()) std::printf("}");
+            std::printf("\n");
             print_recursive({ inner.get_file_id(), inner->get_entry_info(i) }, key_type, tabs + 1);
         }
     }
@@ -598,7 +597,7 @@ int main(int argc, const char **argv)
     const unsigned int count = std::stoul(argv[1]);
 
     const unsigned int seed = os::random();
-    printf("%u\n", seed);
+    std::printf("%u\n", seed);
     srand(seed);
 
     std::vector<Value> map_keys;
@@ -617,9 +616,9 @@ int main(int argc, const char **argv)
 
         const RID value = rand() % 1000;
 
-        // printf("\n%u. insert: ", i);
+        // std::printf("\n%u. insert: ", i);
         // value_print(key);
-        // printf(" -> %u\n", value);
+        // std::printf(" -> %u\n", value);
 
         map[key].push_back(value);
         map_keys.push_back(key);
@@ -645,21 +644,21 @@ int main(int argc, const char **argv)
             key = map_keys[rand() % map_keys.size()];
         }
 
-        // printf("\n%u. find: ", i);
+        // std::printf("\n%u. find: ", i);
         // value_print(key);
-        // printf("\n");
+        // std::printf("\n");
 
         auto values = debug_collect_values(file_id, key_type, { key });
         auto map_values = map.contains(key) ? map.at(key) : std::vector<RID>{};
 
         // for (auto v : values) {
-        // 	printf("v: %u\n", v);
+        // 	std::printf("v: %u\n", v);
         // }
-        // printf("\n");
+        // std::printf("\n");
         // for (auto v : map_values) {
-        // 	printf("m: %u\n", v);
+        // 	std::printf("m: %u\n", v);
         // }
-        // printf("\n");
+        // std::printf("\n");
 
         ASSERT(values.size() == map_values.size());
         for (std::size_t j = 0;j < values.size(); j++) {
@@ -668,7 +667,7 @@ int main(int argc, const char **argv)
     }
 
     print_string(file_id, key_type);
-    printf("depth: %u\n", debug_tree(file_id, key_type, map));
+    std::printf("depth: %u\n", debug_tree(file_id, key_type, map));
 
     buffer::destroy();
 }*/

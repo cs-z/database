@@ -124,16 +124,16 @@ ColumnValue column_value_eval_cast(const ColumnValue& value, ColumnType to)
 
 void value_print(const Value& value)
 {
-    printf("(");
+    std::printf("(");
     for (std::size_t i = 0; i < value.size(); i++)
     {
-        printf("%s", column_value_to_string(value[i], true).c_str());
+        std::printf("%s", column_value_to_string(value[i], true).c_str());
         if (i + 1 < value.size())
         {
-            printf(", ");
+            std::printf(", ");
         }
     }
-    printf(")");
+    std::printf(")");
 }
 
 std::string value_to_list(const Value& value)
