@@ -151,10 +151,10 @@ static void write_columns(TableId table_id, NamedColumns columns)
     {
         auto& [column_name, column_type] = columns[column_id.get()];
         const Value value                = {
-                           ColumnValueInteger{table_id.get()},
-                           ColumnValueInteger{column_id.get()},
-                           ColumnValueVarchar{std::move(column_name)},
-                           ColumnValueVarchar{column_type_to_catalog_string(column_type)},
+            ColumnValueInteger{table_id.get()},
+            ColumnValueInteger{column_id.get()},
+            ColumnValueVarchar{std::move(column_name)},
+            ColumnValueVarchar{column_type_to_catalog_string(column_type)},
         };
         const std::string statement =
             "INSERT INTO " + TABLE_COLUMNS.name + " VALUES " + value_to_list(value);

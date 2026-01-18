@@ -2,23 +2,42 @@ name: Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  build:
+  format:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Run format check
+        run: |
+          cmake -S . -B build/format
+          cmake --build build/format --target formatCheck || exit 1
 
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y build-essential cmake g++
+  build_debug:
+    runs-on: ubuntu-latest
+    needs: format
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake clang
+      - name: Configure Debug build
+        run: cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
+      - name: Debug Build with Static Analysis
+        run: cmake --build build/debug
 
-    - name: Configure CMake
-      run: cmake -B build
-
-    - name: Build
-      run: cmake --build build
+  build_release:
+    runs-on: ubuntu-latest
+    needs: format
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake clang
+      - name: Configure Release build
+        run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++
+      - name: Build Release
+        run: cmake --build build/release

@@ -53,7 +53,7 @@ Prefix calculate_layout(const Value& value)
 template <typename T> T* get_column(u8* row, ColumnId column)
 {
     const page::Offset offset = reinterpret_cast<ColumnPrefix*>(row)[column.get()].offset;
-    return reinterpret_cast<T*>(reinterpret_cast<u8*>(row) + offset);
+    return reinterpret_cast<T*>(row + offset);
 }
 
 void write(const Prefix& prefix, const Value& value, u8* row)
@@ -73,8 +73,8 @@ void write(const Prefix& prefix, const Value& value, u8* row)
                 { *get_column<ColumnValueReal>(row, column_id) = value; },
                 [row, column_id](const ColumnValueVarchar& value)
                 {
-                    memcpy(get_column<char>(row, column_id), value.data(),
-                           value.size());  // NOLINT(bugprone-not-null-terminated-result)
+                    // NOLINTNEXTLINE(bugprone-not-null-terminated-result)
+                    memcpy(get_column<char>(row, column_id), value.data(), value.size());
                 },
             },
             value[column_id.get()]);
@@ -88,7 +88,7 @@ ColumnPrefix get_prefix(const u8* row, ColumnId column)
 
 template <typename T> const T* get_column(const u8* row, ColumnPrefix prefix)
 {
-    return reinterpret_cast<const T*>(reinterpret_cast<const u8*>(row) + prefix.offset);
+    return reinterpret_cast<const T*>(row + prefix.offset);
 }
 
 Value read(const Type& type, const u8* row)
@@ -99,30 +99,30 @@ Value read(const Type& type, const u8* row)
         const ColumnPrefix prefix = get_prefix(row, column_id);
         if (prefix.offset == 0)
         {
-            value.push_back(ColumnValueNull{});
+            value.emplace_back(ColumnValueNull{});
             continue;
         }
         switch (type.at(column_id.get()))
         {
         case ColumnType::BOOLEAN:
         {
-            value.push_back(*get_column<ColumnValueBoolean>(row, prefix));
+            value.emplace_back(*get_column<ColumnValueBoolean>(row, prefix));
             break;
         }
         case ColumnType::INTEGER:
         {
-            value.push_back(*get_column<ColumnValueInteger>(row, prefix));
+            value.emplace_back(*get_column<ColumnValueInteger>(row, prefix));
             break;
         }
         case ColumnType::REAL:
         {
-            value.push_back(*get_column<ColumnValueReal>(row, prefix));
+            value.emplace_back(*get_column<ColumnValueReal>(row, prefix));
             break;
         }
         case ColumnType::VARCHAR:
         {
             const char* const begin = get_column<char>(row, prefix);
-            value.push_back(ColumnValueVarchar{begin, prefix.size});
+            value.emplace_back(ColumnValueVarchar{begin, prefix.size});
             break;
         }
         }

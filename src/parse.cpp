@@ -214,7 +214,7 @@ static AstExprPtr parse_expr(Lexer& lexer, ExprContext context, int prec, AstExp
             SourceText text      = expr->text + null_text;
             expr                 = std::make_unique<AstExpr>(AstExpr{
                 AstExpr::DataOp1{std::move(expr),
-                                 {negated ? Op1::IsNotNull : Op1::IsNull, std::move(op_text)}},
+                                                 {negated ? Op1::IsNotNull : Op1::IsNull, std::move(op_text)}},
                 std::move(text)});
             continue;
         }
@@ -438,13 +438,15 @@ static AstSelect parse_select(Lexer& lexer)
 
 static std::variant<AstOrderBy::Index, AstExpr::DataColumn> parse_order_by_column(Lexer& lexer)
 {
-    const ColumnValueInteger* index;
-    if (lexer.accept(Token::Constant) &&
-        (index = std::get_if<ColumnValueInteger>(
-             &lexer.get_token().get_data<Token::DataConstant>())) != nullptr)
+    if (lexer.accept(Token::Constant))
     {
-        SourceText text = lexer.step_token().get_text();
-        return AstOrderBy::Index{{static_cast<ColumnId>(*index), std::move(text)}};
+        const auto* index =
+            std::get_if<ColumnValueInteger>(&lexer.get_token().get_data<Token::DataConstant>());
+        if (index != nullptr)
+        {
+            SourceText text = lexer.step_token().get_text();
+            return AstOrderBy::Index{{static_cast<ColumnId>(*index), std::move(text)}};
+        }
     }
     if (lexer.accept(Token::Identifier))
     {
@@ -485,14 +487,16 @@ static std::optional<unsigned int> parse_limit(Lexer& lexer)
 {
     if (lexer.accept_step(Token::KwLimit))
     {
-        const ColumnValueInteger* index;
-        if (lexer.accept(Token::Constant) &&
-            (index = std::get_if<ColumnValueInteger>(
-                 &lexer.get_token().get_data<Token::DataConstant>())) != nullptr)
+        if (lexer.accept(Token::Constant))
         {
-            const unsigned int limit = *index;
-            lexer.step_token();
-            return limit;
+            const auto* index =
+                std::get_if<ColumnValueInteger>(&lexer.get_token().get_data<Token::DataConstant>());
+            if (index != nullptr)
+            {
+                const unsigned int limit = *index;
+                lexer.step_token();
+                return limit;
+            }
         }
         lexer.unexpected();
     }
@@ -525,7 +529,7 @@ static AstCreateTable parse_create_table(Lexer& lexer)
             throw ClientError{"column name reused", std::move(column_name)};
         }
         auto [column_type, unused] = parse_type(lexer);
-        columns.push_back({column_name.get(), column_type});
+        columns.emplace_back(column_name.get(), column_type);
     } while (lexer.accept_step(Token::Comma) && !lexer.accept(Token::RParen));
     lexer.expect_step(Token::RParen);
     return {std::move(name), std::move(columns)};

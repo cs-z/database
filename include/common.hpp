@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -148,7 +149,7 @@ using ColumnId = StrongId<ColumnTag, unsigned int>;
 #define ASSERT(expr) static_cast<bool>(expr) ? void(0) : abort_expr(#expr, __FILE__, __LINE__)
 #define UNREACHABLE() abort_expr("UNREACHABLE", __FILE__, __LINE__)
 
-#define FLEXIBLE_ARRAY 1
+constexpr std::size_t FLEXIBLE_ARRAY = 1;
 
 template <typename T> constexpr T align_up(T value, T align)
 {

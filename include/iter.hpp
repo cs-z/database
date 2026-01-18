@@ -26,8 +26,8 @@ class IterProject : public IterBase
 {
   public:
     IterProject(Iter&& parent, std::vector<ColumnId>&& columns)
-        : IterBase{map_type(parent->type, columns)}, parent{std::move(parent)}, columns{std::move(
-                                                                                    columns)}
+        : IterBase{map_type(parent->type, columns)}, parent{std::move(parent)},
+          columns{std::move(columns)}
     {
     }
     ~IterProject() override = default;
@@ -68,8 +68,8 @@ class IterScan : public IterBase
 {
   public:
     IterScan(catalog::FileIds file_ids, Type&& type)
-        : IterBase{std::move(type)}, file_id{file_ids.dat}, page_count{
-                                                                fst::get_page_count(file_ids.fst)}
+        : IterBase{std::move(type)}, file_id{file_ids.dat},
+          page_count{fst::get_page_count(file_ids.fst)}
     {
     }
     ~IterScan() override = default;

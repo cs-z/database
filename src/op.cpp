@@ -212,15 +212,15 @@ std::optional<ColumnType> op2_compile(const std::pair<Op2, SourceText>& op,
             return std::nullopt;
         }
         ASSERT(*type_l == *type_r);
-        return *type_l;
+        return type_l;
     }
     case Op2::ArithAdd:
     {
-        if (type_l && !(column_type_is_arithmetic(*type_l) || *type_l == ColumnType::VARCHAR))
+        if (type_l && !column_type_is_arithmetic(*type_l) && *type_l != ColumnType::VARCHAR)
         {
             report_op2_type_error(op.second, type_l, type_r);
         }
-        if (type_r && !(column_type_is_arithmetic(*type_r) || *type_r == ColumnType::VARCHAR))
+        if (type_r && !column_type_is_arithmetic(*type_r) && *type_r != ColumnType::VARCHAR)
         {
             report_op2_type_error(op.second, type_l, type_r);
         }
@@ -229,7 +229,7 @@ std::optional<ColumnType> op2_compile(const std::pair<Op2, SourceText>& op,
             return std::nullopt;
         }
         ASSERT(*type_l == *type_r);
-        return *type_l;
+        return type_l;
     }
     case Op2::CompL:
     case Op2::CompLe:

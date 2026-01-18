@@ -51,17 +51,17 @@ using Inner          = page::Slotted<InnerHeader, InnerEntryInfo>;
 struct FileHeader
 {
   public:
-    inline void init()
+    void init()
     {
         page_count = page::Id{1};
         root_id    = page::Id{0};
     }
 
-    [[nodiscard]] inline page::Id alloc() { return page_count++; }
+    [[nodiscard]] page::Id alloc() { return page_count++; }
 
-    inline void set_root(page::Id page_id) { root_id = page_id; }
+    void set_root(page::Id page_id) { root_id = page_id; }
 
-    [[nodiscard]] inline page::Id get_root() const
+    [[nodiscard]] page::Id get_root() const
     {
         ASSERT(root_id != 0);
         return root_id;

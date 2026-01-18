@@ -2,7 +2,7 @@
 
 #include "value.hpp"
 
-enum class Function
+enum class Function : std::uint8_t
 {
     AVG,
     MAX,
@@ -29,7 +29,7 @@ inline const char* function_to_cstr(Function function)
     UNREACHABLE();
 }
 
-enum class Op1
+enum class Op1 : std::uint8_t
 {
     Pos,
     Neg,
@@ -44,7 +44,7 @@ std::optional<ColumnType> op1_compile(const std::pair<Op1, SourceText>& op,
                                       std::optional<ColumnType>         type);
 ColumnValue               op1_eval(Op1 op, const ColumnValue& value);
 
-enum class Op2
+enum class Op2 : std::uint8_t
 {
     ArithMul,
     ArithDiv,

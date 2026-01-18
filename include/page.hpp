@@ -30,7 +30,7 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
         EntryInfo info;
     };
 
-    [[nodiscard]] inline EntryId get_entry_count() const { return entry_count; }
+    [[nodiscard]] EntryId get_entry_count() const { return entry_count; }
 
     [[nodiscard]] Header& get_header() { return header; }
 
@@ -48,14 +48,14 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
         return slots[entry_id.get()].info;
     }
 
-    [[nodiscard]] inline const u8* get_entry(EntryId entry_id) const
+    [[nodiscard]] const u8* get_entry(EntryId entry_id) const
     {
         ASSERT(entry_id < entry_count);
         const Slot& slot = slots[entry_id.get()];
         return get_entry(slot);
     }
 
-    [[nodiscard]] inline const u8* get_entry(EntryId entry_id, Offset& size_out) const
+    [[nodiscard]] const u8* get_entry(EntryId entry_id, Offset& size_out) const
     {
         ASSERT(entry_id < entry_count);
         const Slot& slot = slots[entry_id.get()];
@@ -63,32 +63,17 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
         return get_entry(slot);
     }
 
-    [[nodiscard]] inline const u8* get_entry(const Slot& slot) const
-    {
-        return get_pointer(slot.offset);
-    }
+    [[nodiscard]] const u8* get_entry(const Slot& slot) const { return get_pointer(slot.offset); }
 
-    [[nodiscard]] inline u8* get_entry(const Slot& slot) { return get_pointer(slot.offset); }
+    [[nodiscard]] u8* get_entry(const Slot& slot) { return get_pointer(slot.offset); }
 
-    [[nodiscard]] inline auto begin()
-    {
-        return slots.begin();  // TODO
-    }
+    [[nodiscard]] Slot* begin() { return slots; }
 
-    [[nodiscard]] inline auto end()
-    {
-        return slots.end();  // TODO
-    }
+    [[nodiscard]] Slot* end() { return slots + entry_count.get(); }
 
-    [[nodiscard]] inline auto cbegin() const
-    {
-        return slots.cbegin();  // TODO
-    }
+    [[nodiscard]] const Slot* cbegin() const { return slots; }
 
-    [[nodiscard]] inline auto cend() const
-    {
-        return slots.cend();  // TODO
-    }
+    [[nodiscard]] const Slot* cend() const { return slots + entry_count.get(); }
 
     void init(Header header)
     {
@@ -129,7 +114,7 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
         }
         ASSERT(*offset % align == 0);
 
-        memmove(&slots[entry_id.get()] + 1, &slots[entry_id.get()],
+        memmove(slots + entry_id.get() + 1, slots + entry_id.get(),
                 (entry_count - entry_id).get() * sizeof(Slot));
         slots[entry_id.get()] = Slot{*offset, size, std::move(info)};
         entry_count++;
@@ -154,11 +139,12 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
             ASSERT(slot.offset % align == 0);
             entries.push_back({slot.offset, slot.size, entry_id});
         }
-        std::sort(entries.begin(), entries.end());
+        std::ranges::sort(entries);
 
         free_end = SIZE;
+        // NOLINTNEXTLINE(modernize-loop-convert)
         for (auto it = entries.rbegin(); it != entries.rend(); ++it)
-        {  // NOLINT(modernize-loop-convert)
+        {
             auto [offset, size, entry_id] = *it;
 
             ASSERT(free_end > size);
@@ -179,16 +165,13 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
   private:
     Header header;
 
-    EntryId                          entry_count;
-    Offset                           free_begin, free_end;
-    std::array<Slot, FLEXIBLE_ARRAY> slots;
+    EntryId entry_count;
+    Offset  free_begin, free_end;
+    Slot    slots[FLEXIBLE_ARRAY];  // NOLINT(modernize-avoid-c-arrays)
 
-    [[nodiscard]] inline u8* get_pointer(Offset offset)
-    {
-        return reinterpret_cast<u8*>(this) + offset;
-    }
+    [[nodiscard]] u8* get_pointer(Offset offset) { return reinterpret_cast<u8*>(this) + offset; }
 
-    [[nodiscard]] inline const u8* get_pointer(Offset offset) const
+    [[nodiscard]] const u8* get_pointer(Offset offset) const
     {
         return reinterpret_cast<const u8*>(this) + offset;
     }

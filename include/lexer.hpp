@@ -30,7 +30,7 @@ class Lexer
   public:
     Lexer(const std::string& source);
 
-    [[nodiscard]] inline const Token& get_token() const { return token; }
+    [[nodiscard]] const Token& get_token() const { return token; }
 
     [[nodiscard]] bool accept(Token::Tag tag) const;
     bool               accept_step(Token::Tag tag);

@@ -1,4 +1,5 @@
 #include "expr.hpp"
+#include "value.hpp"
 
 ColumnValue Expr::eval(const Value* value) const
 {
@@ -60,7 +61,11 @@ ColumnValue Expr::eval(const Value* value) const
                         return expr.negated ? Bool::FALSE : Bool::TRUE;
                     }
                 }
-                return has_null ? Bool::UNKNOWN : (expr.negated ? Bool::TRUE : Bool::FALSE);
+                if (has_null)
+                {
+                    return Bool::UNKNOWN;
+                }
+                return expr.negated ? Bool::TRUE : Bool::FALSE;
             },
             [&value](const Expr::DataFunction& expr)
             {

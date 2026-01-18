@@ -4,7 +4,7 @@
 #include "error.hpp"
 #include "page.hpp"
 
-enum class ColumnType
+enum class ColumnType : std::uint8_t
 {
     BOOLEAN,
     INTEGER,
@@ -51,9 +51,9 @@ class Type
     Type();
     void push(ColumnType column);
 
-    [[nodiscard]] inline page::Offset get_align() const { return align; }
-    [[nodiscard]] inline std::size_t  size() const { return columns.size(); }
-    [[nodiscard]] inline ColumnType   at(std::size_t index) const { return columns.at(index); }
+    [[nodiscard]] page::Offset get_align() const { return align; }
+    [[nodiscard]] std::size_t  size() const { return columns.size(); }
+    [[nodiscard]] ColumnType   at(std::size_t index) const { return columns.at(index); }
 
   private:
     page::Offset            align;

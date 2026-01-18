@@ -5,6 +5,7 @@
 #include "error.hpp"
 #include "op.hpp"
 #include "value.hpp"
+#include <cstdint>
 
 struct AstExpr;
 using AstExprPtr = std::unique_ptr<AstExpr>;
@@ -102,7 +103,7 @@ struct AstSource
     };
     struct DataJoinConditional
     {
-        enum class Join
+        enum class Join : std::uint8_t
         {
             INNER,
             LEFT,

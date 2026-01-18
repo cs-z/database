@@ -4,11 +4,12 @@
 #include "error.hpp"
 #include "op.hpp"
 #include "value.hpp"
+#include <cstdint>
 
 class Token
 {
   public:
-    enum Tag
+    enum Tag : std::uint8_t
     {
         KwCreate,
         KwTable,
@@ -91,8 +92,8 @@ class Token
     Token& operator=(const Token& other) noexcept = default;
     Token& operator=(Token&& other) noexcept      = default;
 
-    [[nodiscard]] inline Tag               get_tag() const { return tag; }
-    [[nodiscard]] inline const SourceText& get_text() const { return text; }  // TODO: maybe move
+    [[nodiscard]] Tag               get_tag() const { return tag; }
+    [[nodiscard]] const SourceText& get_text() const { return text; }  // TODO: maybe move
 
     template <typename DataT> [[nodiscard]] const DataT& get_data() const
     {

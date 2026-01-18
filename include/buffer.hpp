@@ -25,8 +25,8 @@ template <typename PageT> class Pin
     Pin() : file_id{}, frame{}, page_id{}, page{} {}
 
     Pin(catalog::FileId file_id, page::Id page_id, bool append = false)
-        : file_id{file_id}, page_id{page_id}, page{reinterpret_cast<PageT*>(
-                                                  request(file_id, page_id, append, frame))}
+        : file_id{file_id}, page_id{page_id},
+          page{reinterpret_cast<PageT*>(request(file_id, page_id, append, frame))}
     {
     }
 
@@ -96,9 +96,9 @@ template <typename PageT = void> class Buffer
 {
   public:
     Buffer(FrameId frame_count = FrameId{1})
-        : frame_count{frame_count}, buffer{std::aligned_alloc(
-                                        page::SIZE,
-                                        static_cast<size_t>(frame_count.get()) * page::SIZE)}
+        : frame_count{frame_count},
+          buffer{
+              std::aligned_alloc(page::SIZE, static_cast<size_t>(frame_count.get()) * page::SIZE)}
     {
         ASSERT(buffer);
         memset(buffer, 0, static_cast<size_t>(frame_count.get()) * page::SIZE);  // TODO: remove

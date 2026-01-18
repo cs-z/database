@@ -86,7 +86,7 @@ ColumnValue Aggregator::get(Function function)
                 [this](const ColumnValueInteger& value) -> ColumnValue
                 {
                     ASSERT(this->count > 0);
-                    return value / static_cast<ColumnValueInteger>(this->count);
+                    return value / this->count;
                 },
                 [this](const ColumnValueReal& value) -> ColumnValue
                 {
@@ -115,7 +115,7 @@ static Iter create_iter(Iter&& parent, const Aggregates& aggregates)
         OrderBy order_by;
         for (ColumnId column_id : aggregates.group_by)
         {
-            order_by.columns.push_back({column_id, true});
+            order_by.columns.push_back({.column_id = column_id, .asc = true});
         }
         return std::make_unique<IterSort>(std::move(parent), std::move(order_by));
     }
@@ -190,7 +190,7 @@ std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupB
             }
             else
             {
-                result_value.push_back(count);
+                result_value.emplace_back(count);
             }
         }
         result = {result_value};
@@ -281,7 +281,7 @@ std::optional<Value> IterAggregate::next()
             }
             else
             {
-                result.push_back(count);
+                result.emplace_back(count);
             }
         }
         done = true;

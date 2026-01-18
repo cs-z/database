@@ -51,7 +51,7 @@ struct PageHead
     unsigned int levels;
     unsigned int bottom;  // number of pages in the bottom level
 
-    inline void init()
+    void init()
     {
         pages  = 0;
         levels = 0;
@@ -183,7 +183,7 @@ static page::Id append(catalog::FileId file_id, page::Offset value)
         page_init(page.get_page());
     }
     const page::Id page_id = page::Id{page_head->pages++};
-    update(file_id, page_id, page::Offset{value});
+    update(file_id, page_id, value);
     return page_id;
 }
 
@@ -224,7 +224,7 @@ static std::optional<page::Id> find(catalog::FileId file_id, page::Offset value)
     {
         return std::nullopt;
     }
-    page::Id page_id{page_get(page.get_page(), page::Offset{value}).get()};
+    page::Id page_id{page_get(page.get_page(), value).get()};
     for (unsigned int level = 2; level <= page_head->levels; level++)
     {
         const buffer::Pin<const page::Offset> page{

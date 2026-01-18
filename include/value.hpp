@@ -5,7 +5,7 @@
 #include "common.hpp"
 #include "type.hpp"
 
-enum class Bool
+enum class Bool : std::uint8_t
 {
     TRUE,
     FALSE,

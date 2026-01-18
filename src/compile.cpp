@@ -159,7 +159,7 @@ class Columns
             std::string prefix =
                 multiplicity[column_name] > 1 ? (columns_table[column_id] + ".") : "";
             std::string name = std::move(prefix) + column_name;
-            table_columns.push_back({std::move(name), column_type});
+            table_columns.emplace_back(std::move(name), column_type);
         }
         return table_columns;
     }
@@ -554,12 +554,12 @@ compile_select_list(const Columns& columns, const AstSelectList& ast,
                     {
                         const auto& [column_name, column_type] = column_names[column_id.get()];
                         ExprPtr expr                           = create_nonaggregated_column_expr(
-                                                      column_id, column_type, ast_element.asterisk_text,
-                                                      ExprContext{nonaggregated_columns, aggregates, false});
+                            column_id, column_type, ast_element.asterisk_text,
+                            ExprContext{nonaggregated_columns, aggregates, false});
                         list.exprs.push_back(std::move(expr));
                         list.type.push(column_type);
                         list.visible_count++;
-                        table_columns.push_back({column_name, column_type});
+                        table_columns.emplace_back(column_name, column_type);
                     }
                 },
                 [&nonaggregated_columns, &aggregates, &columns, &column_names, &list,
@@ -570,12 +570,12 @@ compile_select_list(const Columns& columns, const AstSelectList& ast,
                     {
                         const auto& [column_name, column_type] = column_names[column_id.get()];
                         ExprPtr expr                           = create_nonaggregated_column_expr(
-                                                      column_id, column_type, ast_element.asterisk_text,
-                                                      ExprContext{nonaggregated_columns, aggregates, false});
+                            column_id, column_type, ast_element.asterisk_text,
+                            ExprContext{nonaggregated_columns, aggregates, false});
                         list.exprs.push_back(std::move(expr));
                         list.type.push(column_type);
                         list.visible_count++;
-                        table_columns.push_back({column_name, column_type});
+                        table_columns.emplace_back(column_name, column_type);
                     }
                 },
                 [&nonaggregated_columns, &aggregates, &columns, &list,
@@ -598,7 +598,7 @@ compile_select_list(const Columns& columns, const AstSelectList& ast,
                     list.exprs.push_back(std::move(expr));
                     list.type.push(column_type);
                     list.visible_count++;
-                    table_columns.push_back({std::move(column_name), column_type});
+                    table_columns.emplace_back(std::move(column_name), column_type);
                 },
             },
             ast_element);
@@ -611,8 +611,8 @@ static std::tuple<Select, Columns, catalog::NamedColumns> compile_select(const A
     auto [source, columns] = compile_sources(ast.sources);
     ExprPtr    where       = compile_where(columns, ast.where);
     Aggregates aggregates  = {
-         std::vector<Aggregates::Aggregate>{},
-         compile_group_by(columns, ast.group_by),
+        std::vector<Aggregates::Aggregate>{},
+        compile_group_by(columns, ast.group_by),
     };
     std::unordered_map<ColumnId, SourceText> nonaggregated_columns;
     auto [list, table_columns] =
@@ -774,7 +774,8 @@ static InsertValue compile_insert_value(AstInsertValue& ast)
     for (std::size_t i = 0; i < type.size(); i++)
     {
         ExprPtr expr = compile_expr(*ast.exprs[i], columns, std::nullopt);
-        if (expr->type && *expr->type != type.at(i))
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        if (expr->type.has_value() && expr->type.value() != type.at(i))
         {
             throw ClientError{"column type mismatch", ast.exprs[i]->text};
         }
