@@ -16,12 +16,12 @@ namespace catalog
 		FileIds file_ids;
 		NamedColumns columns;
 
-		std::string getDataFileName() const
+		[[nodiscard]] std::string getDataFileName() const
 		{
 			return name + ".DAT";
 		}
 
-		std::string getFstFileName() const
+		[[nodiscard]] std::string getFstFileName() const
 		{
 			return name + ".FST";
 		}
@@ -81,7 +81,7 @@ namespace catalog
 		puts(statement.c_str());
 		std::vector<Value> values = execute_internal_statement(statement);
 		ASSERT(values.size() == 1);
-		ColumnValueVarchar &name = std::get<ColumnValueVarchar>(values.front().at(0));
+		auto &name = std::get<ColumnValueVarchar>(values.front().at(0));
 		return name;
 	}
 
@@ -92,7 +92,7 @@ namespace catalog
 			ColumnValueVarchar { std::move(name) },
 		};
 		const std::string statement = "INSERT INTO " + TABLE_FILES.name + " VALUES " + value_to_list(value);
-		ASSERT(execute_internal_statement(statement).size() == 0);
+		ASSERT(execute_internal_statement(statement).empty());
 	}
 
 	static std::optional<TableId> read_table(const std::string &name)
@@ -103,7 +103,7 @@ namespace catalog
 			return std::nullopt;
 		}
 		ASSERT(values.size() == 1);
-		const ColumnValueInteger id = std::get<ColumnValueInteger>(values.front().at(0));
+		const auto id = std::get<ColumnValueInteger>(values.front().at(0));
 		return static_cast<TableId>(id);
 	}
 
@@ -112,8 +112,8 @@ namespace catalog
 		const std::string statement = "SELECT FILE_FST_ID, FILE_DAT_ID FROM " + TABLE_TABLES.name + " WHERE ID = " + table_id.to_string();
 		std::vector<Value> values = execute_internal_statement(statement);
 		ASSERT(values.size() == 1);
-		ColumnValueInteger file_fst = std::get<ColumnValueInteger>(values.front().at(0));
-		ColumnValueInteger file_dat = std::get<ColumnValueInteger>(values.front().at(1));
+		const auto file_fst = std::get<ColumnValueInteger>(values.front().at(0));
+		const auto file_dat = std::get<ColumnValueInteger>(values.front().at(1));
 		return { static_cast<FileId>(file_fst), static_cast<FileId>(file_dat) };
 	}
 
@@ -126,19 +126,19 @@ namespace catalog
 			ColumnValueInteger { file_ids.dat.get() },
 		};
 		const std::string statement = "INSERT INTO " + TABLE_TABLES.name + " VALUES " + value_to_list(value);
-		ASSERT(execute_internal_statement(statement).size() == 0);
+		ASSERT(execute_internal_statement(statement).empty());
 	}
 
 	static NamedColumns read_columns(TableId table_id)
 	{
 		const std::string statement = "SELECT NAME, TYPE FROM " + TABLE_COLUMNS.name + " WHERE TABLE_ID = " + table_id.to_string() + " ORDER BY ID";
 		std::vector<Value> values = execute_internal_statement(statement);
-		ASSERT(values.size() > 0);
+		ASSERT(!values.empty());
 		NamedColumns columns;
 		for (Value &value : values) {
-			ColumnValueVarchar &column_name = std::get<ColumnValueVarchar>(value.at(0));
-			ColumnValueVarchar &column_type = std::get<ColumnValueVarchar>(value.at(1));
-			columns.emplace_back(std::move(column_name), column_type_from_catalog_string(std::move(column_type)));
+			auto &column_name = std::get<ColumnValueVarchar>(value.at(0));
+			const auto &column_type = std::get<ColumnValueVarchar>(value.at(1));
+			columns.emplace_back(std::move(column_name), column_type_from_catalog_string(column_type));
 		}
 		return columns;
 	}
@@ -154,7 +154,7 @@ namespace catalog
 				ColumnValueVarchar { column_type_to_catalog_string(column_type) },
 			};
 			const std::string statement = "INSERT INTO " + TABLE_COLUMNS.name + " VALUES " + value_to_list(value);
-			ASSERT(execute_internal_statement(statement).size() == 0);
+			ASSERT(execute_internal_statement(statement).empty());
 		}
 	}
 
@@ -162,12 +162,24 @@ namespace catalog
 	{
 		// if (file_id == TABLE_STATS.file_ids.fst) return TABLE_STATS.getFstFileName();
 		// if (file_id == TABLE_STATS.file_ids.dat) return TABLE_STATS.getDataFileName();
-		if (file_id == TABLE_FILES.file_ids.fst) return TABLE_FILES.getFstFileName();
-		if (file_id == TABLE_FILES.file_ids.dat) return TABLE_FILES.getDataFileName();
-		if (file_id == TABLE_TABLES.file_ids.fst) return TABLE_TABLES.getFstFileName();
-		if (file_id == TABLE_TABLES.file_ids.dat) return TABLE_TABLES.getDataFileName();
-		if (file_id == TABLE_COLUMNS.file_ids.fst) return TABLE_COLUMNS.getFstFileName();
-		if (file_id == TABLE_COLUMNS.file_ids.dat) return TABLE_COLUMNS.getDataFileName();
+		if (file_id == TABLE_FILES.file_ids.fst) {
+			return TABLE_FILES.getFstFileName();
+		}
+		if (file_id == TABLE_FILES.file_ids.dat) {
+			return TABLE_FILES.getDataFileName();
+		}
+		if (file_id == TABLE_TABLES.file_ids.fst) {
+			return TABLE_TABLES.getFstFileName();
+		}
+		if (file_id == TABLE_TABLES.file_ids.dat) {
+			return TABLE_TABLES.getDataFileName();
+		}
+		if (file_id == TABLE_COLUMNS.file_ids.fst) {
+			return TABLE_COLUMNS.getFstFileName();
+		}
+		if (file_id == TABLE_COLUMNS.file_ids.dat) {
+			return TABLE_COLUMNS.getDataFileName();
+		}
 		return read_file(file_id);
 	}
 
@@ -175,7 +187,9 @@ namespace catalog
 	{
 		// TODO: avoid copy
 		auto table = find_table_named(name);
-		if (!table) return std::nullopt;
+		if (!table) {
+			return std::nullopt;
+		}
 		Type type;
 		for (const auto &[column_name, column_type] : table->second) {
 			type.push(column_type);
@@ -186,9 +200,15 @@ namespace catalog
 	std::optional<std::pair<TableId, NamedColumns>> find_table_named(const std::string &name)
 	{
 		// if (name == TABLE_STATS.name) return std::make_pair(TABLE_STATS.id, TABLE_STATS.columns);
-		if (name == TABLE_FILES.name) return std::make_pair(TABLE_FILES.id, TABLE_FILES.columns);
-		if (name == TABLE_TABLES.name) return std::make_pair(TABLE_TABLES.id, TABLE_TABLES.columns);
-		if (name == TABLE_COLUMNS.name) return std::make_pair(TABLE_COLUMNS.id, TABLE_COLUMNS.columns);
+		if (name == TABLE_FILES.name) {
+			return std::make_pair(TABLE_FILES.id, TABLE_FILES.columns);
+		}
+		if (name == TABLE_TABLES.name) {
+			return std::make_pair(TABLE_TABLES.id, TABLE_TABLES.columns);
+		}
+		if (name == TABLE_COLUMNS.name) {
+			return std::make_pair(TABLE_COLUMNS.id, TABLE_COLUMNS.columns);
+		}
 		const std::optional<TableId> table_id = read_table(name);
 		if (!table_id) {
 			return std::nullopt;
@@ -217,9 +237,15 @@ namespace catalog
 	FileIds get_table_file_ids(TableId table_id)
 	{
 		// if (table_id == TABLE_STATS.id) return TABLE_STATS.file_ids;
-		if (table_id == TABLE_FILES.id) return TABLE_FILES.file_ids;
-		if (table_id == TABLE_TABLES.id) return TABLE_TABLES.file_ids;
-		if (table_id == TABLE_COLUMNS.id) return TABLE_COLUMNS.file_ids;
+		if (table_id == TABLE_FILES.id) {
+			return TABLE_FILES.file_ids;
+		}
+		if (table_id == TABLE_TABLES.id) {
+			return TABLE_TABLES.file_ids;
+		}
+		if (table_id == TABLE_COLUMNS.id) {
+			return TABLE_COLUMNS.file_ids;
+		}
 		return read_table(table_id);
 	}
 
@@ -267,7 +293,7 @@ namespace catalog
 	{
 		// TODO: update statement needed
 		static TableId TABLE_ID_TODO = TableId { 4 };
-		static FileId FILE_ID_TODO = FileId { 8 };
+		static FileId FILE_ID_TODO = FileId { 8 }; // NOLINT(readability-magic-numbers)
 		return std::make_pair(TABLE_ID_TODO++, FileIds { FILE_ID_TODO++, FILE_ID_TODO++ });
 	}
 

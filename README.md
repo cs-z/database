@@ -15,12 +15,20 @@ cd database
 
 ### 2. Build the Project
 
-Make sure you have CMake and a C++20 compatible compiler installed.
+Requires **CMake** and a **C++20 compiler** (GCC or Clang).
+
+### Debug Build
 
 ```bash
-mkdir build && cd build
-cmake ..
-make
+cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/debug
+```
+
+### Release Build
+
+```bash
+cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
+cmake --build build/release
 ```
 
 ### 3. Run It
@@ -49,7 +57,7 @@ You can use the database in two ways:
 - Aggregation operations
 - Join operations
 - Expression evaluation
-- Query execution using the iterator (Volcano) model
+- Query execution using the iterator model
 - System catalog for storing metadata
 - Detailed error reporting
 

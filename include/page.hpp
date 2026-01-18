@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 
 #include "common.hpp"
 
@@ -27,43 +28,41 @@ namespace page
 			EntryInfo info;
 		};
 
-	public:
-
-		inline EntryId get_entry_count() const
+		[[nodiscard]] inline EntryId get_entry_count() const
 		{
 			return entry_count;
 		}
 
-		Header &get_header()
+		[[nodiscard]] Header &get_header()
 		{
 			return header;
 		}
 
-		const Header &get_header() const
+		[[nodiscard]] const Header &get_header() const
 		{
 			return header;
 		}
 
-		EntryInfo &get_entry_info(EntryId entry_id)
+		[[nodiscard]] EntryInfo &get_entry_info(EntryId entry_id)
 		{
 			ASSERT(entry_id < entry_count);
 			return slots[entry_id.get()].info;
 		}
 
-		const EntryInfo &get_entry_info(EntryId entry_id) const
+		[[nodiscard]] const EntryInfo &get_entry_info(EntryId entry_id) const
 		{
 			ASSERT(entry_id < entry_count);
 			return slots[entry_id.get()].info;
 		}
 
-		inline const u8 *get_entry(EntryId entry_id) const
+		[[nodiscard]] inline const u8 *get_entry(EntryId entry_id) const
 		{
 			ASSERT(entry_id < entry_count);
 			const Slot &slot = slots[entry_id.get()];
 			return get_entry(slot);
 		}
 
-		inline const u8 *get_entry(EntryId entry_id, Offset &size_out) const
+		[[nodiscard]] inline const u8 *get_entry(EntryId entry_id, Offset &size_out) const
 		{
 			ASSERT(entry_id < entry_count);
 			const Slot &slot = slots[entry_id.get()];
@@ -71,34 +70,34 @@ namespace page
 			return get_entry(slot);
 		}
 
-		inline const u8 *get_entry(const Slot &slot) const
+		[[nodiscard]] inline const u8 *get_entry(const Slot &slot) const
 		{
 			return get_pointer(slot.offset);
 		}
 
-		inline u8 *get_entry(const Slot &slot)
+		[[nodiscard]] inline u8 *get_entry(const Slot &slot)
 		{
 			return get_pointer(slot.offset);
 		}
 
-		inline Slot *begin()
+		[[nodiscard]] inline auto begin()
 		{
-			return slots;
+			return slots.begin(); // TODO
 		}
 
-		inline Slot *end()
+		[[nodiscard]] inline auto end()
 		{
-			return slots + entry_count.get();
+			return slots.end(); // TODO
 		}
 
-		inline const Slot *cbegin() const
+		[[nodiscard]] inline auto cbegin() const
 		{
-			return slots;
+			return slots.cbegin(); // TODO
 		}
 
-		inline const Slot *cend() const
+		[[nodiscard]] inline auto cend() const
 		{
-			return slots + entry_count.get();
+			return slots.cend(); // TODO
 		}
 
 		void init(Header header)
@@ -109,7 +108,7 @@ namespace page
 			this->free_end = SIZE;
 		}
 
-		u8 *insert(Offset align, Offset size, EntryInfo info, Offset *free_size_out = nullptr)
+		[[nodiscard]] u8 *insert(Offset align, Offset size, EntryInfo info, Offset *free_size_out = nullptr)
 		{
 			const auto offset = insert_entry(align, size);
 			if (!offset) {
@@ -120,7 +119,7 @@ namespace page
 			const EntryId entry_id = entry_count++;
 			slots[entry_id.get()] = Slot { *offset, size, std::move(info) };
 
-			if (free_size_out) {
+			if (free_size_out != nullptr) {
 				*free_size_out = free_end - free_begin;
 			}
 
@@ -128,7 +127,7 @@ namespace page
 		}
 
 		// insert to specific position, shift slots beyond this position
-		u8 *insert(Offset align, Offset size, EntryInfo info, EntryId entry_id)
+		[[nodiscard]] u8 *insert(Offset align, Offset size, EntryInfo info, EntryId entry_id)
 		{
 			const auto offset = insert_entry(align, size);
 			if (!offset) {
@@ -136,7 +135,7 @@ namespace page
 			}
 			ASSERT(*offset % align == 0);
 
-			memmove(slots + entry_id.get() + 1, slots + entry_id.get(), (entry_count - entry_id).get() * sizeof(Slot));
+			memmove(&slots[entry_id.get()] + 1, &slots[entry_id.get()], (entry_count - entry_id).get() * sizeof(Slot));
 			slots[entry_id.get()] = Slot { *offset, size, std::move(info) };
 			entry_count++;
 
@@ -162,7 +161,7 @@ namespace page
 			std::sort(entries.begin(), entries.end());
 
 			free_end = SIZE;
-			for (auto it = entries.rbegin(); it != entries.rend(); it++) {
+			for (auto it = entries.rbegin(); it != entries.rend(); ++it) { // NOLINT(modernize-loop-convert)
 				auto [offset, size, entry_id] = *it;
 
 				ASSERT(free_end > size);
@@ -185,21 +184,19 @@ namespace page
 
 		EntryId entry_count;
 		Offset free_begin, free_end;
-		Slot slots[FLEXIBLE_ARRAY];
+		std::array<Slot, FLEXIBLE_ARRAY> slots;
 
-	private:
-
-		inline u8 *get_pointer(Offset offset)
+		[[nodiscard]] inline u8 *get_pointer(Offset offset)
 		{
 			return reinterpret_cast<u8 *>(this) + offset;
 		}
 
-		inline const u8 *get_pointer(Offset offset) const
+		[[nodiscard]] inline const u8 *get_pointer(Offset offset) const
 		{
 			return reinterpret_cast<const u8 *>(this) + offset;
 		}
 
-		std::optional<Offset> insert_entry(Offset align, Offset size)
+		[[nodiscard]] std::optional<Offset> insert_entry(Offset align, Offset size)
 		{
 			ASSERT(align > 0);
 			ASSERT(size > 0);
@@ -208,8 +205,8 @@ namespace page
 				return std::nullopt;
 			}
 
-			const Offset free_begin_new = free_begin + sizeof(Slot);
-			const Offset free_end_new = align_down<Offset>(free_end - size, align);
+			const auto free_begin_new = free_begin + sizeof(Slot);
+			const auto free_end_new = align_down<Offset>(free_end - size, align);
 
 			if (free_begin_new > free_end_new) {
 				return std::nullopt;

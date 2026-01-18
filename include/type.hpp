@@ -15,10 +15,12 @@ enum class ColumnType
 inline bool column_type_is_comparable(ColumnType type)
 {
 	switch (type) {
-		case ColumnType::BOOLEAN: return false;
-		case ColumnType::INTEGER: return true;
-		case ColumnType::REAL: return true;
-		case ColumnType::VARCHAR: return true;
+		case ColumnType::INTEGER:
+		case ColumnType::REAL:
+		case ColumnType::VARCHAR:
+			return true;
+		case ColumnType::BOOLEAN:
+			return false;
 	}
 	UNREACHABLE();
 }
@@ -26,10 +28,12 @@ inline bool column_type_is_comparable(ColumnType type)
 inline bool column_type_is_arithmetic(ColumnType type)
 {
 	switch (type) {
-		case ColumnType::BOOLEAN: return false;
-		case ColumnType::INTEGER: return true;
-		case ColumnType::REAL: return true;
-		case ColumnType::VARCHAR: return false;
+		case ColumnType::INTEGER:
+		case ColumnType::REAL:
+			return true;		
+		case ColumnType::BOOLEAN:
+		case ColumnType::VARCHAR:
+			return false;		
 	}
 	UNREACHABLE();
 }
@@ -46,9 +50,9 @@ public:
 	Type();
 	void push(ColumnType column);
 
-	inline page::Offset get_align() const { return align; }
-	inline std::size_t size() const { return columns.size(); }
-	inline ColumnType at(std::size_t index) const { return columns.at(index); }
+	[[nodiscard]] inline page::Offset get_align() const { return align; }
+	[[nodiscard]] inline std::size_t size() const { return columns.size(); }
+	[[nodiscard]] inline ColumnType at(std::size_t index) const { return columns.at(index); }
 
 private:
 

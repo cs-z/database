@@ -38,15 +38,6 @@ void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, So
 				}
 				break;
 			case ColumnType::INTEGER:
-				switch (to.first) {
-					case ColumnType::BOOLEAN:
-						break;
-					case ColumnType::INTEGER:
-					case ColumnType::REAL:
-					case ColumnType::VARCHAR:
-						return;
-				}
-				break;
 			case ColumnType::REAL:
 				switch (to.first) {
 					case ColumnType::BOOLEAN:

@@ -15,7 +15,7 @@ void Aggregator::feed(const ColumnValue &value)
 		[](const ColumnValueNull &) {
 			// ignore null values
 		},
-		[this](const ColumnValueBoolean &) {
+		[](const ColumnValueBoolean &) {
 			UNREACHABLE();
 		},
 		[this](const ColumnValueInteger &value) {
@@ -75,11 +75,11 @@ ColumnValue Aggregator::get(Function function)
 				},
 				[this](const ColumnValueInteger &value) -> ColumnValue {
 					ASSERT(this->count > 0);
-					return value / this->count;
+					return value / static_cast<ColumnValueInteger>(this->count);
 				},
 				[this](const ColumnValueReal &value) -> ColumnValue {
 					ASSERT(this->count > 0);
-					return value / this->count;
+					return value / static_cast<ColumnValueReal>(this->count);
 				},
 				[](const ColumnValueVarchar &) -> ColumnValue {
 					UNREACHABLE();
@@ -99,16 +99,14 @@ ColumnValue Aggregator::get(Function function)
 
 static Iter create_iter(Iter &&parent, const Aggregates &aggregates)
 {
-	if (aggregates.group_by.size() > 0) {
+	if (!aggregates.group_by.empty()) {
 		OrderBy order_by;
 		for (ColumnId column_id : aggregates.group_by) {
 			order_by.columns.push_back({ column_id, true });
 		}
 		return std::make_unique<IterSort>(std::move(parent), std::move(order_by));
 	}
-	else {
-		return parent;
-	}
+	return parent;
 }
 
 IterAggregate::IterAggregate(Iter &&parent, Aggregates &&aggregates)
@@ -208,7 +206,7 @@ std::optional<Value> IterAggregate::next()
 	if (done) {
 		return std::nullopt;
 	}
-	if (aggregates.group_by.size() > 0) {
+	if (!aggregates.group_by.empty()) {
 		for (;;) {
 			const std::optional<Value> value = parent->next();
 			if (!value) {

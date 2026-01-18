@@ -14,7 +14,7 @@ namespace os
 	public:
 
 		File(const std::string &name);
-		~File();
+		~File() noexcept;
 
 		File(const File &) = delete;
 		File& operator=(const File &) = delete;
@@ -36,15 +36,15 @@ namespace os
 	public:
 
 		TempFile();
-		~TempFile();
+		~TempFile() noexcept;
 
-		TempFile(TempFile &&other)
+		TempFile(TempFile &&other) noexcept
 		{
 			fd = other.fd;
 			other.fd = std::nullopt;
 		}
 
-		TempFile &operator=(TempFile &&other)
+		TempFile &operator=(TempFile &&other) noexcept
 		{
 			ASSERT(!fd); // TODO
 			fd = other.fd;

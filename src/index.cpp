@@ -56,7 +56,7 @@ public:
 		root_id = page::Id { 0 };
 	}
 
-	inline page::Id alloc()
+	[[nodiscard]] inline page::Id alloc()
 	{
 		return page_count++;
 	}
@@ -66,7 +66,7 @@ public:
 		root_id = page_id;
 	}
 
-	inline page::Id get_root() const
+	[[nodiscard]] inline page::Id get_root() const
 	{
 		ASSERT(root_id != 0);
 		return root_id;
@@ -90,10 +90,8 @@ static std::pair<page::Id, Value> insert(const auto &page, const Type &key_type,
 		row::write(key_prefix, key, entry);
 		return {};
 	}
-	else {
-		auto [new_page, new_key] = split(page, key_type, key, std::move(value), index);
-		return std::make_pair(new_page, std::move(new_key));
-	}
+	auto [new_page, new_key] = split(page, key_type, key, std::move(value), index);
+	return std::make_pair(new_page, std::move(new_key));
 }
 
 static std::pair<page::Id, Value> split(const buffer::Pin<Leaf> &page, const Type &key_type, const Value &key, RID rid, page::EntryId index)
@@ -205,7 +203,7 @@ static auto find_lower_entry(buffer::Pin<const PageT> &page, const Type &key_typ
 		page->cbegin(),
 		page->cend(),
 		key,
-		[&page, &key_type](const PageT::Slot &slot, const Value &key) {
+		[&page, &key_type](const typename PageT::Slot &slot, const Value &key) {
 			return compare_keys(key_type, page->get_entry(slot), key) < 0; // TODO
 		}
 	);
@@ -231,7 +229,7 @@ static auto find_upper_entry(buffer::Pin<const PageT> &page, const Type &key_typ
 		page->cbegin(),
 		page->cend(),
 		key,
-		[&page, &key_type](const Value &key, const PageT::Slot &slot) {
+		[&page, &key_type](const Value &key, const typename PageT::Slot &slot) {
 			return compare_keys(key_type, page->get_entry(slot), key) > 0;
 		}
 	);
@@ -255,7 +253,7 @@ static page::EntryId find_insert_entry(buffer::Pin<PageT> &page, const Type &key
 		page->cbegin(),
 		page->cend(),
 		key,
-		[&page, &key_type](const Value &key, const PageT::Slot &slot) {
+		[&page, &key_type](const Value &key, const typename PageT::Slot &slot) {
 			return compare_keys(key_type, page->get_entry(slot), key) > 0;
 		}
 	);
@@ -270,16 +268,14 @@ static std::pair<page ::Id, Value> insert_recursive(catalog::FileId file_id, pag
 		const page::EntryId index = find_insert_entry(leaf, key_type, key);
 		return insert(leaf, key_type, key, rid, index);
 	}
-	else {
-		buffer::Pin<Inner> inner = std::move(page);
-		const page::EntryId index = find_insert_entry(inner, key_type, key);
-		const auto child = index > 0 ? inner->get_entry_info(index - 1) : inner->get_header().leftmost_child;
-		auto overflow = insert_recursive(file_id, child, key_type, key, rid);
-		if (overflow.first != 0) {
-			return insert(inner, key_type, overflow.second, overflow.first, index);
-		}
-		return {};
+	buffer::Pin<Inner> inner = std::move(page);
+	const page::EntryId index = find_insert_entry(inner, key_type, key);
+	const auto child = index > 0 ? inner->get_entry_info(index - 1) : inner->get_header().leftmost_child;
+	auto overflow = insert_recursive(file_id, child, key_type, key, rid);
+	if (overflow.first != 0) {
+		return insert(inner, key_type, overflow.second, overflow.first, index);
 	}
+	return {};
 }
 
 void insert(catalog::FileId file_id, const Type &key_type, const Value &key, RID rid)

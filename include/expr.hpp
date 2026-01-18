@@ -54,6 +54,8 @@ struct Expr
 	Data data;
 	std::optional<ColumnType> type;
 
+	Expr(Data data, std::optional<ColumnType> type) : data { std::move(data) }, type { type } {}
+
 	void print() const;
 	ColumnValue eval(const Value *value) const;
 };

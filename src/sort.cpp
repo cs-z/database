@@ -13,10 +13,10 @@ static constexpr unsigned int K = 2; // TODO
 
 static bool compare_rows(const Type &type, const OrderBy &order_by, const u8 *row_l, const u8 *row_r)
 {
-	if (!row_r) {
+	if (row_r == nullptr) {
 		return true;
 	}
-	if (!row_l) {
+	if (row_l == nullptr) {
 		return false;
 	}
 	for (const OrderBy::Column &column : order_by.columns) {
@@ -42,16 +42,16 @@ static void sort_page(const Type &type, const OrderBy &order_by, page::Slotted<>
 	);
 }
 
-static std::optional<unsigned int> next_input(const Type &type, const OrderBy &order_by, const u8 **rows)
+static std::optional<unsigned int> next_input(const Type &type, const OrderBy &order_by, const std::array<const u8 *, K> &rows)
 {
 	const auto compare = [&type, &order_by](const u8 *row_l, const u8 *row_r) {
 		return compare_rows(type, order_by, row_l, row_r);
 	};
-	const u8 **iter = std::min_element(rows, rows + K, compare);
+	const auto *iter = std::min_element(rows.begin(), rows.end(), compare);
 	if (*iter == nullptr) {
 		return std::nullopt;
 	}
-	return std::distance(rows, iter);
+	return static_cast<unsigned int>(std::distance(rows.begin(), iter));
 }
 
 class Input
@@ -83,7 +83,7 @@ public:
 				continue;
 			}
 			const u8 * const entry = page->get_entry(entry_id++, size);
-			if (!entry) {
+			if (entry == nullptr) {
 				continue;
 			}
 			return entry;
@@ -117,7 +117,7 @@ public:
 	{
 		for (;;) {
 			u8 * const entry = page->insert(align, size, {});
-			if (!entry) {
+			if (entry == nullptr) {
 				write();
 				continue;
 			}
@@ -129,7 +129,8 @@ public:
 	std::pair<page::Id, page::Id> end_section()
 	{
 		write();
-		const page::Id begin = page_id_begin, end = page_id;
+		const page::Id begin = page_id_begin;
+		const page::Id end = page_id;
 		page_id_begin = page_id;
 		return { begin, end };
 	}
@@ -160,7 +161,7 @@ public:
 		page::Id begin, end;
 	};
 
-	page::Id get_size() const { return size; }
+	[[nodiscard]] page::Id get_size() const { return size; }
 
 	SectionQueue()
 		: page_begin { 0 }
@@ -183,7 +184,7 @@ public:
 		}
 	}
 
-	Section pop()
+	[[nodiscard]] Section pop()
 	{
 		size--;
 		if (entry_r == 0 || entry_r == SECTION_PER_PAGE) {
@@ -230,9 +231,9 @@ static os::TempFile merge_sorted_pages(const Type &type, const OrderBy &order_by
 	}
 	queue.flush();
 
-	Input inputs[K];
-	const u8 *rows[K];
-	page::Offset sizes[K];
+	std::array<Input, K> inputs;
+	std::array<const u8 *, K> rows;
+	std::array<page::Offset, K> sizes;
 
 	const page::Offset align = type.get_align();
 
@@ -320,7 +321,7 @@ static os::TempFile merge_sort(Iter iter, const OrderBy &order_by, page::Id &pag
 
 		for (;;) {
 			u8 * const entry = page->insert(align, prefix.size, {});
-			if (!entry) {
+			if (entry == nullptr) {
 				sort_page(type, order_by, page.get());
 				file.write(page_id++, page.get());
 				page->init({});

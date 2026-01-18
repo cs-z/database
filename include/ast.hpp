@@ -19,7 +19,7 @@ struct AstExpr
 	{
 		std::optional<SourceText> table;
 		SourceText name;
-		std::string to_string() const;
+		[[nodiscard]] std::string to_string() const;
 	};
 	struct DataCast
 	{
@@ -60,7 +60,7 @@ struct AstExpr
 	Data data;
 	SourceText text;
 
-	std::string to_string() const;
+	[[nodiscard]] std::string to_string() const;
 	void print() const;
 };
 

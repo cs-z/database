@@ -1,11 +1,9 @@
 #include "error.hpp"
+#include "lexer.hpp"
 
 static inline char escape_char(char c)
 {
-	if (0x20 <= c && c <= 0x7E) {
-		return c;
-	}
-	return ' ';
+	return is_printable(c) ? c : ' ';
 }
 
 void SourceText::print_escaped() const
@@ -14,7 +12,7 @@ void SourceText::print_escaped() const
 	bool prev_is_space = false;
 	for (const char *ptr = first; ptr <= last; ptr++) {
 		const char c = escape_char(*ptr);
-		const bool c_is_space = std::isspace(c);
+		const bool c_is_space = std::isspace(c) != 0;
 		if (!prev_is_space || !c_is_space) {
 			std::printf("%c", c);
 		}

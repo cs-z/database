@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 #include "page.hpp"
 #include "catalog.hpp"
 
@@ -72,15 +74,15 @@ namespace buffer
 
 		// create new pin using the same file
 		template <typename PageResultT = PageT>
-		inline Pin<PageResultT> shift(page::Id page_id, bool append = false) const
+		Pin<PageResultT> shift(page::Id page_id, bool append = false) const
 		{
 			return { file_id, page_id, append };
 		}
 
-		inline catalog::FileId get_file_id() const { return file_id; }
-		inline page::Id get_page_id() const { return page_id; }
-		inline PageT *get_page() const { return page; }
-		inline PageT *operator->() const { return page; }
+		[[nodiscard]] catalog::FileId get_file_id() const { return file_id; }
+		[[nodiscard]] page::Id get_page_id() const { return page_id; }
+		[[nodiscard]] PageT *get_page() const { return page; }
+		[[nodiscard]] PageT *operator->() const { return page; }
 
 	private:
 
@@ -107,10 +109,10 @@ namespace buffer
 
 		Buffer(FrameId frame_count = FrameId { 1 })
 			: frame_count { frame_count }
-			, buffer { std::aligned_alloc(page::SIZE, frame_count.get() * page::SIZE) }
+			, buffer { std::aligned_alloc(page::SIZE, static_cast<size_t>(frame_count.get()) * page::SIZE) }
 		{
 			ASSERT(buffer);
-			memset(buffer, 0, frame_count.get() * page::SIZE); // TODO: remove
+			memset(buffer, 0, static_cast<size_t>(frame_count.get()) * page::SIZE); // TODO: remove
 		}
 
 		~Buffer()
@@ -118,14 +120,14 @@ namespace buffer
 			std::free(buffer);
 		}
 
-		inline void *get_frame(FrameId frame)
+		void *get_frame(FrameId frame)
 		{
 			ASSERT(frame < frame_count);
-			return reinterpret_cast<char *>(buffer) + frame.get() * page::SIZE;
+			return reinterpret_cast<char *>(buffer) + static_cast<size_t>(frame.get() * page::SIZE);
 		}
 
-		inline PageT *get() const { return reinterpret_cast<PageT *>(buffer); }
-		inline PageT *operator->() const { return reinterpret_cast<PageT *>(buffer); }
+		[[nodiscard]] PageT *get() const { return reinterpret_cast<PageT *>(buffer); }
+		PageT *operator->() const { return reinterpret_cast<PageT *>(buffer); }
 
 	private:
 

@@ -40,7 +40,7 @@ std::string column_value_to_string(const ColumnValue &value, bool quote)
 		},
 		[](const ColumnValueReal &value) {
 			const std::string string = std::to_string(value);
-			ASSERT(string.size() > 0);
+			ASSERT(!string.empty());
 			std::size_t ptr = string.size() - 1;
 			while (ptr > 0 && string[ptr] == '0' && string[ptr - 1] == '0') {
 				ptr--;

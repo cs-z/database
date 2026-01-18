@@ -22,9 +22,15 @@ inline int compare_strings(std::string_view a, std::string_view b)
 {
 	const auto size_min = std::min(a.size(), b.size());
 	const int result = memcmp(a.data(), b.data(), size_min);
-	if (result) return result;
-	if (a.size() < b.size()) return -1;
-	if (a.size() > b.size()) return +1;
+	if (result != 0) {
+		return result;
+	}
+	if (a.size() < b.size()) {
+		return -1;
+	}
+	if (a.size() > b.size()) {
+		return +1;
+	}
 	return 0;
 }
 

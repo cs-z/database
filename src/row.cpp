@@ -36,7 +36,7 @@ namespace row
 				},
 			}, column_value);
 			prefix.size = align_up(prefix.size, column_align);
-			prefix.columns.push_back({ column_size ? prefix.size : page::Offset {}, column_size });
+			prefix.columns.push_back({ column_size != 0 ? prefix.size : page::Offset {}, column_size });
 			prefix.size += column_size;
 		}
 		return prefix;
@@ -55,7 +55,7 @@ namespace row
 		memcpy(row, prefix.columns.data(), prefix.columns.size() * sizeof(ColumnPrefix));
 		for (ColumnId column_id {}; column_id < value.size(); column_id++) {
 			std::visit(Overload{
-				[&prefix](const ColumnValueNull &) {
+				[](const ColumnValueNull &) {
 				},
 				[row, column_id](const ColumnValueBoolean &value) {
 					*get_column<ColumnValueBoolean>(row, column_id) = value;
@@ -67,7 +67,7 @@ namespace row
 					*get_column<ColumnValueReal>(row, column_id) = value;
 				},
 				[row, column_id](const ColumnValueVarchar &value) {
-					memcpy(get_column<char>(row, column_id), value.data(), value.size());
+					memcpy(get_column<char>(row, column_id), value.data(), value.size()); // NOLINT(bugprone-not-null-terminated-result)
 				},
 			}, value[column_id.get()]);
 		}

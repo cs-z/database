@@ -1,6 +1,9 @@
 #include "buffer.hpp"
 #include "os.hpp"
+#include "page.hpp"
 
+#include <array>
+#include <cstddef>
 #include <list>
 #include <algorithm>
 
@@ -22,7 +25,8 @@ namespace buffer
 	{
 		std::size_t operator()(const Id &id) const
 		{
-			return (static_cast<std::size_t>(id.file_id.get()) << 32) | id.page_id.get();
+			static constexpr std::size_t bitOffset = 32;
+			return (static_cast<std::size_t>(id.file_id.get()) << bitOffset) | id.page_id.get();
 		}
 	};
 
@@ -33,7 +37,7 @@ namespace buffer
 		std::optional<Id> id;
 	};
 
-	static std::unique_ptr<FrameInfo[]> frame_infos;
+	static std::unique_ptr<std::array<FrameInfo, FRAME_COUNT.get()>> frame_infos;
 	static Buffer frames { FRAME_COUNT };
 
 	static std::unordered_map<Id, FrameId, IdHash> ids_used;
@@ -56,7 +60,7 @@ namespace buffer
 	static void input_frame(FrameId frame, Id id, bool append)
 	{
 		ASSERT(frame < FRAME_COUNT);
-		FrameInfo &frame_info = frame_infos[frame.get()];
+		FrameInfo &frame_info = (*frame_infos)[frame.get()];
 		ASSERT(frame_info.pins == 0);
 		ASSERT(frame_info.dirty == false);
 		ASSERT(!frame_info.id);
@@ -78,7 +82,7 @@ namespace buffer
 	static void ouput_frame(FrameId frame)
 	{
 		ASSERT(frame < FRAME_COUNT);
-		FrameInfo &frame_info = frame_infos[frame.get()];
+		FrameInfo &frame_info = (*frame_infos)[frame.get()];
 		ASSERT(frame_info.pins == 0);
 		if (frame_info.id) {
 			const Id id = *frame_info.id;
@@ -97,7 +101,7 @@ namespace buffer
 	static void pin(FrameId frame)
 	{
 		ASSERT(frame < FRAME_COUNT);
-		FrameInfo &frame_info = frame_infos[frame.get()];
+		FrameInfo &frame_info = (*frame_infos)[frame.get()];
 		ASSERT(frame_info.id);
 		if (frame_info.pins == 0) {
 			// TODO: slow asserts
@@ -113,7 +117,7 @@ namespace buffer
 	static void unpin(FrameId frame, bool dirty)
 	{
 		ASSERT(frame < FRAME_COUNT);
-		FrameInfo &frame_info = frame_infos[frame.get()];
+		FrameInfo &frame_info = (*frame_infos)[frame.get()];
 		ASSERT(frame_info.pins > 0);
 		ASSERT(frame_info.id);
 		frame_info.pins--;
@@ -133,7 +137,7 @@ namespace buffer
 		free_list.clear();
 		free_list_iters.clear();
 		file_name_cache.clear(); // TODO
-		frame_infos = std::make_unique<FrameInfo[]>(FRAME_COUNT.get());
+		frame_infos = std::make_unique<std::array<FrameInfo, FRAME_COUNT.get()>>();
 		for (FrameId frame {}; frame < FRAME_COUNT; frame++) {
 			free_list.push_back(frame);
 			free_list_iters[frame] = --free_list.end();
@@ -150,7 +154,7 @@ namespace buffer
 	void flush(catalog::FileId file_id)
 	{
 		for (FrameId frame {}; frame < FRAME_COUNT; frame++) {
-			FrameInfo &info = frame_infos[frame.get()];
+			FrameInfo &info = (*frame_infos)[frame.get()];
 			if (info.id && info.id->file_id == file_id) {
 				ouput_frame(frame);
 			}
@@ -179,7 +183,7 @@ namespace buffer
 	void release(FrameId frame, bool dirty)
 	{
 		ASSERT(frame < FRAME_COUNT);
-		const FrameInfo &frame_info = frame_infos[frame.get()];
+		const FrameInfo &frame_info = (*frame_infos)[frame.get()];
 		ASSERT(frame_info.id);
 		unpin(frame, dirty);
 	}
@@ -201,21 +205,23 @@ namespace buffer
 			std::unordered_map<page::Id, unsigned int> pins_count;
 			std::vector<Pin<char>> pins;
 
-			for (unsigned int page_count = 0; page_count < 5'000; page_count++) {
+			static constexpr unsigned int pageCount = 5'000;
+			for (unsigned int page_count = 0; page_count < pageCount; page_count++) {
 
 				{
 					const page::Id page_id_append { page_count };
 					Pin<char> page_append { file_id, page_id_append, true };
-					const char c_append = 'A' + rand() % ('Z' - 'A' + 1);
+					const auto c_append = static_cast<char>('A' + rand() % ('Z' - 'A' + 1));
 					memset(page_append.get_page(), c_append, page::SIZE);
 					file_data.push_back(c_append);
 				}
 
-				for (unsigned int j = 0; j < 10; j++) {
+				static constexpr unsigned int iterationCount = 10;
+				for (unsigned int j = 0; j < iterationCount; j++) {
 
 					const page::Id page_id_set(rand() % (page_count + 1));
 					Pin<char> page_set { file_id, page_id_set };
-					const char c_set = 'A' + rand() % ('Z' - 'A' + 1);
+					const auto c_set = static_cast<char>('A' + rand() % ('Z' - 'A' + 1));
 					memset(page_set.get_page(), c_set, page::SIZE);
 					file_data.at(page_id_set.get()) = c_set;
 
@@ -239,8 +245,8 @@ namespace buffer
 
 		const os::File file { get_file_name(file_id, false) };
 		for (page::Id i {}; i < file_data.size(); i++) {
-			char frame[page::SIZE];
-			file.read(i, frame);
+			std::array<char, page::SIZE> frame;
+			file.read(i, frame.data());
 			ASSERT(frame[0] == file_data[i.get()]);
 		}
 

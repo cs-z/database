@@ -9,9 +9,16 @@ class SourceText
 {
 public:
 
+	// TODO: move or copy
+
+	SourceText(const SourceText &other) noexcept = default;
+	SourceText(SourceText &&other) noexcept = default;
+
+	SourceText &operator=(const SourceText &other) noexcept = default;
+	SourceText &operator=(SourceText &&other) noexcept = default;
+
 	explicit SourceText()
-		: text {}
-		, first {}
+		: first {}
 		, last {}
 	{
 	}
@@ -53,7 +60,7 @@ public:
 		return SourceText { first, other.last };
 	}
 
-	inline const std::string &get() const { return text; }
+	[[nodiscard]] const std::string &get() const { return text; }
 
 	void print_escaped() const;
 	void print_error(const std::string &source) const;
@@ -67,8 +74,8 @@ private:
 class ClientError : public std::runtime_error
 {
 public:
-	ClientError(std::string message) : std::runtime_error { message } {}
-	ClientError(std::string message, SourceText text) : std::runtime_error { message }, text { text } {}
+	ClientError(const std::string &message) : std::runtime_error { message } {}
+	ClientError(const std::string &message, SourceText text) : std::runtime_error { message }, text { std::move(text) } {}
 	void print_error(const std::string &source) const;
 private:
 	std::optional<SourceText> text;
@@ -77,7 +84,7 @@ private:
 class ServerError : public std::runtime_error
 {
 public:
-	ServerError(std::string message) : std::runtime_error { message } {}
+	ServerError(const std::string &message) : std::runtime_error { message } {}
 	ServerError(const char *function, int errnum);
 	ServerError(const char *function, const std::string &arg, int errnum);
 	void print_error() const;

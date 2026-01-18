@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 
 #include "fst.hpp"
 #include "buffer.hpp"
@@ -14,7 +15,7 @@ namespace fst
 	{
 		static constexpr unsigned int LEVEL_MAX = 6; // TODO
 
-		static constexpr page::Id LEVEL_PAGES[LEVEL_MAX + 1] =
+		static constexpr std::array<page::Id, LEVEL_MAX + 1> LEVEL_PAGES =
 		{
 			static_cast<page::Id>(0),
 			static_cast<page::Id>(1),
@@ -25,7 +26,7 @@ namespace fst
 			static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) * static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
 		};
 
-		static constexpr page::Id LEVEL_BEGIN[LEVEL_MAX + 1] =
+		static constexpr std::array<page::Id, LEVEL_MAX + 1> LEVEL_BEGIN =
 		{
 			page::Id { 1 },
 			page::Id { 1 } + LEVEL_PAGES[0],
@@ -223,11 +224,13 @@ namespace fst
 		init(file_id);
 
 		std::vector<page::Offset> test;
-		for (unsigned int i = 0; i < 1'000; i++) {
+		static constexpr unsigned int pageCount = 1'000;
+		for (unsigned int i = 0; i < pageCount; i++) {
 			const page::Offset value_append = rand() % 100'000U + 1U;
 			append(file_id, value_append);
 			test.push_back(value_append);
-			for (unsigned int j = 0; j < 10; j++) {
+			static constexpr unsigned int iterationCount = 10;
+			for (unsigned int j = 0; j < iterationCount; j++) {
 				const page::Id index_set(rand() % test.size());
 				const page::Offset value_set = rand() % 100'000U + 1U;
 				update(file_id, index_set, value_set);

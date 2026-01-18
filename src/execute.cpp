@@ -83,7 +83,7 @@ static void execute_query(const Query &query)
 	std::vector<Value> values;
 	unsigned int count = 0;
 	while (!query.limit || count < *query.limit) {
-		const std::optional<Value> value = query.iter->next();
+		std::optional<Value> value = query.iter->next();
 		if (value) {
 			values.push_back(std::move(*value));
 			count++;

@@ -22,18 +22,20 @@ namespace os
 		return fd;
 	}
 
-	static void file_close(int fd)
+	static void file_close(int fd) noexcept
 	{
 		const int err = ::close(fd);
 		////fprintf(stderr, "fclose: %d\n", fd);
 		if (err < 0) {
-			throw ServerError { "close", std::to_string(fd), err };
+			// TODO
+			ASSERT(false);
+			//throw ServerError { "close", std::to_string(fd), err };
 		}
 	}
 
 	static void file_seek(int fd, page::Id page_id)
 	{
-		const off_t offset = page_id.get() * page::SIZE;
+		const auto offset = static_cast<off_t>(page_id.get()) * page::SIZE;
 		//fprintf(stderr, "fseek: %d, %u\n", fd, page_id.get());
 		if (::lseek(fd, offset, SEEK_SET) != offset) {
 			throw ServerError { "lseek", std::to_string(fd), errno };
@@ -79,7 +81,7 @@ namespace os
 		return fd;
 	}
 
-	static void file_remove_temp(int fd)
+	static void file_remove_temp(int fd) noexcept
 	{
 		////fprintf(stderr, "closing temp: ");
 		file_close(fd);
@@ -122,7 +124,7 @@ namespace os
 	{
 	}
 
-	File::~File()
+	File::~File() noexcept
 	{
 		file_close(fd);
 	}
@@ -142,7 +144,7 @@ namespace os
 	{
 	}
 
-	TempFile::~TempFile()
+	TempFile::~TempFile() noexcept
 	{
 		if (fd) {
 			file_remove_temp(*fd);

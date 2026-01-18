@@ -93,48 +93,23 @@ public:
 	{
 	}
 
-	Token(const Token &other)
-		: tag { other.tag }
-		, text { other.text }
-		, data { other.data }
-	{
-	}
+	Token(const Token &other) noexcept = default;
+	Token(Token &&other) noexcept = default;
+	Token &operator=(const Token &other) noexcept = default;
+	Token &operator=(Token &&other) noexcept = default;
 
-	Token(Token &&other)
-		: tag { other.tag }
-		, text { std::move(other.text) }
-		, data { std::move(other.data) }
-	{
-	}
-
-	inline Token &operator=(const Token &other)
-	{
-		tag = other.tag;
-		text = other.text;
-		data = other.data;
-		return *this;
-	}
-
-	inline Token &operator=(Token &&other)
-	{
-		tag = other.tag;
-		text = std::move(other.text);
-		data = std::move(other.data);
-		return *this;
-	}
-
-	inline Tag get_tag() const { return tag; }
-	inline SourceText get_text() const { return std::move(text); }
+	[[nodiscard]] inline Tag get_tag() const { return tag; }
+	[[nodiscard]] inline const SourceText &get_text() const { return text; } // TODO: maybe move
 
 	template <typename DataT>
-	const DataT &get_data() const
+	[[nodiscard]] const DataT &get_data() const
 	{
 		ASSERT(std::holds_alternative<DataT>(data));
 		return std::get<DataT>(data);
 	}
 
 	template <typename DataT>
-	std::pair<DataT, SourceText> take()
+	[[nodiscard]] std::pair<DataT, SourceText> take()
 	{
 		ASSERT(std::holds_alternative<DataT>(data));
 		return { std::move(std::get<DataT>(data)), std::move(text) };

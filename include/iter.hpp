@@ -7,22 +7,17 @@
 #include "os.hpp"
 #include "fst.hpp"
 
-class IterBase
+struct IterBase
 {
-public:
-
-	IterBase(Type type)
-		: type { std::move(type) }
-	{
-	}
+	explicit IterBase(Type type) noexcept : type { std::move(type) } {}
 	virtual ~IterBase() = default;
 
 	virtual void open() = 0;
 	virtual void restart() = 0;
 	virtual void close() = 0;
-	virtual std::optional<Value> next() = 0;
+	[[nodiscard]] virtual std::optional<Value> next() = 0;
 
-	Type type;
+	const Type type;
 };
 
 using Iter = std::unique_ptr<IterBase>;

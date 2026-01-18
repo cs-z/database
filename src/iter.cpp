@@ -103,7 +103,7 @@ std::optional<Value> IterScan::next()
 			continue;
 		}
 		const u8 * const entry = page->get_entry(entry_id++);
-		if (!entry) {
+		if (entry == nullptr) {
 			continue;
 		}
 		return row::read(type, entry);
@@ -140,7 +140,7 @@ std::optional<Value> IterScanTemp::next()
 			continue;
 		}
 		const u8 * const entry = page->get_entry(entry_id++);
-		if (!entry) {
+		if (entry == nullptr) {
 			continue;
 		}
 		return row::read(type, entry);

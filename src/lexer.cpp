@@ -3,26 +3,6 @@
 
 #include <algorithm>
 
-static inline bool is_printable(char c)
-{
-	return 0x20 <= c && c <= 0x7E;
-}
-
-static inline bool is_alphabetic(char c)
-{
-	return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
-}
-
-static inline bool is_digit(char c)
-{
-	return '0' <= c && c <= '9';
-}
-
-static inline bool is_alphanumeric(char c)
-{
-	return is_alphabetic(c) || is_digit(c);
-}
-
 Lexer::Lexer(const std::string &source)
 	: ptr { source.c_str() }
 	, token { Token::End, SourceText {} }
@@ -58,7 +38,7 @@ Token Lexer::expect_step(Token::Tag tag)
 	return step_token();
 }
 
-[[noreturn]] void Lexer::unexpected()
+void Lexer::unexpected()
 {
 	throw ClientError { "unexpected token", token.get_text() };
 }
@@ -72,7 +52,7 @@ Token Lexer::step_token()
 
 Token Lexer::next_token()
 {
-	while (std::isspace(*ptr)) {
+	while (std::isspace(*ptr) != 0) {
 		ptr++;
 	}
 	if (ptr[0] == '-' && ptr[1] == '-') {
@@ -318,9 +298,10 @@ Token Lexer::next_token()
 		return { Token::Identifier, SourceText { std::move(identifier), text_begin, ptr } };
 	}
 	if (is_digit(*ptr)) {
+		static constexpr u64 base = 10;
 		u64 whole = 0;
 		do {
-			whole *= 10;
+			whole *= base;
 			whole += *ptr++ - '0';
 		} while (is_digit(*ptr));
 		if (*ptr == '.') {
@@ -328,17 +309,17 @@ Token Lexer::next_token()
 			u64 fraction = 0;
 			u64 divisor = 1;
 			while (is_digit(*ptr)) {
-				fraction *= 10;
+				fraction *= base;
 				fraction += *ptr++ - '0';
-				divisor *= 10;
+				divisor *= base;
 			}
 			if (ptr == fraction_begin) {
 				throw ClientError { "invalid fraction", SourceText { fraction_begin } };
 			}
-			const ColumnValueReal real = static_cast<ColumnValueReal>(whole) + static_cast<ColumnValueReal>(fraction) / static_cast<ColumnValueReal>(divisor);
+			const auto real = static_cast<ColumnValueReal>(whole) + static_cast<ColumnValueReal>(fraction) / static_cast<ColumnValueReal>(divisor);
 			return { Token::Constant, Token::DataConstant { real }, SourceText { text_begin, ptr } };
 		}
-		const ColumnValueInteger integer = static_cast<ColumnValueInteger>(whole);
+		const auto integer = static_cast<ColumnValueInteger>(whole);
 		return { Token::Constant, Token::DataConstant { integer }, SourceText { text_begin, ptr } };
 	}
 	if (*ptr == '\'' || *ptr == '\"' || *ptr == '`') {

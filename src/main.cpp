@@ -24,15 +24,13 @@ int main(int argc, const char **argv)
 		std::printf("> ");
 		while (std::getline(std::cin, source)) {
 			source = trim(source);
-			if (source == "") {
+			if (source.empty()) {
 				// ignore
 			}
 			if (source == "q" || source == "quit") {
 				break;
 			}
-			else {
-				parse_and_execute_statement(source);
-			}
+			parse_and_execute_statement(source);
 			std::printf("> ");
 		}
 	}
@@ -43,14 +41,14 @@ int main(int argc, const char **argv)
 static std::string trim(const std::string &text)
 {
 	std::size_t begin = 0;
-    while (begin < text.size() && std::isspace(text[begin])) {
+    while (begin < text.size() && std::isspace(text[begin]) != 0) {
 		begin++;
     }
     if (begin == text.size()) {
 		return "";
 	}
     std::size_t end = text.size() - 1;
-    while (end > begin && std::isspace(text[end])) {
+    while (end > begin && std::isspace(text[end]) != 0) {
 		end--;
     }
     return text.substr(begin, end - begin + 1);

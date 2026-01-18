@@ -1,0 +1,15 @@
+Checks: '>
+  -*,
+  -clang-analyzer-cplusplus.NewDeleteLeaks,
+  readability-redundant-casting,
+  bugprone-*,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  portability-*,
+  readability-*,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity'
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+FormatStyle: file
