@@ -1,20 +1,28 @@
 BasedOnStyle: LLVM
+Language: Cpp
+Standard: Latest
+
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
+AccessModifierOffset: -4
+
 BreakBeforeBraces: Allman
-AllowShortFunctionsOnASingleLine: InlineOnly
 ColumnLimit: 100
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceAfterCStyleCast: true
+
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
-AlignAfterOpenBracket: Align
-AlignEscapedNewlinesLeft: true
-SortIncludes: true
-SpaceBeforeParens: ControlStatements
 PointerAlignment: Left
-Cpp11BracedListStyle: true
+ReferenceAlignment: Left
 DerivePointerAlignment: false
-SpacesInParentheses: false
-SpacesInAngles: false
-SpacesInSquareBrackets: false
-SpacesBeforeTrailingComments: 2
+
+SortIncludes: true
+IncludeBlocks: Preserve
+FixNamespaceComments: true

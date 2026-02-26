@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-
 project(database LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -8,46 +7,46 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB_RECURSE SOURCES
-    "${CMAKE_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_SOURCE_DIR}/include/*.hpp"
-)
+enable_testing()
 
-add_executable(database ${SOURCES})
-
-target_include_directories(database PRIVATE
-    ${PROJECT_SOURCE_DIR}/include
-)
-
-target_compile_options(database PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-)
-
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(database PRIVATE
-        -fsanitize=address
-    )
-    target_link_options(database PRIVATE
-        -fsanitize=address
-    )
-    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
-    if (CLANG_TIDY_EXE)
-        set_target_properties(database PROPERTIES
-            CXX_CLANG_TIDY "${CLANG_TIDY_EXE}"
-        )
-    endif()
+# Targets linking to this will inherit compile flags.
+add_library(warnings INTERFACE)
+if(MSVC)
+    target_compile_options(warnings INTERFACE /W4 /permissive- /WX)
+else()
+    target_compile_options(warnings INTERFACE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
-add_custom_target(formatCheck
-    COMMAND ${CMAKE_COMMAND} -E echo "Checking code formatting..."
-    COMMAND clang-format --dry-run --Werror ${SOURCES}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
+option(ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
+if(ENABLE_CLANG_TIDY)
+    find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
+    if(NOT CLANG_TIDY_EXE)
+        message(WARNING "clang-tidy not found. Static analysis will be disabled.")
+        set(ENABLE_CLANG_TIDY OFF)
+    endif()
+endif()
+if(ENABLE_CLANG_TIDY)
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}" CACHE STRING "" FORCE)
+endif()
 
-add_custom_target(formatFix
-    COMMAND ${CMAKE_COMMAND} -E echo "Fixing code formatting..."
-    COMMAND clang-format -i ${SOURCES}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
+add_subdirectory(src)
+add_subdirectory(tests)
+
+find_program(CLANG_FORMAT_EXE NAMES "clang-format")
+if(CLANG_FORMAT_EXE)
+    file(GLOB_RECURSE SOURCE_FILES
+        CONFIGURE_DEPENDS
+        "src/*.cpp" "src/*.hpp"
+        "tests/*.cpp" "tests/*.hpp"
+    )
+    add_custom_target(formatFix
+        COMMAND ${CLANG_FORMAT_EXE} -i ${SOURCE_FILES}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+    add_custom_target(formatCheck
+        COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${SOURCE_FILES}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+else()
+    message(WARNING "clang-format not found. Formatting targets will not be available.")
+endif()

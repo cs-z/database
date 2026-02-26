@@ -1,4 +1,4 @@
-name: Build
+name: CI Build and Test
 
 on:
   push:
@@ -10,34 +10,54 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang clang-tidy libgtest-dev        
       - name: Run format check
         run: |
           cmake -S . -B build/format
-          cmake --build build/format --target formatCheck || exit 1
+          cmake --build build/format --target formatCheck
 
-  build_debug:
-    runs-on: ubuntu-latest
+  build_and_test:
     needs: format
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake clang
-      - name: Configure Debug build
-        run: cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
-      - name: Debug Build with Static Analysis
-        run: cmake --build build/debug
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_config: [debug, release, static]
+        include:
+          - build_config: debug
+            type: Debug
+            tidy: OFF
+          - build_config: release
+            type: Release
+            tidy: OFF
+          - build_config: static
+            type: Release
+            tidy: ON
 
-  build_release:
-    runs-on: ubuntu-latest
-    needs: format
+    runs-on: ${{ matrix.os }}
+    
     steps:
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake clang
-      - name: Configure Release build
-        run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++
-      - name: Build Release
-        run: cmake --build build/release
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang clang-tidy libgtest-dev
+
+      - name: Configure CMake
+        run: >
+          cmake -S . -B build 
+          -DCMAKE_BUILD_TYPE=${{ matrix.type }}
+          -DENABLE_CLANG_TIDY=${{ matrix.tidy }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.type }}
+
+      - name: Run Tests
+        working-directory: build
+        run: ctest -C ${{ matrix.type }} --output-on-failure

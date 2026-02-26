@@ -1,0 +1,68 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "config_debug",
+            "type": "shell",
+            "command": "cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug"
+        },
+        {
+            "label": "config_release",
+            "type": "shell",
+            "command": "cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release"
+        },
+        {
+            "label": "config_static",
+            "type": "shell",
+            "command": "cmake -S . -B build/static -DCMAKE_BUILD_TYPE=Release -DENABLE_CLANG_TIDY=ON"
+        },
+        {
+            "label": "build_debug",
+            "type": "shell",
+            "command": "cmake --build build/debug",
+            "dependsOn": [
+                "config_debug"
+            ],
+            "group": "build",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build_release",
+            "type": "shell",
+            "command": "cmake --build build/release",
+            "dependsOn": [
+                "config_release"
+            ],
+            "group": "build",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "build_static",
+            "type": "shell",
+            "command": "cmake --build build/static",
+            "dependsOn": [
+                "config_static"
+            ],
+            "group": "build",
+            "problemMatcher": ["$gcc"]
+        },
+        {
+            "label": "format_fix",
+            "type": "shell",
+            "command": "cmake --build build/debug --target formatFix",
+            "dependsOn": [
+                "config_debug"
+            ],
+            "group": "none"
+        },
+        {
+            "label": "format_check",
+            "type": "shell",
+            "command": "cmake --build build/debug --target formatCheck",
+            "dependsOn": [
+                "config_debug"
+            ],
+            "group": "none"
+        }
+    ]
+}

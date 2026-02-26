@@ -1,0 +1,81 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "🧪 [DEBUG] Build",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "node",
+            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build_debug"
+        },
+        {
+            "name": "🧪 [DEBUG] Run",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/debug/src/database",
+            "args": ["example.sql"],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "preLaunchTask": "build_debug"
+        },
+        {
+            "name": "🧪 [DEBUG] Unit Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/debug/tests/unit/unit_tests",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "preLaunchTask": "build_debug"
+        },
+        {
+            "name": "🚀 [RELEASE] Build",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "node",
+            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build_release"
+        },
+        {
+            "name": "🚀 [RELEASE] Run",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/release/src/database",
+            "args": ["example.sql"],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "preLaunchTask": "build_release"
+        },
+        {
+            "name": "🚀 [RELEASE] Unit Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/release/tests/unit/unit_tests",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "preLaunchTask": "build_release"
+        },
+        {
+            "name": "🔎 Static Analysis",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "node",
+            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "build_static"
+        },
+        {
+            "name": "✨ Format Code",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "node",
+            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "format_fix"
+        }
+    ]
+}
