@@ -13,7 +13,7 @@ constexpr page::EntryId ENTRIES_PER_PAGE{page::SIZE / sizeof(page::Offset) / 2};
 
 struct PageHead
 {
-    static constexpr unsigned int LEVEL_MAX = 6;  // TODO
+    static constexpr unsigned int LEVEL_MAX = 6; // TODO
 
     static constexpr std::array<page::Id, LEVEL_MAX + 1> LEVEL_PAGES = {
         static_cast<page::Id>(0),
@@ -49,7 +49,7 @@ struct PageHead
 
     unsigned int pages;
     unsigned int levels;
-    unsigned int bottom;  // number of pages in the bottom level
+    unsigned int bottom; // number of pages in the bottom level
 
     void init()
     {
@@ -286,4 +286,4 @@ void test()
 
     std::printf("testing fst done\n");
 }
-}  // namespace fst
+} // namespace fst

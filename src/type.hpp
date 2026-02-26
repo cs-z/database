@@ -47,15 +47,24 @@ ColumnType  column_type_from_catalog_string(const std::string& name);
 
 class Type
 {
-  public:
+public:
     Type();
     void push(ColumnType column);
 
-    [[nodiscard]] page::Offset get_align() const { return align; }
-    [[nodiscard]] std::size_t  size() const { return columns.size(); }
-    [[nodiscard]] ColumnType   at(std::size_t index) const { return columns.at(index); }
+    [[nodiscard]] page::Offset get_align() const
+    {
+        return align;
+    }
+    [[nodiscard]] std::size_t size() const
+    {
+        return columns.size();
+    }
+    [[nodiscard]] ColumnType at(std::size_t index) const
+    {
+        return columns.at(index);
+    }
 
-  private:
+private:
     page::Offset            align;
     std::vector<ColumnType> columns;
 };

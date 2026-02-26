@@ -41,12 +41,12 @@ int op1_prec(Op1 op)
     {
     case Op1::Pos:
     case Op1::Neg:
-        return 7;  // NOLINT(readability-magic-numbers)
+        return 7; // NOLINT(readability-magic-numbers)
     case Op1::IsNull:
     case Op1::IsNotNull:
-        return 3;  // NOLINT(readability-magic-numbers)
+        return 3; // NOLINT(readability-magic-numbers)
     case Op1::Not:
-        return 2;  // NOLINT(readability-magic-numbers)
+        return 2; // NOLINT(readability-magic-numbers)
     }
     UNREACHABLE();
 }
@@ -58,21 +58,21 @@ int op2_prec(Op2 op)
     case Op2::ArithMul:
     case Op2::ArithDiv:
     case Op2::ArithMod:
-        return 6;  // NOLINT(readability-magic-numbers)
+        return 6; // NOLINT(readability-magic-numbers)
     case Op2::ArithAdd:
     case Op2::ArithSub:
-        return 5;  // NOLINT(readability-magic-numbers)
+        return 5; // NOLINT(readability-magic-numbers)
     case Op2::CompL:
     case Op2::CompLe:
     case Op2::CompG:
     case Op2::CompGe:
     case Op2::CompEq:
     case Op2::CompNe:
-        return 4;  // NOLINT(readability-magic-numbers)
+        return 4; // NOLINT(readability-magic-numbers)
     case Op2::LogicAnd:
-        return 1;  // NOLINT(readability-magic-numbers)
+        return 1; // NOLINT(readability-magic-numbers)
     case Op2::LogicOr:
-        return 0;  // NOLINT(readability-magic-numbers)
+        return 0; // NOLINT(readability-magic-numbers)
     }
     UNREACHABLE();
 }

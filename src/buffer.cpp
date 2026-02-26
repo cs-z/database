@@ -9,7 +9,7 @@
 
 namespace buffer
 {
-constexpr FrameId FRAME_COUNT{1 << 5};  // TODO
+constexpr FrameId FRAME_COUNT{1 << 5}; // TODO
 
 struct Id
 {
@@ -45,7 +45,7 @@ static std::unordered_map<Id, FrameId, IdHash> ids_used;
 static std::list<FrameId>                                        free_list;
 static std::unordered_map<FrameId, std::list<FrameId>::iterator> free_list_iters;
 
-static std::unordered_map<catalog::FileId, std::string> file_name_cache;  // TODO: limit cache
+static std::unordered_map<catalog::FileId, std::string> file_name_cache; // TODO: limit cache
 static const std::string& get_file_name(catalog::FileId file_id, bool assert_cached)
 {
     const auto iter = file_name_cache.find(file_id);
@@ -115,7 +115,7 @@ static void pin(FrameId frame)
         // ASSERT_T(free_list_iters.contains(frame)); // TODO
         const auto iter = free_list_iters.at(frame);
         free_list.erase(iter);
-        free_list_iters.erase(frame);  // TODO: optimize: cache access by key 'frame'
+        free_list_iters.erase(frame); // TODO: optimize: cache access by key 'frame'
     }
     frame_info.pins++;
 }
@@ -143,7 +143,7 @@ void init()
     ids_used.clear();
     free_list.clear();
     free_list_iters.clear();
-    file_name_cache.clear();  // TODO
+    file_name_cache.clear(); // TODO
     frame_infos = std::make_unique<std::array<FrameInfo, FRAME_COUNT.get()>>();
     for (FrameId frame{}; frame < FRAME_COUNT; frame++)
     {
@@ -271,4 +271,4 @@ void test()
 
     std::printf("testing buffer done\n");
 }
-}  // namespace buffer
+} // namespace buffer

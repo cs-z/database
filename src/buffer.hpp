@@ -21,8 +21,10 @@ void  release(FrameId frame, bool dirty);
 
 template <typename PageT> class Pin
 {
-  public:
-    Pin() : file_id{}, frame{}, page_id{}, page{} {}
+public:
+    Pin() : file_id{}, frame{}, page_id{}, page{}
+    {
+    }
 
     Pin(catalog::FileId file_id, page::Id page_id, bool append = false)
         : file_id{file_id}, page_id{page_id},
@@ -30,7 +32,10 @@ template <typename PageT> class Pin
     {
     }
 
-    operator bool() const { return page != nullptr; }
+    operator bool() const
+    {
+        return page != nullptr;
+    }
 
     Pin(const Pin&)            = delete;
     Pin& operator=(const Pin&) = delete;
@@ -61,7 +66,10 @@ template <typename PageT> class Pin
         return *this;
     }
 
-    ~Pin() { release(); }
+    ~Pin()
+    {
+        release();
+    }
 
     // create new pin using the same file
     template <typename PageResultT = PageT>
@@ -70,12 +78,24 @@ template <typename PageT> class Pin
         return {file_id, page_id, append};
     }
 
-    [[nodiscard]] catalog::FileId get_file_id() const { return file_id; }
-    [[nodiscard]] page::Id        get_page_id() const { return page_id; }
-    [[nodiscard]] PageT*          get_page() const { return page; }
-    [[nodiscard]] PageT*          operator->() const { return page; }
+    [[nodiscard]] catalog::FileId get_file_id() const
+    {
+        return file_id;
+    }
+    [[nodiscard]] page::Id get_page_id() const
+    {
+        return page_id;
+    }
+    [[nodiscard]] PageT* get_page() const
+    {
+        return page;
+    }
+    [[nodiscard]] PageT* operator->() const
+    {
+        return page;
+    }
 
-  private:
+private:
     void release()
     {
         if (page)
@@ -94,17 +114,20 @@ template <typename PageT> class Pin
 
 template <typename PageT = void> class Buffer
 {
-  public:
+public:
     Buffer(FrameId frame_count = FrameId{1})
         : frame_count{frame_count},
           buffer{
               std::aligned_alloc(page::SIZE, static_cast<size_t>(frame_count.get()) * page::SIZE)}
     {
         ASSERT(buffer);
-        memset(buffer, 0, static_cast<size_t>(frame_count.get()) * page::SIZE);  // TODO: remove
+        memset(buffer, 0, static_cast<size_t>(frame_count.get()) * page::SIZE); // TODO: remove
     }
 
-    ~Buffer() { std::free(buffer); }
+    ~Buffer()
+    {
+        std::free(buffer);
+    }
 
     void* get_frame(FrameId frame)
     {
@@ -112,14 +135,20 @@ template <typename PageT = void> class Buffer
         return reinterpret_cast<char*>(buffer) + static_cast<size_t>(frame.get() * page::SIZE);
     }
 
-    [[nodiscard]] PageT* get() const { return reinterpret_cast<PageT*>(buffer); }
-    PageT*               operator->() const { return reinterpret_cast<PageT*>(buffer); }
+    [[nodiscard]] PageT* get() const
+    {
+        return reinterpret_cast<PageT*>(buffer);
+    }
+    PageT* operator->() const
+    {
+        return reinterpret_cast<PageT*>(buffer);
+    }
 
-  private:
+private:
     const FrameId frame_count;
     void* const   buffer;
 };
 
 void test();
 
-}  // namespace buffer
+} // namespace buffer

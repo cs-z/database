@@ -23,7 +23,7 @@ static int compare_keys(const Type& key_type, auto key_l, auto key_r)
 }
 
 // row id
-using RID = unsigned int;  // TODO
+using RID = unsigned int; // TODO
 
 struct Header
 {
@@ -50,16 +50,22 @@ using Inner          = page::Slotted<InnerHeader, InnerEntryInfo>;
 // first page of index heap file
 struct FileHeader
 {
-  public:
+public:
     void init()
     {
         page_count = page::Id{1};
         root_id    = page::Id{0};
     }
 
-    [[nodiscard]] page::Id alloc() { return page_count++; }
+    [[nodiscard]] page::Id alloc()
+    {
+        return page_count++;
+    }
 
-    void set_root(page::Id page_id) { root_id = page_id; }
+    void set_root(page::Id page_id)
+    {
+        root_id = page_id;
+    }
 
     [[nodiscard]] page::Id get_root() const
     {
@@ -67,7 +73,7 @@ struct FileHeader
         return root_id;
     }
 
-  private:
+private:
     page::Id page_count;
     page::Id root_id;
 };
@@ -207,7 +213,7 @@ static auto find_lower_entry(buffer::Pin<const PageT>& page, const Type& key_typ
         std::lower_bound(page->cbegin(), page->cend(), key,
                          [&page, &key_type](const typename PageT::Slot& slot, const Value& key)
                          {
-                             return compare_keys(key_type, page->get_entry(slot), key) < 0;  // TODO
+                             return compare_keys(key_type, page->get_entry(slot), key) < 0; // TODO
                          });
     const auto index = static_cast<page::EntryId>(iter - page->cbegin());
     if constexpr (std::is_same_v<PageT, Leaf>)

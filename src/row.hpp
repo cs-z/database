@@ -27,4 +27,4 @@ Value read(const Type& type, const u8* row);
 
 int compare(const Type& type, ColumnId column, const u8* row_l, const u8* row_r);
 int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row_r);
-}  // namespace row
+} // namespace row

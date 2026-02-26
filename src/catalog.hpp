@@ -36,4 +36,4 @@ std::optional<std::pair<TableId, NamedColumns>> find_table_named(const std::stri
 void create_table(std::string name, NamedColumns columns);
 
 // void remove_table(TableId table_id);
-}  // namespace catalog
+} // namespace catalog

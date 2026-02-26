@@ -9,7 +9,9 @@
 
 struct IterBase
 {
-    explicit IterBase(Type type) noexcept : type{std::move(type)} {}
+    explicit IterBase(Type type) noexcept : type{std::move(type)}
+    {
+    }
     virtual ~IterBase() = default;
 
     virtual void                               open()    = 0;
@@ -24,7 +26,7 @@ using Iter = std::unique_ptr<IterBase>;
 
 class IterProject : public IterBase
 {
-  public:
+public:
     IterProject(Iter&& parent, std::vector<ColumnId>&& columns)
         : IterBase{map_type(parent->type, columns)}, parent{std::move(parent)},
           columns{std::move(columns)}
@@ -37,7 +39,7 @@ class IterProject : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     static Type  map_type(const Type& type, const std::vector<ColumnId>& columns);
     static Value map_value(Value&& value, const std::vector<ColumnId>& columns);
 
@@ -47,7 +49,7 @@ class IterProject : public IterBase
 
 class IterExpr : public IterBase
 {
-  public:
+public:
     IterExpr(Iter&& parent, std::vector<ExprPtr>&& exprs, Type&& type)
         : IterBase{std::move(type)}, parent{std::move(parent)}, exprs{std::move(exprs)}
     {
@@ -59,14 +61,14 @@ class IterExpr : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     Iter                       parent;
     const std::vector<ExprPtr> exprs;
 };
 
 class IterScan : public IterBase
 {
-  public:
+public:
     IterScan(catalog::FileIds file_ids, Type&& type)
         : IterBase{std::move(type)}, file_id{file_ids.dat},
           page_count{fst::get_page_count(file_ids.fst)}
@@ -79,7 +81,7 @@ class IterScan : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     const catalog::FileId file_id;
     const page::Id        page_count;
 
@@ -92,7 +94,7 @@ class IterScan : public IterBase
 // TODO: remove
 class IterScanTemp : public IterBase
 {
-  public:
+public:
     IterScanTemp(os::TempFile&& file, page::Id page_count, Type&& type)
         : IterBase{std::move(type)}, file{std::move(file)}, page_count{page_count}
     {
@@ -104,7 +106,7 @@ class IterScanTemp : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     const os::TempFile file;
     const page::Id     page_count;
 
@@ -116,7 +118,7 @@ class IterScanTemp : public IterBase
 
 class IterJoinCross : public IterBase
 {
-  public:
+public:
     IterJoinCross(Iter&& iter_l, Iter&& iter_r, Type&& type)
         : IterBase{std::move(type)}, iter_l{std::move(iter_l)}, iter_r{std::move(iter_r)}
     {
@@ -128,17 +130,17 @@ class IterJoinCross : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     Iter                 iter_l, iter_r;
     std::optional<Value> value_l;
 };
 
 class IterJoinQualified : public IterBase
 {
-  public:
+public:
     IterJoinQualified(Iter&& iter_l, Iter&& iter_r, ExprPtr&& condition, Type&& type)
         : IterBase{type}, parent{std::make_unique<IterJoinCross>(
-                              std::move(iter_l), std::move(iter_r), std::move(type))}  // TODO
+                              std::move(iter_l), std::move(iter_r), std::move(type))} // TODO
           ,
           condition{std::move(condition)}
     {
@@ -150,14 +152,14 @@ class IterJoinQualified : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     Iter          parent;
     const ExprPtr condition;
 };
 
 class IterFilter : public IterBase
 {
-  public:
+public:
     IterFilter(Iter&& parent, ExprPtr&& condition)
         : IterBase{parent->type}, parent{std::move(parent)}, condition{std::move(condition)}
     {
@@ -169,7 +171,7 @@ class IterFilter : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     Iter          parent;
     const ExprPtr condition;
 };

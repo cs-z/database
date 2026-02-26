@@ -40,10 +40,12 @@ if(CLANG_FORMAT_EXE)
         "tests/*.cpp" "tests/*.hpp"
     )
     add_custom_target(formatFix
+        COMMAND ${CLANG_FORMAT_EXE} --version
         COMMAND ${CLANG_FORMAT_EXE} -i ${SOURCE_FILES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
     add_custom_target(formatCheck
+        COMMAND ${CLANG_FORMAT_EXE} --version
         COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror ${SOURCE_FILES}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )

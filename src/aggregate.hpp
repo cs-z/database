@@ -4,12 +4,12 @@
 
 class Aggregator
 {
-  public:
+public:
     void        init();
     void        feed(const ColumnValue& value);
     ColumnValue get(Function function);
 
-  private:
+private:
     ColumnValue        min;
     ColumnValue        max;
     ColumnValue        sum;
@@ -30,7 +30,7 @@ struct Aggregates
 
 class IterAggregate : public IterBase
 {
-  public:
+public:
     IterAggregate(Iter&& parent, Aggregates&& aggregates);
     ~IterAggregate() override = default;
 
@@ -39,7 +39,7 @@ class IterAggregate : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     std::optional<std::optional<Value>> feed(const Aggregates::GroupBy&  group_by,
                                              const std::optional<Value>& value);
 

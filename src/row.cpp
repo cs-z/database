@@ -241,4 +241,4 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row
     }
     UNREACHABLE();
 }
-}  // namespace row
+} // namespace row

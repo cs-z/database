@@ -8,7 +8,7 @@
 
 class Token
 {
-  public:
+public:
     enum Tag : std::uint8_t
     {
         KwCreate,
@@ -80,7 +80,9 @@ class Token
 
     using Data = std::variant<DataOp2, DataFunction, DataConstant>;
 
-    Token(Tag tag, SourceText text) : tag{tag}, text{std::move(text)} {}
+    Token(Tag tag, SourceText text) : tag{tag}, text{std::move(text)}
+    {
+    }
 
     Token(Tag tag, Data data, SourceText text)
         : tag{tag}, text{std::move(text)}, data{std::move(data)}
@@ -92,8 +94,14 @@ class Token
     Token& operator=(const Token& other) noexcept = default;
     Token& operator=(Token&& other) noexcept      = default;
 
-    [[nodiscard]] Tag               get_tag() const { return tag; }
-    [[nodiscard]] const SourceText& get_text() const { return text; }  // TODO: maybe move
+    [[nodiscard]] Tag get_tag() const
+    {
+        return tag;
+    }
+    [[nodiscard]] const SourceText& get_text() const
+    {
+        return text;
+    } // TODO: maybe move
 
     template <typename DataT> [[nodiscard]] const DataT& get_data() const
     {
@@ -109,7 +117,7 @@ class Token
 
     static const char* tag_to_cstr(Tag tag);
 
-  private:
+private:
     Tag        tag;
     SourceText text;
     Data       data;

@@ -8,7 +8,7 @@
 namespace page
 {
 using Offset = u16;
-constexpr Offset SIZE{1 << 8};  // TODO
+constexpr Offset SIZE{1 << 8}; // TODO
 
 struct IdTag
 {
@@ -22,7 +22,7 @@ using EntryId = StrongId<EntryIdTag, u16>;
 
 template <typename Header = std::monostate, typename EntryInfo = std::monostate> class Slotted
 {
-  public:
+public:
     struct Slot
     {
         Offset    offset;
@@ -30,11 +30,20 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
         EntryInfo info;
     };
 
-    [[nodiscard]] EntryId get_entry_count() const { return entry_count; }
+    [[nodiscard]] EntryId get_entry_count() const
+    {
+        return entry_count;
+    }
 
-    [[nodiscard]] Header& get_header() { return header; }
+    [[nodiscard]] Header& get_header()
+    {
+        return header;
+    }
 
-    [[nodiscard]] const Header& get_header() const { return header; }
+    [[nodiscard]] const Header& get_header() const
+    {
+        return header;
+    }
 
     [[nodiscard]] EntryInfo& get_entry_info(EntryId entry_id)
     {
@@ -63,17 +72,35 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
         return get_entry(slot);
     }
 
-    [[nodiscard]] const u8* get_entry(const Slot& slot) const { return get_pointer(slot.offset); }
+    [[nodiscard]] const u8* get_entry(const Slot& slot) const
+    {
+        return get_pointer(slot.offset);
+    }
 
-    [[nodiscard]] u8* get_entry(const Slot& slot) { return get_pointer(slot.offset); }
+    [[nodiscard]] u8* get_entry(const Slot& slot)
+    {
+        return get_pointer(slot.offset);
+    }
 
-    [[nodiscard]] Slot* begin() { return slots; }
+    [[nodiscard]] Slot* begin()
+    {
+        return slots;
+    }
 
-    [[nodiscard]] Slot* end() { return slots + entry_count.get(); }
+    [[nodiscard]] Slot* end()
+    {
+        return slots + entry_count.get();
+    }
 
-    [[nodiscard]] const Slot* cbegin() const { return slots; }
+    [[nodiscard]] const Slot* cbegin() const
+    {
+        return slots;
+    }
 
-    [[nodiscard]] const Slot* cend() const { return slots + entry_count.get(); }
+    [[nodiscard]] const Slot* cend() const
+    {
+        return slots + entry_count.get();
+    }
 
     void init(Header header)
     {
@@ -162,14 +189,17 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
         }
     }
 
-  private:
+private:
     Header header;
 
     EntryId entry_count;
     Offset  free_begin, free_end;
-    Slot    slots[FLEXIBLE_ARRAY];  // NOLINT(modernize-avoid-c-arrays)
+    Slot    slots[FLEXIBLE_ARRAY]; // NOLINT(modernize-avoid-c-arrays)
 
-    [[nodiscard]] u8* get_pointer(Offset offset) { return reinterpret_cast<u8*>(this) + offset; }
+    [[nodiscard]] u8* get_pointer(Offset offset)
+    {
+        return reinterpret_cast<u8*>(this) + offset;
+    }
 
     [[nodiscard]] const u8* get_pointer(Offset offset) const
     {
@@ -202,4 +232,4 @@ template <typename Header = std::monostate, typename EntryInfo = std::monostate>
     }
 };
 
-}  // namespace page
+} // namespace page

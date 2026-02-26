@@ -16,7 +16,7 @@ struct CreateTable
 struct InsertValue
 {
     catalog::TableId table_id;
-    Type             type;  // TODO: avoid copy
+    Type             type; // TODO: avoid copy
     Value            value;
 };
 

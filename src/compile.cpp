@@ -22,7 +22,7 @@ struct Source
     struct DataJoinConditional
     {
         SourcePtr                            source_l, source_r;
-        AstSource::DataJoinConditional::Join join;  // TODO: move definition
+        AstSource::DataJoinConditional::Join join; // TODO: move definition
         ExprPtr                              condition;
     };
 
@@ -31,14 +31,16 @@ struct Source
     Data data;
     Type type;
 
-    Source(Data data, Type type) : data{std::move(data)}, type{std::move(type)} {}
+    Source(Data data, Type type) : data{std::move(data)}, type{std::move(type)}
+    {
+    }
 
     void print() const;
 };
 
 struct SelectList
 {
-    std::vector<ExprPtr> exprs;  // may containt hidden columns for sorting
+    std::vector<ExprPtr> exprs; // may containt hidden columns for sorting
     Type                 type;
     ColumnId             visible_count;
 };
@@ -60,7 +62,7 @@ struct QueryTodo
 
 class Columns
 {
-  public:
+public:
     Columns() = default;
 
     Columns(SourceText&& table, catalog::NamedColumns table_columns)
@@ -174,7 +176,7 @@ class Columns
         return type;
     }
 
-  private:
+private:
     [[nodiscard]] std::optional<ColumnId> find_table(const std::string& name) const
     {
         for (ColumnId column_id{}; column_id < tables.size(); column_id++)
@@ -754,7 +756,7 @@ static Query compile_query(const AstQuery& ast)
 
 static CreateTable compile_create_table(AstCreateTable& ast)
 {
-    std::string name = ast.name.get();  // TODO: .get() move?
+    std::string name = ast.name.get(); // TODO: .get() move?
     if (catalog::find_table(name))
     {
         throw ClientError{"table already exists", std::move(ast.name)};

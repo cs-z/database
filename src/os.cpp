@@ -119,7 +119,7 @@ void file_create(const std::string& name)
     {
         throw ServerError{"open", path, errno};
     }
-    file_close(fd);  // TODO: use it
+    file_close(fd); // TODO: use it
 }
 
 void file_remove(const std::string& name)
@@ -192,4 +192,4 @@ unsigned int random()
     }
     return value;
 }
-}  // namespace os
+} // namespace os

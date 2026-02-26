@@ -16,7 +16,7 @@ struct OrderBy
 
 class IterSort : public IterBase
 {
-  public:
+public:
     IterSort(Iter parent, OrderBy columns)
         : IterBase{parent->type}, parent{std::move(parent)}, columns{std::move(columns)}
     {
@@ -28,7 +28,7 @@ class IterSort : public IterBase
     void                 close() override;
     std::optional<Value> next() override;
 
-  private:
+private:
     Iter          parent;
     const OrderBy columns;
 

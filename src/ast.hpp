@@ -130,11 +130,11 @@ struct AstGroupBy
 
 struct AstSelect
 {
-    AstSelectList             list;      // SELECT clause
-    std::vector<AstSourcePtr> sources;   // FROM clause
-    AstExprPtr                where;     // WHERE clause: null if missing
-    std::optional<AstGroupBy> group_by;  // GROUP BY clause
-    AstExprPtr                having;    // HAVING clause
+    AstSelectList             list;     // SELECT clause
+    std::vector<AstSourcePtr> sources;  // FROM clause
+    AstExprPtr                where;    // WHERE clause: null if missing
+    std::optional<AstGroupBy> group_by; // GROUP BY clause
+    AstExprPtr                having;   // HAVING clause
 };
 
 struct AstOrderBy

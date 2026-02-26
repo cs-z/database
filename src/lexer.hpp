@@ -27,10 +27,13 @@ inline bool is_alphanumeric(char c)
 
 class Lexer
 {
-  public:
+public:
     Lexer(const std::string& source);
 
-    [[nodiscard]] const Token& get_token() const { return token; }
+    [[nodiscard]] const Token& get_token() const
+    {
+        return token;
+    }
 
     [[nodiscard]] bool accept(Token::Tag tag) const;
     bool               accept_step(Token::Tag tag);
@@ -42,7 +45,7 @@ class Lexer
 
     Token step_token();
 
-  private:
+private:
     [[nodiscard]] Token next_token();
 
     const char* ptr;

@@ -11,7 +11,7 @@ void file_remove(const std::string& name);
 
 class File
 {
-  public:
+public:
     File(const std::string& name);
     ~File() noexcept;
 
@@ -24,13 +24,13 @@ class File
     void read(page::Id page_id, void* buffer) const;
     void write(page::Id page_id, const void* buffer) const;
 
-  private:
+private:
     const int fd;
 };
 
 class TempFile
 {
-  public:
+public:
     TempFile();
     ~TempFile() noexcept;
 
@@ -42,7 +42,7 @@ class TempFile
 
     TempFile& operator=(TempFile&& other) noexcept
     {
-        ASSERT(!fd);  // TODO
+        ASSERT(!fd); // TODO
         fd       = other.fd;
         other.fd = std::nullopt;
         return *this;
@@ -54,9 +54,9 @@ class TempFile
     void read(page::Id page_id, void* buffer) const;
     void write(page::Id page_id, const void* buffer) const;
 
-  private:
+private:
     std::optional<int> fd;
 };
 
 unsigned int random();
-}  // namespace os
+} // namespace os

@@ -9,7 +9,7 @@
 
 // K-way merge sort
 
-static constexpr unsigned int K = 2;  // TODO
+static constexpr unsigned int K = 2; // TODO
 
 static bool compare_rows(const Type& type, const OrderBy& order_by, const u8* row_l,
                          const u8* row_r)
@@ -64,7 +64,7 @@ static std::optional<unsigned int> next_input(const Type& type, const OrderBy& o
 
 class Input
 {
-  public:
+public:
     void init(const os::TempFile& file, page::Id page_begin, page::Id page_end)
     {
         this->file       = &file;
@@ -102,7 +102,7 @@ class Input
         }
     }
 
-  private:
+private:
     buffer::Buffer<page::Slotted<>> page;
 
     const os::TempFile* file;
@@ -114,8 +114,11 @@ class Input
 
 class Output
 {
-  public:
-    Output(const os::TempFile& file) : file{file}, page_id{}, page_id_begin{} { page->init({}); }
+public:
+    Output(const os::TempFile& file) : file{file}, page_id{}, page_id_begin{}
+    {
+        page->init({});
+    }
 
     void append(const u8* row, page::Offset align, page::Offset size)
     {
@@ -141,7 +144,7 @@ class Output
         return {begin, end};
     }
 
-  private:
+private:
     void write()
     {
         if (page->get_entry_count() > 0)
@@ -160,15 +163,20 @@ class Output
 // needed because variable-length rows
 class SectionQueue
 {
-  public:
+public:
     struct Section
     {
         page::Id begin, end;
     };
 
-    [[nodiscard]] page::Id get_size() const { return size; }
+    [[nodiscard]] page::Id get_size() const
+    {
+        return size;
+    }
 
-    SectionQueue() : page_begin{0}, page_r{0}, page_w{0}, entry_r{0}, entry_w{0}, size{0} {}
+    SectionQueue() : page_begin{0}, page_r{0}, page_w{0}, entry_r{0}, entry_w{0}, size{0}
+    {
+    }
 
     void push(Section section)
     {
@@ -205,7 +213,7 @@ class SectionQueue
         page_begin = page_w;
     }
 
-  private:
+private:
     static constexpr unsigned int SECTION_PER_PAGE = page::SIZE / sizeof(Section);
 
     const os::TempFile file;
@@ -283,7 +291,7 @@ static os::TempFile merge_sorted_pages(const Type& type, const OrderBy& order_by
             while (input_k)
             {
                 const unsigned int k = *input_k;
-                ASSERT(k < remainder.get());  // TODO: id / int
+                ASSERT(k < remainder.get()); // TODO: id / int
                 output.append(rows[k], align, sizes[k]);
                 rows[k] = inputs[k].next(sizes[k]);
                 input_k = next_input(type, order_by, rows);
@@ -361,7 +369,7 @@ void IterSort::open()
     ASSERT(!sorted_iter);
     page::Id     page_count;
     os::TempFile file       = merge_sort(std::move(parent), columns, page_count);
-    Type         type_clone = type;  // TODO
+    Type         type_clone = type; // TODO
     sorted_iter =
         std::make_unique<IterScanTemp>(std::move(file), page_count, std::move(type_clone));
     sorted_iter->open();

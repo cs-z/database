@@ -16,9 +16,15 @@ struct Table
     FileIds      file_ids;
     NamedColumns columns;
 
-    [[nodiscard]] std::string getDataFileName() const { return name + ".DAT"; }
+    [[nodiscard]] std::string getDataFileName() const
+    {
+        return name + ".DAT";
+    }
 
-    [[nodiscard]] std::string getFstFileName() const { return name + ".FST"; }
+    [[nodiscard]] std::string getFstFileName() const
+    {
+        return name + ".FST";
+    }
 };
 
 // static const Table TABLE_STATS =
@@ -313,7 +319,7 @@ static std::pair<TableId, FileIds> generate_table_ids()
 {
     // TODO: update statement needed
     static TableId TABLE_ID_TODO = TableId{4};
-    static FileId  FILE_ID_TODO  = FileId{8};  // NOLINT(readability-magic-numbers)
+    static FileId  FILE_ID_TODO  = FileId{8}; // NOLINT(readability-magic-numbers)
     return std::make_pair(TABLE_ID_TODO++, FileIds{FILE_ID_TODO++, FILE_ID_TODO++});
 }
 
@@ -329,4 +335,4 @@ void create_table(std::string name, NamedColumns columns)
     register_table(table);
     create_table_files(table);
 }
-}  // namespace catalog
+} // namespace catalog

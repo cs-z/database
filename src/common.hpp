@@ -34,27 +34,59 @@ template <typename... Ts> Overload(Ts...) -> Overload<Ts...>;
 // type)
 template <typename Tag, typename T> class StrongId
 {
-  public:
+public:
     using Type = T;
 
     constexpr StrongId() = default;
-    explicit constexpr StrongId(T id) : id{id} {}
+    explicit constexpr StrongId(T id) : id{id}
+    {
+    }
 
     constexpr StrongId(const StrongId&) noexcept  = default;
     constexpr StrongId(StrongId&&) noexcept       = default;
     StrongId& operator=(const StrongId&) noexcept = default;
     StrongId& operator=(StrongId&&) noexcept      = default;
 
-    constexpr bool operator<(const StrongId& other) const { return id < other.id; }
-    constexpr bool operator<(T other) const { return id < other; }
-    constexpr bool operator<=(const StrongId& other) const { return id <= other.id; }
-    constexpr bool operator<=(T other) const { return id <= other; }
-    constexpr bool operator>(const StrongId& other) const { return id > other.id; }
-    constexpr bool operator>(T other) const { return id > other; }
-    constexpr bool operator>=(const StrongId& other) const { return id >= other.id; }
-    constexpr bool operator>=(T other) const { return id >= other; }
-    constexpr bool operator==(const StrongId& other) const { return id == other.id; }
-    constexpr bool operator==(T other) const { return id == other; }
+    constexpr bool operator<(const StrongId& other) const
+    {
+        return id < other.id;
+    }
+    constexpr bool operator<(T other) const
+    {
+        return id < other;
+    }
+    constexpr bool operator<=(const StrongId& other) const
+    {
+        return id <= other.id;
+    }
+    constexpr bool operator<=(T other) const
+    {
+        return id <= other;
+    }
+    constexpr bool operator>(const StrongId& other) const
+    {
+        return id > other.id;
+    }
+    constexpr bool operator>(T other) const
+    {
+        return id > other;
+    }
+    constexpr bool operator>=(const StrongId& other) const
+    {
+        return id >= other.id;
+    }
+    constexpr bool operator>=(T other) const
+    {
+        return id >= other;
+    }
+    constexpr bool operator==(const StrongId& other) const
+    {
+        return id == other.id;
+    }
+    constexpr bool operator==(T other) const
+    {
+        return id == other;
+    }
 
     friend constexpr StrongId operator+(const StrongId& a, const StrongId& b)
     {
@@ -121,13 +153,25 @@ template <typename Tag, typename T> class StrongId
         return static_cast<StrongId>(a % b.id);
     }
 
-    constexpr StrongId operator++(int) { return StrongId{id++}; }
-    constexpr StrongId operator--(int) { return StrongId{id--}; }
+    constexpr StrongId operator++(int)
+    {
+        return StrongId{id++};
+    }
+    constexpr StrongId operator--(int)
+    {
+        return StrongId{id--};
+    }
 
-    [[nodiscard]] constexpr T get() const { return id; }
-    [[nodiscard]] std::string to_string() const { return std::to_string(id); }
+    [[nodiscard]] constexpr T get() const
+    {
+        return id;
+    }
+    [[nodiscard]] std::string to_string() const
+    {
+        return std::to_string(id);
+    }
 
-  private:
+private:
     T id;
 };
 
@@ -135,9 +179,12 @@ namespace std
 {
 template <typename Tag, typename T> struct hash<StrongId<Tag, T>>
 {
-    std::size_t operator()(const StrongId<Tag, T>& id) const { return std::hash<T>{}(id.get()); }
+    std::size_t operator()(const StrongId<Tag, T>& id) const
+    {
+        return std::hash<T>{}(id.get());
+    }
 };
-}  // namespace std
+} // namespace std
 
 struct ColumnTag
 {
