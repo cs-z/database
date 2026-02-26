@@ -1,10 +1,19 @@
+#include "os.hpp"
+#include "common.hpp"
+#include "error.hpp"
+#include "page.hpp"
+
+#include <fcntl.h>
 #include <sys/fcntl.h>
 #include <sys/random.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include "error.hpp"
-#include "os.hpp"
+#include <cerrno>
+#include <cstddef>
+#include <cstdio>
+#include <string>
 
 namespace os
 {

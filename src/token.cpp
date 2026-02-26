@@ -1,4 +1,5 @@
 #include "token.hpp"
+#include "common.hpp"
 
 const char* Token::tag_to_cstr(Tag tag)
 {

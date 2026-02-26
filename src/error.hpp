@@ -1,8 +1,12 @@
 #pragma once
 
-#include <stdexcept>
-
 #include "common.hpp"
+
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 // stores location in source text, used for error reports
 class SourceText

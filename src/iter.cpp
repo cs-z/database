@@ -1,6 +1,15 @@
 #include "iter.hpp"
-#include "op.hpp"
+#include "common.hpp"
+#include "expr.hpp"
+#include "page.hpp"
 #include "row.hpp"
+#include "type.hpp"
+#include "value.hpp"
+
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
 
 void IterProject::open()
 {

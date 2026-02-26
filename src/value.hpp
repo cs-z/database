@@ -1,9 +1,14 @@
 #pragma once
 
-#include <string_view>
-
 #include "common.hpp"
 #include "type.hpp"
+#include "value.hpp"
+
+#include <optional>
+#include <string>
+#include <string_view>
+#include <variant>
+#include <vector>
 
 enum class Bool : std::uint8_t
 {

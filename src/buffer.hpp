@@ -1,9 +1,12 @@
 #pragma once
 
-#include <cstddef>
-
 #include "catalog.hpp"
+#include "common.hpp"
 #include "page.hpp"
+
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 
 namespace buffer
 {

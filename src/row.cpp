@@ -1,5 +1,12 @@
 #include "row.hpp"
+#include "common.hpp"
 #include "page.hpp"
+#include "type.hpp"
+#include "value.hpp"
+
+#include <cstring>
+#include <utility>
+#include <variant>
 
 namespace row
 {
@@ -59,7 +66,7 @@ template <typename T> T* get_column(u8* row, ColumnId column)
 void write(const Prefix& prefix, const Value& value, u8* row)
 {
     ASSERT(prefix.columns.size() == value.size());
-    memcpy(row, prefix.columns.data(), prefix.columns.size() * sizeof(ColumnPrefix));
+    std::memcpy(row, prefix.columns.data(), prefix.columns.size() * sizeof(ColumnPrefix));
     for (ColumnId column_id{}; column_id < value.size(); column_id++)
     {
         std::visit(
@@ -74,7 +81,7 @@ void write(const Prefix& prefix, const Value& value, u8* row)
                 [row, column_id](const ColumnValueVarchar& value)
                 {
                     // NOLINTNEXTLINE(bugprone-not-null-terminated-result)
-                    memcpy(get_column<char>(row, column_id), value.data(), value.size());
+                    std::memcpy(get_column<char>(row, column_id), value.data(), value.size());
                 },
             },
             value[column_id.get()]);

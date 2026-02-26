@@ -1,8 +1,16 @@
 #pragma once
 
 #include "common.hpp"
+#include "error.hpp"
 #include "op.hpp"
+#include "type.hpp"
 #include "value.hpp"
+
+#include <memory>
+#include <optional>
+#include <utility>
+#include <variant>
+#include <vector>
 
 struct Expr;
 using ExprPtr = std::unique_ptr<Expr>;

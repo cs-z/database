@@ -1,13 +1,16 @@
 #include "buffer.hpp"
+#include "catalog.hpp"
 #include "common.hpp"
-#include "iter.hpp"
-#include "os.hpp"
 #include "page.hpp"
 #include "row.hpp"
 #include "type.hpp"
+#include "value.hpp"
 
 #include <algorithm>
-#include <unordered_set>
+#include <cstdlib>
+#include <cstring>
+#include <optional>
+#include <utility>
 
 static int compare_keys(const Type& key_type, auto key_l, auto key_r)
 {
@@ -128,7 +131,7 @@ static std::pair<page::Id, Value> split(const buffer::Pin<Leaf>& page, const Typ
         const u8* const     src = page->get_entry(index, size);
         u8* const           dst = new_page->insert(align, size, page->get_entry_info(index));
         ASSERT(dst);
-        memcpy(dst, src, size);
+        std::memcpy(dst, src, size);
     }
     page->remove_beyond(entry_count_l);
     page->shift(align);
@@ -176,7 +179,7 @@ static std::pair<page::Id, Value> split(const buffer::Pin<Inner>& page, const Ty
         const u8* const     src = page->get_entry(index, size);
         u8* const           dst = new_page->insert(align, size, page->get_entry_info(index));
         ASSERT(dst);
-        memcpy(dst, src, size);
+        std::memcpy(dst, src, size);
     }
     page->remove_beyond(entry_count_l);
     page->shift(align);

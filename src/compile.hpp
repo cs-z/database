@@ -1,11 +1,13 @@
 #pragma once
 
-#include <unordered_set>
-
 #include "ast.hpp"
 #include "catalog.hpp"
 #include "iter.hpp"
 #include "type.hpp"
+
+#include <optional>
+#include <string>
+#include <unordered_set>
 
 struct CreateTable
 {

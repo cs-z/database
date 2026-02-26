@@ -1,4 +1,12 @@
 #include "ast.hpp"
+#include "common.hpp"
+#include "op.hpp"
+#include "type.hpp"
+#include "value.hpp"
+
+#include <cstdio>
+#include <string>
+#include <variant>
 
 std::string AstExpr::DataColumn::to_string() const
 {

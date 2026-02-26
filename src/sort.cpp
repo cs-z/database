@@ -1,8 +1,20 @@
-#include <algorithm>
-
-#include "buffer.hpp"
-#include "row.hpp"
 #include "sort.hpp"
+#include "buffer.hpp"
+#include "common.hpp"
+#include "iter.hpp"
+#include "os.hpp"
+#include "page.hpp"
+#include "row.hpp"
+#include "type.hpp"
+#include "value.hpp"
+
+#include <algorithm>
+#include <array>
+#include <cstring>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <utility>
 
 // TODO: should temp files use buffer?
 // TODO: don't create temp files for small sorts (like column lookup)
@@ -130,7 +142,7 @@ public:
                 write();
                 continue;
             }
-            memcpy(entry, row, size);
+            std::memcpy(entry, row, size);
             break;
         }
     }

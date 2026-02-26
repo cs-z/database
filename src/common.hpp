@@ -1,17 +1,7 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <memory>
-#include <optional>
 #include <string>
-#include <unordered_map>
-#include <variant>
-#include <vector>
 
 using u8  = std::uint8_t;
 using u16 = std::uint16_t;

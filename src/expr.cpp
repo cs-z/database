@@ -1,5 +1,9 @@
 #include "expr.hpp"
+#include "common.hpp"
+#include "op.hpp"
 #include "value.hpp"
+
+#include <variant>
 
 ColumnValue Expr::eval(const Value* value) const
 {

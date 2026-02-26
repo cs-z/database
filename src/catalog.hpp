@@ -3,6 +3,10 @@
 #include "error.hpp"
 #include "type.hpp"
 
+#include <optional>
+#include <string>
+#include <vector>
+
 namespace catalog
 {
 struct FileTag
@@ -24,7 +28,7 @@ using NamedColumns = std::vector<NamedColumn>;
 
 void init();
 
-std::string get_file_name(catalog::FileId file_id);
+std::string get_file_name(FileId file_id);
 FileIds     get_table_file_ids(TableId table_id);
 
 std::pair<TableId, Type>         get_table(const SourceText& name);

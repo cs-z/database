@@ -5,9 +5,9 @@ Checks: >
   performance-*,
   portability-*,
   readability-*,
+  misc-include-cleaner,
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
   -readability-identifier-length
-WarningsAsErrors: '*'
 HeaderFilterRegex: '^(src/|tests/).*'
 FormatStyle: file

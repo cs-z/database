@@ -4,6 +4,11 @@
 #include "common.hpp"
 #include "iter.hpp"
 
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
+
 struct OrderBy
 {
     struct Column

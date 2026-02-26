@@ -1,9 +1,15 @@
 #pragma once
 
+#include "common.hpp"
+
 #include <algorithm>
 #include <array>
-
-#include "common.hpp"
+#include <cstring>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace page
 {
@@ -141,8 +147,8 @@ public:
         }
         ASSERT(*offset % align == 0);
 
-        memmove(slots + entry_id.get() + 1, slots + entry_id.get(),
-                (entry_count - entry_id).get() * sizeof(Slot));
+        std::memmove(slots + entry_id.get() + 1, slots + entry_id.get(),
+                     (entry_count - entry_id).get() * sizeof(Slot));
         slots[entry_id.get()] = Slot{*offset, size, std::move(info)};
         entry_count++;
 
@@ -183,7 +189,7 @@ public:
                 ASSERT(free_end > offset);
                 const u8* src = get_pointer(offset);
                 u8*       dst = get_pointer(free_end);
-                memmove(dst, src, size);
+                std::memmove(dst, src, size);
                 slots[entry_id.get()].offset = free_end;
             }
         }

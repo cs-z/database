@@ -1,5 +1,12 @@
 #include "error.hpp"
+#include "common.hpp"
 #include "lexer.hpp"
+
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <stdexcept>
+#include <string>
 
 static inline char escape_char(char c)
 {
@@ -59,14 +66,14 @@ void ClientError::print_error(const std::string& source) const
 }
 
 ServerError::ServerError(const char* function, int errnum)
-    : std::runtime_error{"call to " + std::string{function} + "() failed: " + strerror(errnum) +
-                         " [errno = " + std::to_string(errnum) + "]"}
+    : std::runtime_error{"call to " + std::string{function} + "() failed: " +
+                         std::strerror(errnum) + " [errno = " + std::to_string(errnum) + "]"}
 {
 }
 
 ServerError::ServerError(const char* function, const std::string& arg, int errnum)
     : std::runtime_error{"call to " + std::string{function} + "(" + arg + ")" + " failed: " +
-                         strerror(errnum) + " [errno = " + std::to_string(errnum) + "]"}
+                         std::strerror(errnum) + " [errno = " + std::to_string(errnum) + "]"}
 {
 }
 

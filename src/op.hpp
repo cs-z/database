@@ -1,6 +1,12 @@
 #pragma once
 
+#include "error.hpp"
+#include "op.hpp"
+#include "type.hpp"
 #include "value.hpp"
+
+#include <optional>
+#include <string>
 
 enum class Function : std::uint8_t
 {

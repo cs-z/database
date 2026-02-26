@@ -1,6 +1,15 @@
 #include "type.hpp"
+#include "common.hpp"
+#include "error.hpp"
+#include "page.hpp"
 #include "parse.hpp"
 #include "row.hpp"
+#include "value.hpp"
+
+#include <algorithm>
+#include <optional>
+#include <string>
+#include <utility>
 
 std::string column_type_to_string(ColumnType type)
 {

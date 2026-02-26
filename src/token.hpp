@@ -4,7 +4,10 @@
 #include "error.hpp"
 #include "op.hpp"
 #include "value.hpp"
+
 #include <cstdint>
+#include <memory>
+#include <utility>
 
 class Token
 {

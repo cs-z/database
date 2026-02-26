@@ -3,6 +3,8 @@
 #include "error.hpp"
 #include "token.hpp"
 
+#include <string>
+
 inline bool is_printable(char c)
 {
     static constexpr char minPrintable = 0x20;

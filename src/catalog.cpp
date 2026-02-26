@@ -1,8 +1,17 @@
 #include "catalog.hpp"
+#include "common.hpp"
+#include "error.hpp"
 #include "execute.hpp"
 #include "fst.hpp"
 #include "os.hpp"
+#include "type.hpp"
 #include "value.hpp"
+
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 // TODO: cache catalog data
 
@@ -167,7 +176,7 @@ static void write_columns(TableId table_id, NamedColumns columns)
     }
 }
 
-std::string get_file_name(catalog::FileId file_id)
+std::string get_file_name(FileId file_id)
 {
     // if (file_id == TABLE_STATS.file_ids.fst) return TABLE_STATS.getFstFileName();
     // if (file_id == TABLE_STATS.file_ids.dat) return TABLE_STATS.getDataFileName();
@@ -301,8 +310,8 @@ static void register_table(const Table& table)
 void init()
 {
     // TODO: update statement needed
-    ASSERT(system("rm -rf data") == 0);
-    ASSERT(system("mkdir -p data") == 0);
+    ASSERT(std::system("rm -rf data") == 0);
+    ASSERT(std::system("mkdir -p data") == 0);
 
     // create_table_files(TABLE_STATS);
     create_table_files(TABLE_FILES);

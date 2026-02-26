@@ -3,6 +3,9 @@
 #include "common.hpp"
 #include "page.hpp"
 
+#include <optional>
+#include <string>
+
 namespace os
 {
 bool file_exists(const std::string& name);

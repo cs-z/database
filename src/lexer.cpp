@@ -1,7 +1,14 @@
 #include "lexer.hpp"
 #include "common.hpp"
+#include "error.hpp"
+#include "op.hpp"
+#include "token.hpp"
+#include "value.hpp"
 
 #include <algorithm>
+#include <cctype>
+#include <string>
+#include <utility>
 
 Lexer::Lexer(const std::string& source) : ptr{source.c_str()}, token{Token::End, SourceText{}}
 {

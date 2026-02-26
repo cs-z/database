@@ -4,6 +4,10 @@
 #include "error.hpp"
 #include "page.hpp"
 
+#include <optional>
+#include <string>
+#include <vector>
+
 enum class ColumnType : std::uint8_t
 {
     BOOLEAN,

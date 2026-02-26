@@ -1,11 +1,20 @@
-#include <fstream>
-#include <iostream>
-#include <streambuf>
-
+#include "ast.hpp"
 #include "buffer.hpp"
 #include "catalog.hpp"
+#include "compile.hpp"
+#include "error.hpp"
 #include "execute.hpp"
+#include "lexer.hpp"
 #include "parse.hpp"
+#include "token.hpp"
+
+#include <cctype>
+#include <cstdio>
+#include <exception>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <string>
 
 static std::string trim(const std::string& text);
 static void        parse_and_execute_statement(const std::string& source);

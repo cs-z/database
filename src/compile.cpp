@@ -1,10 +1,26 @@
-#include <algorithm>
-
-#include "aggregate.hpp"
-#include "catalog.hpp"
 #include "compile.hpp"
+#include "aggregate.hpp"
+#include "ast.hpp"
+#include "catalog.hpp"
+#include "common.hpp"
+#include "error.hpp"
 #include "expr.hpp"
+#include "iter.hpp"
+#include "op.hpp"
 #include "sort.hpp"
+#include "type.hpp"
+#include "value.hpp"
+
+#include <algorithm>
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <variant>
+#include <vector>
 
 struct Source;
 using SourcePtr = std::unique_ptr<Source>;

@@ -1,11 +1,21 @@
 #include "buffer.hpp"
+#include "catalog.hpp"
+#include "common.hpp"
 #include "os.hpp"
 #include "page.hpp"
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <list>
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace buffer
 {

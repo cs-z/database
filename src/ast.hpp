@@ -4,8 +4,13 @@
 #include "common.hpp"
 #include "error.hpp"
 #include "op.hpp"
+#include "type.hpp"
 #include "value.hpp"
+
 #include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
 
 struct AstExpr;
 using AstExprPtr = std::unique_ptr<AstExpr>;

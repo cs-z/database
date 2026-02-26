@@ -1,7 +1,21 @@
-#include <algorithm>
-
-#include "error.hpp"
 #include "parse.hpp"
+#include "ast.hpp"
+#include "catalog.hpp"
+#include "common.hpp"
+#include "error.hpp"
+#include "lexer.hpp"
+#include "op.hpp"
+#include "token.hpp"
+#include "type.hpp"
+#include "value.hpp"
+
+#include <algorithm>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
 static std::pair<ColumnType, SourceText> parse_type(Lexer& lexer)
 {

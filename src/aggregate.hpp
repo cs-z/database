@@ -1,6 +1,11 @@
 #pragma once
 
 #include "iter.hpp"
+#include "op.hpp"
+#include "value.hpp"
+
+#include <optional>
+#include <vector>
 
 class Aggregator
 {

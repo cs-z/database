@@ -1,5 +1,13 @@
 #include "op.hpp"
+#include "common.hpp"
 #include "error.hpp"
+#include "type.hpp"
+#include "value.hpp"
+
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
 
 [[noreturn]] static void report_op1_type_error(SourceText op_text, std::optional<ColumnType> type)
 {

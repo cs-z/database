@@ -1,5 +1,16 @@
 #include "aggregate.hpp"
+#include "common.hpp"
+#include "iter.hpp"
+#include "op.hpp"
 #include "sort.hpp"
+#include "value.hpp"
+
+#include <algorithm>
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <variant>
 
 void Aggregator::init()
 {

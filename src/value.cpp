@@ -1,4 +1,11 @@
 #include "value.hpp"
+#include "common.hpp"
+#include "type.hpp"
+
+#include <cstdio>
+#include <optional>
+#include <string>
+#include <variant>
 
 std::optional<ColumnType> column_value_to_type(const ColumnValue& value)
 {

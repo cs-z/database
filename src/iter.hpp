@@ -1,11 +1,19 @@
 #pragma once
 
 #include "buffer.hpp"
+#include "catalog.hpp"
 #include "common.hpp"
 #include "expr.hpp"
 #include "fst.hpp"
 #include "os.hpp"
+#include "page.hpp"
+#include "type.hpp"
 #include "value.hpp"
+
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
 
 struct IterBase
 {

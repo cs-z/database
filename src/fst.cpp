@@ -1,9 +1,18 @@
+#include "fst.hpp"
+#include "buffer.hpp"
+#include "catalog.hpp"
+#include "common.hpp"
+#include "os.hpp"
+#include "page.hpp"
+
 #include <algorithm>
 #include <array>
-
-#include "buffer.hpp"
-#include "fst.hpp"
-#include "os.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <optional>
+#include <utility>
+#include <vector>
 
 // FREE SPACE TREE: stores free space of data pages, one entry per page
 
@@ -157,7 +166,7 @@ static page::Id append(catalog::FileId file_id, page::Offset value)
                 const buffer::Pin<page::Offset> dst{
                     file_id, page::Id{PageHead::LEVEL_BEGIN[page_head->levels + 1] + page_id},
                     true};
-                memcpy(dst.get_page(), src.get_page(), page::SIZE);
+                std::memcpy(dst.get_page(), src.get_page(), page::SIZE);
             }
             for (unsigned int level = 1; level <= page_head->levels; level++)
             {

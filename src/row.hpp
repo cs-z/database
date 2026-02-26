@@ -1,10 +1,11 @@
 #pragma once
 
-#include <algorithm>
-
 #include "common.hpp"
 #include "page.hpp"
 #include "value.hpp"
+
+#include <algorithm>
+#include <vector>
 
 namespace row
 {
