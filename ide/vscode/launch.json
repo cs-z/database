@@ -2,6 +2,15 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "⚙️ Config All",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "node",
+            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "config_all"
+        },
+        {
             "name": "🧪 [DEBUG] Build",
             "type": "node",
             "request": "launch",

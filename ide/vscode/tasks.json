@@ -17,6 +17,16 @@
             "command": "cmake -S . -B build/static -DCMAKE_BUILD_TYPE=Release -DENABLE_CLANG_TIDY=ON"
         },
         {
+            "label": "config_all",
+            "dependsOn": [
+                "config_debug",
+                "config_release",
+                "config_static"
+            ],
+            "group": "none",
+            "problemMatcher": []
+        },
+        {
             "label": "build_debug",
             "type": "shell",
             "command": "cmake --build build/debug",
@@ -24,7 +34,9 @@
                 "config_debug"
             ],
             "group": "build",
-            "problemMatcher": ["$gcc"]
+            "problemMatcher": [
+                "$gcc"
+            ]
         },
         {
             "label": "build_release",
@@ -34,7 +46,9 @@
                 "config_release"
             ],
             "group": "build",
-            "problemMatcher": ["$gcc"]
+            "problemMatcher": [
+                "$gcc"
+            ]
         },
         {
             "label": "build_static",
@@ -44,7 +58,9 @@
                 "config_static"
             ],
             "group": "build",
-            "problemMatcher": ["$gcc"]
+            "problemMatcher": [
+                "$gcc"
+            ]
         },
         {
             "label": "format_fix",
