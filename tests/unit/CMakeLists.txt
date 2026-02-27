@@ -15,7 +15,7 @@ set_target_properties(gmock PROPERTIES CXX_CLANG_TIDY "")
 set_target_properties(gmock_main PROPERTIES CXX_CLANG_TIDY "")
 
 add_executable(unit_tests
-    Dummy.cpp
+    cache.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE
