@@ -120,11 +120,11 @@ template <typename PageT = void> class Buffer
 public:
     Buffer(FrameId frame_count = FrameId{1})
         : frame_count{frame_count},
-          buffer{
-              std::aligned_alloc(page::SIZE, static_cast<size_t>(frame_count.get()) * page::SIZE)}
+          buffer{std::aligned_alloc(page::SIZE,
+                                    static_cast<std::size_t>(frame_count.get()) * page::SIZE)}
     {
         ASSERT(buffer);
-        memset(buffer, 0, static_cast<size_t>(frame_count.get()) * page::SIZE); // TODO: remove
+        memset(buffer, 0, static_cast<std::size_t>(frame_count.get()) * page::SIZE); // TODO: remove
     }
 
     ~Buffer()
@@ -135,7 +135,7 @@ public:
     void* get_frame(FrameId frame)
     {
         ASSERT(frame < frame_count);
-        return reinterpret_cast<char*>(buffer) + static_cast<size_t>(frame.get() * page::SIZE);
+        return reinterpret_cast<char*>(buffer) + static_cast<std::size_t>(frame.get() * page::SIZE);
     }
 
     [[nodiscard]] PageT* get() const

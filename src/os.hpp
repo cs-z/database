@@ -8,9 +8,9 @@
 
 namespace os
 {
-bool file_exists(const std::string& name);
-void file_create(const std::string& name);
-void file_remove(const std::string& name);
+[[nodiscard]] bool file_exists(const std::string& name);
+void               file_create(const std::string& name);
+void               file_remove(const std::string& name);
 
 class File
 {
@@ -61,5 +61,5 @@ private:
     std::optional<int> fd;
 };
 
-unsigned int random();
+[[nodiscard]] unsigned int random();
 } // namespace os
