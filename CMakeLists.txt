@@ -7,10 +7,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(ENABLE_WERROR "Treat compiler warnings as errors" ON)
-option(ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
-
 enable_testing()
+
+option(ENABLE_WERROR "Treat compiler warnings as errors" OFF)
+option(ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 
 # Targets linking to this will inherit compile flags.
 add_library(warnings INTERFACE)

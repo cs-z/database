@@ -28,15 +28,18 @@ jobs:
         os: [ubuntu-latest] # windows-latest
         build_config: [debug, release, static]
         include:
-          - build_config: debug
-            type: Debug
-            tidy: OFF
-          - build_config: release
-            type: Release
-            tidy: OFF
-          - build_config: static
-            type: Release
-            tidy: ON
+        - build_config: debug
+          type: Debug
+          tidy: OFF
+          werror: OFF
+        - build_config: release
+          type: Release
+          tidy: OFF
+          werror: OFF
+        - build_config: static
+          type: Release
+          tidy: ON
+          werror: ON
 
     runs-on: ${{ matrix.os }}
     
@@ -54,10 +57,15 @@ jobs:
           cmake -S . -B build 
           -DCMAKE_BUILD_TYPE=${{ matrix.type }}
           -DENABLE_CLANG_TIDY=${{ matrix.tidy }}
+          -DENABLE_WERROR=${{ matrix.werror }}
 
       - name: Build
         run: cmake --build build --config ${{ matrix.type }}
 
-      - name: Run Tests
+      - name: Unit Tests
         working-directory: build
-        run: ctest -C ${{ matrix.type }} --output-on-failure
+        run: ctest -C ${{ matrix.type }} -L "unit" --output-on-failure
+
+      - name: Stress Tests
+        working-directory: build
+        run: ctest -C ${{ matrix.type }} -L "stress" --output-on-failure

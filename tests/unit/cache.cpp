@@ -26,7 +26,7 @@ private:
     std::size_t callCount = 0;
 };
 
-TEST(CacheTest, OldestIsEvicted)
+TEST(CacheUnitTest, OldestIsEvicted)
 {
     static constexpr std::size_t  capacity = 4UL;
     Cache<Key, Value, MockLoader> cache{capacity, MockLoader{}};
@@ -63,7 +63,7 @@ TEST(CacheTest, OldestIsEvicted)
     EXPECT_EQ(cache.getLoader().getCallCount(), 7);
 }
 
-TEST(CacheTest, HitPreventsEviction)
+TEST(CacheUnitTest, HitPreventsEviction)
 {
     static constexpr std::size_t  capacity = 4UL;
     Cache<Key, Value, MockLoader> cache{capacity, MockLoader{}};
@@ -105,7 +105,7 @@ TEST(CacheTest, HitPreventsEviction)
     EXPECT_EQ(cache.getLoader().getCallCount(), 6);
 }
 
-TEST(CacheTest, RemoveExisting)
+TEST(CacheUnitTest, RemoveExisting)
 {
     static constexpr std::size_t  capacity = 4UL;
     Cache<Key, Value, MockLoader> cache{capacity, MockLoader{}};
@@ -143,7 +143,7 @@ TEST(CacheTest, RemoveExisting)
     EXPECT_EQ(cache.getLoader().getCallCount(), 6);
 }
 
-TEST(CacheTest, RemoveNonExisting)
+TEST(CacheUnitTest, RemoveNonExisting)
 {
     static constexpr std::size_t  capacity = 4UL;
     Cache<Key, Value, MockLoader> cache{capacity, MockLoader{}};
@@ -172,7 +172,7 @@ TEST(CacheTest, RemoveNonExisting)
     EXPECT_EQ(cache.getLoader().getCallCount(), 3);
 }
 
-TEST(CacheTest, ClearAll)
+TEST(CacheUnitTest, ClearAll)
 {
     static constexpr std::size_t  capacity = 4UL;
     Cache<Key, Value, MockLoader> cache{capacity, MockLoader{}};

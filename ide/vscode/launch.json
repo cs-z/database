@@ -6,7 +6,10 @@
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "runtimeArgs": [
+                "-e",
+                "console.log('Done.')"
+            ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "config_all"
         },
@@ -15,7 +18,10 @@
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "runtimeArgs": [
+                "-e",
+                "console.log('Done.')"
+            ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build_debug"
         },
@@ -24,7 +30,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/src/database",
-            "args": ["example.sql"],
+            "args": [
+                "example.sql"
+            ],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb",
             "preLaunchTask": "build_debug"
@@ -40,11 +48,24 @@
             "preLaunchTask": "build_debug"
         },
         {
+            "name": "🧪 [DEBUG] Stress Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/debug/tests/stress/stress_tests",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "preLaunchTask": "build_debug"
+        },
+        {
             "name": "🚀 [RELEASE] Build",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "runtimeArgs": [
+                "-e",
+                "console.log('Done.')"
+            ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build_release"
         },
@@ -53,7 +74,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/release/src/database",
-            "args": ["example.sql"],
+            "args": [
+                "example.sql"
+            ],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb",
             "preLaunchTask": "build_release"
@@ -69,11 +92,24 @@
             "preLaunchTask": "build_release"
         },
         {
+            "name": "🚀 [RELEASE] Stress Tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/release/tests/stress/stress_tests",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "preLaunchTask": "build_release"
+        },
+        {
             "name": "🔎 Static Analysis",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "runtimeArgs": [
+                "-e",
+                "console.log('Done.')"
+            ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "build_static"
         },
@@ -82,9 +118,30 @@
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["-e", "console.log('Done.')"],
+            "runtimeArgs": [
+                "-e",
+                "console.log('Done.')"
+            ],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "format_fix"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "🧪 [DEBUG] All Tests",
+            "configurations": [
+                "🧪 [DEBUG] Unit Tests",
+                "🧪 [DEBUG] Stress Tests"
+            ],
+            "stopAll": true
+        },
+        {
+            "name": "🚀 [RELEASE] All Tests",
+            "configurations": [
+                "🚀 [RELEASE] Unit Tests",
+                "🚀 [RELEASE] Stress Tests"
+            ],
+            "stopAll": true
         }
     ]
 }
