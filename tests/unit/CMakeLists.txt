@@ -1,5 +1,6 @@
 add_executable(unit_tests
     cache.cpp
+    posix_file.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE
