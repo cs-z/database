@@ -5,9 +5,9 @@ add_library(database_lib
     ast.hpp
     buffer.cpp
     buffer.hpp
+    cache.hpp
     catalog.cpp
     catalog.hpp
-    CMakeLists.txt
     common.cpp
     common.hpp
     compile.cpp
@@ -18,6 +18,7 @@ add_library(database_lib
     execute.hpp
     expr.cpp
     expr.hpp
+    file.hpp
     fst.cpp
     fst.hpp
     index.cpp
@@ -32,6 +33,8 @@ add_library(database_lib
     page.hpp
     parse.cpp
     parse.hpp
+    posix_file.cpp
+    posix_file.hpp
     row.cpp
     row.hpp
     sort.cpp
