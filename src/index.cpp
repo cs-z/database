@@ -115,7 +115,8 @@ static std::pair<page::Id, Value> split(const buffer::Pin<Leaf>& page, const Typ
     const page::Offset align = key_type.get_align();
 
     buffer::Pin<Leaf> new_page{page.get_file_id(), header->alloc(), true};
-    new_page->init({Header{true}, page.get_page_id(), page->get_header().next});
+    new_page->init(
+        {.header = Header{true}, .prev = page.get_page_id(), .next = page->get_header().next});
 
     if (page->get_header().next != 0)
     {
@@ -168,7 +169,7 @@ static std::pair<page::Id, Value> split(const buffer::Pin<Inner>& page, const Ty
     const page::Offset align = key_type.get_align();
 
     buffer::Pin<Inner> new_page{page.get_file_id(), header->alloc(), true};
-    new_page->init({Header{false}, page->get_entry_info(middle)});
+    new_page->init({.header = Header{false}, .leftmost_child = page->get_entry_info(middle)});
 
     Value new_key = row::read(key_type, page->get_entry(middle));
 
@@ -205,7 +206,7 @@ void init(catalog::FileId file_id)
     header->init();
 
     buffer::Pin<Leaf> root{file_id, header->alloc(), true};
-    root->init({Header{true}, page::Id{}, page::Id{}});
+    root->init({.header = Header{true}, .prev = page::Id{}, .next = page::Id{}});
     header->set_root(root.get_page_id());
 }
 
@@ -302,7 +303,7 @@ void insert(catalog::FileId file_id, const Type& key_type, const Value& key, RID
     if (overflow.first != 0)
     {
         buffer::Pin<Inner> inner{file_id, header->alloc(), true};
-        inner->init({Header{false}, header->get_root()});
+        inner->init({.header = Header{false}, .leftmost_child = header->get_root()});
         const auto result =
             insert(inner, key_type, overflow.second, overflow.first, page::EntryId{});
         ASSERT(result.first == 0);

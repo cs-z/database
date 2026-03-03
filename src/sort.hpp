@@ -1,6 +1,5 @@
 #pragma once
 
-#include "catalog.hpp"
 #include "common.hpp"
 #include "iter.hpp"
 

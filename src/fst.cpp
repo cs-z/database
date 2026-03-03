@@ -273,19 +273,19 @@ void test()
     static constexpr unsigned int pageCount = 1'000;
     for (unsigned int i = 0; i < pageCount; i++)
     {
-        const page::Offset value_append = rand() % 100'000U + 1U;
+        const page::Offset value_append = (rand() % 100'000U) + 1U;
         append(file_id, value_append);
         test.push_back(value_append);
         static constexpr unsigned int iterationCount = 10;
         for (unsigned int j = 0; j < iterationCount; j++)
         {
             const page::Id     index_set(rand() % test.size());
-            const page::Offset value_set = rand() % 100'000U + 1U;
+            const page::Offset value_set = (rand() % 100'000U) + 1U;
             update(file_id, index_set, value_set);
             test.at(index_set.get())                 = value_set;
-            const page::Offset            value_find = rand() % 100'000U + 1U;
+            const page::Offset            value_find = (rand() % 100'000U) + 1U;
             const std::optional<page::Id> page_id    = find(file_id, value_find);
-            const page::Offset            test_max = *std::max_element(test.cbegin(), test.cend());
+            const page::Offset            test_max   = *std::ranges::max_element(test);
             ASSERT((!page_id && test_max < value_find) ||
                    (page_id && test.at(page_id->get()) >= value_find));
         }

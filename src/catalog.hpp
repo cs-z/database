@@ -38,6 +38,10 @@ std::optional<std::pair<TableId, Type>>         find_table(const std::string& na
 std::optional<std::pair<TableId, NamedColumns>> find_table_named(const std::string& name);
 
 void create_table(std::string name, NamedColumns columns);
+void truncate_table(TableId table_id);
+void drop_table(TableId table_id);
+
+Type getTypeFromNamedColumns(const NamedColumns& namedColumns);
 
 // void remove_table(TableId table_id);
 } // namespace catalog

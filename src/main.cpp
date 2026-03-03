@@ -118,8 +118,8 @@ static void parse_and_execute_file(const std::string& file_name)
             const SourceText text_end   = lexer.get_token().get_text();
             const SourceText text{text_begin, text_end};
             const Statement  statement = compile_statement(ast);
-            // std::printf("> ");
-            // text.print_escaped();
+            std::printf("> ");
+            text.print_escaped();
             execute_statement(statement);
             lexer.accept_step(Token::Semicolon);
         }

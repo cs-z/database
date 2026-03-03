@@ -24,7 +24,6 @@ static int file_open(const std::string& name)
     ASSERT(file_exists(name));
     const std::string path = DATA_DIR + name;
     const int         fd   = ::open(path.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
-    ////std::fprintf(stderr, "fopen: %s, %d\n", name.c_str(), fd);
     if (fd < 0)
     {
         throw ServerError{"open", path, errno};
@@ -35,7 +34,6 @@ static int file_open(const std::string& name)
 static void file_close(int fd) noexcept
 {
     const int err = ::close(fd);
-    ////std::fprintf(stderr, "fclose: %d\n", fd);
     if (err < 0)
     {
         // TODO
@@ -47,7 +45,6 @@ static void file_close(int fd) noexcept
 static void file_seek(int fd, page::Id page_id)
 {
     const auto offset = static_cast<off_t>(page_id.get()) * page::SIZE;
-    // std::fprintf(stderr, "fseek: %d, %u\n", fd, page_id.get());
     if (::lseek(fd, offset, SEEK_SET) != offset)
     {
         throw ServerError{"lseek", std::to_string(fd), errno};
@@ -59,7 +56,6 @@ static void file_read(int fd, page::Id page_id, void* buffer)
     file_seek(fd, page_id);
     const std::size_t bytes          = page::SIZE;
     const ssize_t     bytes_returned = ::read(fd, buffer, bytes);
-    // std::fprintf(stderr, "fread: %d, %u, %p\n", fd, page_id.get(), (void*)buffer);
     if (bytes_returned < 0)
     {
         throw ServerError{"read", std::to_string(fd), errno};
@@ -76,7 +72,6 @@ static void file_write(int fd, page::Id page_id, const void* buffer)
     file_seek(fd, page_id);
     const std::size_t bytes          = page::SIZE;
     const ssize_t     bytes_returned = ::write(fd, buffer, bytes);
-    // std::fprintf(stderr, "fwrite: %d, %u, %p\n", fd, page_id.get(), (void*)buffer);
     if (bytes_returned < 0)
     {
         throw ServerError{"write", std::to_string(fd), errno};
@@ -92,7 +87,6 @@ static int file_create_temp()
 {
     const std::string path = DATA_DIR;
     const int         fd   = ::open(path.c_str(), O_TMPFILE | O_RDWR, S_IRUSR | S_IWUSR);
-    ////std::fprintf(stderr, "fopen temp: %d\n", fd);
     if (fd < 0)
     {
         throw ServerError{"open", path, errno};
@@ -102,15 +96,15 @@ static int file_create_temp()
 
 static void file_remove_temp(int fd) noexcept
 {
-    ////std::fprintf(stderr, "closing temp: ");
     file_close(fd);
 }
 
 bool file_exists(const std::string& name)
 {
     const std::string path = DATA_DIR + name;
-    struct stat       stat = {};
-    const int         err  = ::stat(path.c_str(), &stat);
+    // std::cout << "?: " << path << "\n";
+    struct stat stat = {};
+    const int   err  = ::stat(path.c_str(), &stat);
     if (err < 0 && errno != ENOENT)
     {
         throw ServerError{"stat", path, err};
@@ -123,7 +117,6 @@ void file_create(const std::string& name)
     ASSERT(!file_exists(name));
     const std::string path = DATA_DIR + name;
     const int         fd   = ::open(path.c_str(), O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
-    ////std::fprintf(stderr, "fcreate: %s, %d\n", name.c_str(), fd);
     if (fd < 0)
     {
         throw ServerError{"open", path, errno};
@@ -135,10 +128,19 @@ void file_remove(const std::string& name)
 {
     ASSERT(file_exists(name));
     const std::string path = DATA_DIR + name;
-    ////std::fprintf(stderr, "fremove: %s\n", name.c_str());
     if (::unlink(path.c_str()) < 0)
     {
         throw ServerError{"unlink", path, errno};
+    }
+}
+
+void file_truncate(const std::string& name)
+{
+    ASSERT(file_exists(name));
+    const std::string path = DATA_DIR + name;
+    if (::truncate(path.c_str(), 0) != 0)
+    {
+        throw ServerError{"truncate", path, errno};
     }
 }
 

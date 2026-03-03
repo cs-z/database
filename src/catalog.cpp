@@ -1,4 +1,5 @@
 #include "catalog.hpp"
+#include "buffer.hpp"
 #include "common.hpp"
 #include "error.hpp"
 #include "execute.hpp"
@@ -27,10 +28,18 @@ struct Table
 
     [[nodiscard]] std::string getDataFileName() const
     {
-        return name + ".DAT";
+        return getDataFileNameFromName(name);
+    }
+    [[nodiscard]] std::string getFstFileName() const
+    {
+        return getFstFileNameFromName(name);
     }
 
-    [[nodiscard]] std::string getFstFileName() const
+    [[nodiscard]] static std::string getDataFileNameFromName(const std::string& name)
+    {
+        return name + ".DAT";
+    }
+    [[nodiscard]] static std::string getFstFileNameFromName(const std::string& name)
     {
         return name + ".FST";
     }
@@ -50,7 +59,7 @@ struct Table
 static const Table TABLE_FILES = {
     .id       = TableId{1},
     .name     = "SYS_FILES",
-    .file_ids = {FileId{2}, FileId{3}},
+    .file_ids = {.fst = FileId{2}, .dat = FileId{3}},
     .columns =
         {
             {"ID", ColumnType::INTEGER},
@@ -61,7 +70,7 @@ static const Table TABLE_FILES = {
 static const Table TABLE_TABLES = {
     .id       = TableId{2},
     .name     = "SYS_TABLES",
-    .file_ids = {FileId{4}, FileId{5}},
+    .file_ids = {.fst = FileId{4}, .dat = FileId{5}},
     .columns =
         {
             {"ID", ColumnType::INTEGER},
@@ -74,7 +83,7 @@ static const Table TABLE_TABLES = {
 static const Table TABLE_COLUMNS = {
     .id       = TableId{3},
     .name     = "SYS_COLUMNS",
-    .file_ids = {FileId{6}, FileId{7}},
+    .file_ids = {.fst = FileId{6}, .dat = FileId{7}},
     .columns =
         {
             {"TABLE_ID", ColumnType::INTEGER},
@@ -127,7 +136,7 @@ static FileIds read_table(TableId table_id)
     ASSERT(values.size() == 1);
     const auto file_fst = std::get<ColumnValueInteger>(values.front().at(0));
     const auto file_dat = std::get<ColumnValueInteger>(values.front().at(1));
-    return {static_cast<FileId>(file_fst), static_cast<FileId>(file_dat)};
+    return {.fst = static_cast<FileId>(file_fst), .dat = static_cast<FileId>(file_dat)};
 }
 
 static void write_table(TableId table_id, std::string name, FileIds file_ids)
@@ -297,8 +306,8 @@ static void create_table_files(const Table& table)
 static void register_table(const Table& table)
 {
     // TABLE_FILES
-    write_file(table.file_ids.dat, table.getFstFileName());
-    write_file(table.file_ids.fst, table.getDataFileName());
+    write_file(table.file_ids.fst, table.getFstFileName());
+    write_file(table.file_ids.dat, table.getDataFileName());
 
     // TABLE_TABLES
     write_table(table.id, table.name, table.file_ids);
@@ -329,7 +338,7 @@ static std::pair<TableId, FileIds> generate_table_ids()
     // TODO: update statement needed
     static TableId TABLE_ID_TODO = TableId{4};
     static FileId  FILE_ID_TODO  = FileId{8}; // NOLINT(readability-magic-numbers)
-    return std::make_pair(TABLE_ID_TODO++, FileIds{FILE_ID_TODO++, FILE_ID_TODO++});
+    return std::make_pair(TABLE_ID_TODO++, FileIds{.fst = FILE_ID_TODO++, .dat = FILE_ID_TODO++});
 }
 
 void create_table(std::string name, NamedColumns columns)
@@ -344,4 +353,67 @@ void create_table(std::string name, NamedColumns columns)
     register_table(table);
     create_table_files(table);
 }
+
+void truncate_table(TableId table_id)
+{
+    // TODO: clean indexes, metadata, etc
+    // Buffer flush? not sure
+
+    // TODO: multiple lookups
+    const auto [file_fst, file_dat] = get_table_file_ids(table_id);
+
+    // data file
+    os::file_truncate(get_file_name(file_dat));
+
+    // fst file
+    os::file_truncate(get_file_name(file_fst));
+    fst::init(file_fst);
+}
+
+void drop_table(TableId table_id)
+{
+    ASSERT(table_id != TABLE_FILES.id);
+    ASSERT(table_id != TABLE_TABLES.id);
+    ASSERT(table_id != TABLE_COLUMNS.id);
+
+    // TODO: clean indexes, metadata, etc
+
+    const auto [file_fst, file_dat] = get_table_file_ids(table_id);
+    const auto file_fst_name        = get_file_name(file_fst);
+    const auto file_dat_name        = get_file_name(file_dat);
+
+    std::vector<Value> result;
+
+    const auto statement_columns =
+        "DELETE FROM " + TABLE_COLUMNS.name + " WHERE TABLE_ID = " + table_id.to_string();
+    result = execute_internal_statement(statement_columns);
+    ASSERT(result.empty());
+
+    const auto statement_table =
+        "DELETE FROM " + TABLE_TABLES.name + " WHERE ID = " + table_id.to_string();
+    result = execute_internal_statement(statement_table);
+    ASSERT(result.empty());
+
+    const auto statement_files = "DELETE FROM " + TABLE_FILES.name + " WHERE ID IN (" +
+                                 file_fst.to_string() + ", " + file_dat.to_string() + ")";
+    result = execute_internal_statement(statement_files);
+    ASSERT(result.empty());
+
+    buffer::flush(file_fst);
+    buffer::flush(file_dat);
+
+    os::file_remove(file_fst_name);
+    os::file_remove(file_dat_name);
+}
+
+Type getTypeFromNamedColumns(const NamedColumns& namedColumns)
+{
+    Type type;
+    for (const auto& [column_name, column_type] : namedColumns)
+    {
+        type.push(column_type);
+    }
+    return type;
+}
+
 } // namespace catalog

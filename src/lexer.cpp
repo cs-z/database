@@ -160,7 +160,7 @@ Token Lexer::next_token()
             ptr++;
         }
         std::string identifier{identifier_begin, ptr};
-        std::transform(identifier.begin(), identifier.end(), identifier.begin(), toupper);
+        std::ranges::transform(identifier, identifier.begin(), toupper);
         if (identifier == "CREATE")
         {
             return {Token::KwCreate, SourceText{std::move(identifier), text_begin, ptr}};
@@ -326,6 +326,18 @@ Token Lexer::next_token()
         {
             return {Token::KwLimit, SourceText{std::move(identifier), text_begin, ptr}};
         }
+        if (identifier == "DELETE")
+        {
+            return {Token::KwDelete, SourceText{std::move(identifier), text_begin, ptr}};
+        }
+        if (identifier == "UPDATE")
+        {
+            return {Token::KwUpdate, SourceText{std::move(identifier), text_begin, ptr}};
+        }
+        if (identifier == "SET")
+        {
+            return {Token::KwSet, SourceText{std::move(identifier), text_begin, ptr}};
+        }
         if (identifier == "TRUE")
         {
             return {Token::Constant, Token::DataConstant{Bool::TRUE},
@@ -417,7 +429,7 @@ Token Lexer::next_token()
             }
             const auto real =
                 static_cast<ColumnValueReal>(whole) +
-                static_cast<ColumnValueReal>(fraction) / static_cast<ColumnValueReal>(divisor);
+                (static_cast<ColumnValueReal>(fraction) / static_cast<ColumnValueReal>(divisor));
             return {Token::Constant, Token::DataConstant{real}, SourceText{text_begin, ptr}};
         }
         const auto integer = static_cast<ColumnValueInteger>(whole);

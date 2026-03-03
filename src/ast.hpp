@@ -170,10 +170,29 @@ struct AstCreateTable
     catalog::NamedColumns columns;
 };
 
+struct AstDropTable
+{
+    SourceText name;
+};
+
 struct AstInsertValue
 {
     SourceText              table;
     std::vector<AstExprPtr> exprs;
 };
 
-using AstStatement = std::variant<AstCreateTable, AstInsertValue, AstQuery>;
+struct AstUpdate
+{
+    SourceText                                     table;
+    std::vector<std::pair<SourceText, AstExprPtr>> columns;
+    AstExprPtr                                     condition_opt;
+};
+
+struct AstDelete
+{
+    SourceText table;
+    AstExprPtr condition_opt;
+};
+
+using AstStatement =
+    std::variant<AstCreateTable, AstDropTable, AstInsertValue, AstQuery, AstUpdate, AstDelete>;

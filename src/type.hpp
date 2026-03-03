@@ -52,7 +52,7 @@ ColumnType  column_type_from_catalog_string(const std::string& name);
 class Type
 {
 public:
-    Type();
+    Type(); // TODO: reserve?
     void push(ColumnType column);
 
     [[nodiscard]] page::Offset get_align() const

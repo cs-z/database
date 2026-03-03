@@ -77,8 +77,8 @@ private:
 class IterScan : public IterBase
 {
 public:
-    IterScan(catalog::FileIds file_ids, Type&& type)
-        : IterBase{std::move(type)}, file_id{file_ids.dat},
+    IterScan(catalog::FileIds file_ids, Type&& type, bool emitRowId)
+        : IterBase{std::move(type)}, emitRowId{emitRowId}, file_id{file_ids.dat},
           page_count{fst::get_page_count(file_ids.fst)}
     {
     }
@@ -90,6 +90,8 @@ public:
     std::optional<Value> next() override;
 
 private:
+    const bool emitRowId;
+
     const catalog::FileId file_id;
     const page::Id        page_count;
 

@@ -81,14 +81,15 @@ class Columns
 public:
     Columns() = default;
 
-    Columns(SourceText&& table, catalog::NamedColumns table_columns)
+    Columns(SourceText table, catalog::NamedColumns table_columns)
     {
         for (auto& table_column : table_columns)
         {
             columns.push_back(std::move(table_column));
             columns_table.push_back(table.get());
         }
-        tables.push_back({std::move(table), {ColumnId{}, ColumnId(table_columns.size())}});
+        tables.push_back(
+            {.name = std::move(table), .columns = {ColumnId{}, ColumnId(table_columns.size())}});
     }
 
     Columns(const Columns& columns_l, const Columns& columns_r)
@@ -102,7 +103,7 @@ public:
                 throw ClientError{"table name or alias collision", table.name};
             }
             const std::pair columns{table.columns.first + offset, table.columns.second + offset};
-            tables.push_back({table.name, columns});
+            tables.push_back({.name = table.name, .columns = columns});
         }
         columns = columns_l.columns;
         for (const auto& column : columns_r.columns)
@@ -312,14 +313,15 @@ static ExprPtr compile_expr(const AstExpr& ast, const Columns& columns,
             {
                 ExprPtr expr = compile_expr(*ast.expr, columns, context);
                 compile_cast(expr->type, ast.to);
-                return std::make_unique<Expr>(Expr::DataCast{std::move(expr), ast.to.first},
-                                              ast.to.first);
+                return std::make_unique<Expr>(
+                    Expr::DataCast{.expr = std::move(expr), .to = ast.to.first}, ast.to.first);
             },
             [&columns, context](const AstExpr::DataOp1& ast)
             {
                 ExprPtr                         expr = compile_expr(*ast.expr, columns, context);
                 const std::optional<ColumnType> type = op1_compile(ast.op, expr->type);
-                return std::make_unique<Expr>(Expr::DataOp1{std::move(expr), ast.op}, type);
+                return std::make_unique<Expr>(Expr::DataOp1{.expr = std::move(expr), .op = ast.op},
+                                              type);
             },
             [&columns, context](const AstExpr::DataOp2& ast)
             {
@@ -329,18 +331,20 @@ static ExprPtr compile_expr(const AstExpr& ast, const Columns& columns,
                     cast_together({expr_l->type, expr_r->type}, ast.op.second);
                 if (expr_l->type && type && *expr_l->type != *type)
                 {
-                    expr_l =
-                        std::make_unique<Expr>(Expr::DataCast{std::move(expr_l), *type}, *type);
+                    expr_l = std::make_unique<Expr>(
+                        Expr::DataCast{.expr = std::move(expr_l), .to = *type}, *type);
                 }
                 if (expr_r->type && type && *expr_r->type != *type)
                 {
-                    expr_r =
-                        std::make_unique<Expr>(Expr::DataCast{std::move(expr_r), *type}, *type);
+                    expr_r = std::make_unique<Expr>(
+                        Expr::DataCast{.expr = std::move(expr_r), .to = *type}, *type);
                 }
                 const std::optional<ColumnType> output_type =
                     op2_compile(ast.op, expr_l->type, expr_r->type);
-                return std::make_unique<Expr>(
-                    Expr::DataOp2{std::move(expr_l), std::move(expr_r), ast.op}, output_type);
+                return std::make_unique<Expr>(Expr::DataOp2{.expr_l = std::move(expr_l),
+                                                            .expr_r = std::move(expr_r),
+                                                            .op     = ast.op},
+                                              output_type);
             },
             [&columns, context](const AstExpr::DataBetween& ast)
             {
@@ -355,19 +359,24 @@ static ExprPtr compile_expr(const AstExpr& ast, const Columns& columns,
                 }
                 if (expr->type && type && *expr->type != *type)
                 {
-                    expr = std::make_unique<Expr>(Expr::DataCast{std::move(expr), *type}, *type);
+                    expr = std::make_unique<Expr>(
+                        Expr::DataCast{.expr = std::move(expr), .to = *type}, *type);
                 }
                 if (min->type && type && *min->type != *type)
                 {
-                    min = std::make_unique<Expr>(Expr::DataCast{std::move(min), *type}, *type);
+                    min = std::make_unique<Expr>(
+                        Expr::DataCast{.expr = std::move(min), .to = *type}, *type);
                 }
                 if (max->type && type && *max->type != *type)
                 {
-                    max = std::make_unique<Expr>(Expr::DataCast{std::move(max), *type}, *type);
+                    max = std::make_unique<Expr>(
+                        Expr::DataCast{.expr = std::move(max), .to = *type}, *type);
                 }
-                return std::make_unique<Expr>(Expr::DataBetween{std::move(expr), std::move(min),
-                                                                std::move(max), ast.negated,
-                                                                ast.between_text},
+                return std::make_unique<Expr>(Expr::DataBetween{.expr         = std::move(expr),
+                                                                .min          = std::move(min),
+                                                                .max          = std::move(max),
+                                                                .negated      = ast.negated,
+                                                                .between_text = ast.between_text},
                                               ColumnType::BOOLEAN);
             },
             [&columns, context](const AstExpr::DataIn& ast)
@@ -384,19 +393,21 @@ static ExprPtr compile_expr(const AstExpr& ast, const Columns& columns,
                 const std::optional<ColumnType> type = cast_together(types, ast.in_text);
                 if (expr->type && type && *expr->type != *type)
                 {
-                    expr = std::make_unique<Expr>(Expr::DataCast{std::move(expr), *type}, type);
+                    expr = std::make_unique<Expr>(
+                        Expr::DataCast{.expr = std::move(expr), .to = *type}, type);
                 }
                 for (ExprPtr& element : list)
                 {
                     if (element->type && type && *element->type != *type)
                     {
-                        element =
-                            std::make_unique<Expr>(Expr::DataCast{std::move(element), *type}, type);
+                        element = std::make_unique<Expr>(
+                            Expr::DataCast{.expr = std::move(element), .to = *type}, type);
                     }
                 }
-                return std::make_unique<Expr>(
-                    Expr::DataIn{std::move(expr), std::move(list), ast.negated},
-                    ColumnType::BOOLEAN);
+                return std::make_unique<Expr>(Expr::DataIn{.expr    = std::move(expr),
+                                                           .list    = std::move(list),
+                                                           .negated = ast.negated},
+                                              ColumnType::BOOLEAN);
             },
             [&columns, context](const AstExpr::DataFunction& ast)
             {
@@ -408,7 +419,9 @@ static ExprPtr compile_expr(const AstExpr& ast, const Columns& columns,
                 {
                     arg = compile_expr(
                         *ast.arg, columns,
-                        ExprContext{context->nonaggregated_columns, context->aggregates, true});
+                        ExprContext{.nonaggregated_columns = context->nonaggregated_columns,
+                                    .aggregates            = context->aggregates,
+                                    .inside_aggregation    = true});
                     switch (ast.function)
                     {
                     case Function::AVG:
@@ -439,7 +452,8 @@ static ExprPtr compile_expr(const AstExpr& ast, const Columns& columns,
                 }
                 const ColumnId column_id(context->aggregates.group_by.size() +
                                          context->aggregates.exprs.size());
-                context->aggregates.exprs.push_back({ast.function, std::move(arg)});
+                context->aggregates.exprs.push_back(
+                    {.function = ast.function, .arg = std::move(arg)});
                 return std::make_unique<Expr>(Expr::DataFunction{column_id}, type);
             },
         },
@@ -464,9 +478,9 @@ static std::pair<SourcePtr, Columns> compile_source(const AstSource& ast)
                 auto [source_r, columns_r] = compile_source(*ast.source_r);
                 Columns columns{columns_l, columns_r};
                 return std::make_pair(
-                    std::make_unique<Source>(
-                        Source::DataJoinCross{std::move(source_l), std::move(source_r)},
-                        columns.get_type()),
+                    std::make_unique<Source>(Source::DataJoinCross{.source_l = std::move(source_l),
+                                                                   .source_r = std::move(source_r)},
+                                             columns.get_type()),
                     std::move(columns));
             },
             [](const AstSource::DataJoinConditional& ast)
@@ -482,9 +496,10 @@ static std::pair<SourcePtr, Columns> compile_source(const AstSource& ast)
                 return std::make_pair(
                     std::make_unique<Source>(
                         Source::DataJoinConditional{
-                            std::move(source_l), std::move(source_r),
-                            ast.join.value_or(AstSource::DataJoinConditional::Join::INNER),
-                            std::move(condition)},
+                            .source_l = std::move(source_l),
+                            .source_r = std::move(source_r),
+                            .join = ast.join.value_or(AstSource::DataJoinConditional::Join::INNER),
+                            .condition = std::move(condition)},
                         columns.get_type()),
                     std::move(columns));
             },
@@ -500,11 +515,11 @@ static std::pair<SourcePtr, Columns> compile_sources(const std::vector<AstSource
     {
         std::pair<SourcePtr, Columns> other = compile_source(*asts[i]);
         Columns                       columns{result.second, other.second};
-        result =
-            std::make_pair(std::make_unique<Source>(Source::DataJoinCross{std::move(result.first),
-                                                                          std::move(other.first)},
-                                                    columns.get_type()),
-                           std::move(columns));
+        result = std::make_pair(
+            std::make_unique<Source>(Source::DataJoinCross{.source_l = std::move(result.first),
+                                                           .source_r = std::move(other.first)},
+                                     columns.get_type()),
+            std::move(columns));
     }
     return result;
 };
@@ -573,7 +588,9 @@ compile_select_list(const Columns& columns, const AstSelectList& ast,
                         const auto& [column_name, column_type] = column_names[column_id.get()];
                         ExprPtr expr                           = create_nonaggregated_column_expr(
                             column_id, column_type, ast_element.asterisk_text,
-                            ExprContext{nonaggregated_columns, aggregates, false});
+                            ExprContext{.nonaggregated_columns = nonaggregated_columns,
+                                                                  .aggregates            = aggregates,
+                                                                  .inside_aggregation    = false});
                         list.exprs.push_back(std::move(expr));
                         list.type.push(column_type);
                         list.visible_count++;
@@ -589,7 +606,9 @@ compile_select_list(const Columns& columns, const AstSelectList& ast,
                         const auto& [column_name, column_type] = column_names[column_id.get()];
                         ExprPtr expr                           = create_nonaggregated_column_expr(
                             column_id, column_type, ast_element.asterisk_text,
-                            ExprContext{nonaggregated_columns, aggregates, false});
+                            ExprContext{.nonaggregated_columns = nonaggregated_columns,
+                                                                  .aggregates            = aggregates,
+                                                                  .inside_aggregation    = false});
                         list.exprs.push_back(std::move(expr));
                         list.type.push(column_type);
                         list.visible_count++;
@@ -601,13 +620,15 @@ compile_select_list(const Columns& columns, const AstSelectList& ast,
                 {
                     ExprPtr expr =
                         compile_expr(*ast_element.expr, columns,
-                                     ExprContext{nonaggregated_columns, aggregates, false});
+                                     ExprContext{.nonaggregated_columns = nonaggregated_columns,
+                                                 .aggregates            = aggregates,
+                                                 .inside_aggregation    = false});
                     const ColumnType column_type = expr->type.value_or(ColumnType::INTEGER);
                     std::string      column_name = ast_element.alias ? ast_element.alias->get()
                                                                      : ast_element.expr->to_string();
-                    const auto       iter = std::find_if(table_columns.begin(), table_columns.end(),
-                                                         [&column_name](const auto& column)
-                                                         { return column.first == column_name; });
+                    const auto       iter =
+                        std::ranges::find_if(table_columns, [&column_name](const auto& column)
+                                             { return column.first == column_name; });
                     if (iter != table_columns.end())
                     {
                         throw ClientError{"column name or alias collision",
@@ -629,21 +650,26 @@ static std::tuple<Select, Columns, catalog::NamedColumns> compile_select(const A
     auto [source, columns] = compile_sources(ast.sources);
     ExprPtr    where       = compile_where(columns, ast.where);
     Aggregates aggregates  = {
-        std::vector<Aggregates::Aggregate>{},
-        compile_group_by(columns, ast.group_by),
+         .exprs    = std::vector<Aggregates::Aggregate>{},
+         .group_by = compile_group_by(columns, ast.group_by),
     };
     std::unordered_map<ColumnId, SourceText> nonaggregated_columns;
     auto [list, table_columns] =
         compile_select_list(columns, ast.list, nonaggregated_columns, aggregates);
-    ExprPtr having =
-        compile_having(columns, ast.having, ExprContext{nonaggregated_columns, aggregates, false});
+    ExprPtr having = compile_having(columns, ast.having,
+                                    ExprContext{.nonaggregated_columns = nonaggregated_columns,
+                                                .aggregates            = aggregates,
+                                                .inside_aggregation    = false});
     if (!aggregates.exprs.empty() && aggregates.group_by.empty() && !nonaggregated_columns.empty())
     {
         throw ClientError{"nonaggregated column in aggregation",
                           nonaggregated_columns.begin()->second};
     }
-    return std::make_tuple(Select{std::move(source), std::move(where), std::move(aggregates),
-                                  std::move(having), std::move(list)},
+    return std::make_tuple(Select{.source     = std::move(source),
+                                  .where      = std::move(where),
+                                  .aggregates = std::move(aggregates),
+                                  .having     = std::move(having),
+                                  .list       = std::move(list)},
                            std::move(columns), std::move(table_columns));
 }
 
@@ -689,7 +715,7 @@ static OrderBy compile_order_by(const Columns& columns, SelectList& list, const 
                 },
             },
             ast_column.column);
-        order_by.columns.push_back({column, ast_column.asc});
+        order_by.columns.push_back({.column_id = column, .asc = ast_column.asc});
     }
     return order_by;
 }
@@ -702,7 +728,7 @@ static Iter create_source_iter(Source& source)
             [&type](Source::DataTable& source) -> Iter
             {
                 return std::make_unique<IterScan>(catalog::get_table_file_ids(source.table_id),
-                                                  std::move(type));
+                                                  std::move(type), false);
             },
             [&type](Source::DataJoinCross& source) -> Iter
             {
@@ -766,8 +792,10 @@ static Query compile_query(const AstQuery& ast)
     {
         order_by = compile_order_by(columns, select.list, *ast.order_by);
     }
-    QueryTodo query{std::move(select), std::move(order_by)};
-    return {std::move(table_columns), create_query_iter(std::move(query)), ast.limit};
+    QueryTodo query{.select = std::move(select), .order_by = std::move(order_by)};
+    return {.columns = std::move(table_columns),
+            .iter    = create_query_iter(std::move(query)),
+            .limit   = ast.limit};
 }
 
 static CreateTable compile_create_table(AstCreateTable& ast)
@@ -777,7 +805,18 @@ static CreateTable compile_create_table(AstCreateTable& ast)
     {
         throw ClientError{"table already exists", std::move(ast.name)};
     }
-    return {std::move(name), std::move(ast.columns)};
+    return {.name = std::move(name), .columns = std::move(ast.columns)};
+}
+
+static DropTable compile_drop_table(AstDropTable& ast)
+{
+    const auto& name  = ast.name.get();
+    const auto  table = catalog::find_table(name);
+    if (!table.has_value())
+    {
+        throw ClientError{"table does not exists", std::move(ast.name)};
+    }
+    return {.table_id = table->first};
 }
 
 static InsertValue compile_insert_value(AstInsertValue& ast)
@@ -799,16 +838,37 @@ static InsertValue compile_insert_value(AstInsertValue& ast)
         }
         value.push_back(expr->eval(nullptr));
     }
-    return {table_id, std::move(type), std::move(value)};
+    return {.table_id = table_id, .type = std::move(type), .value = std::move(value)};
+}
+
+static Statement compile_delete(const AstDelete& ast)
+{
+    auto [table_id, table_columns] = catalog::get_table_named(ast.table);
+    if (ast.condition_opt)
+    {
+        const Columns columns{ast.table, table_columns};
+        auto          condition = compile_expr(*ast.condition_opt, columns, std::nullopt);
+        if (condition->type != ColumnType::BOOLEAN)
+        {
+            throw ClientError{"condition must be boolean", ast.condition_opt->text};
+        }
+        const auto file_ids  = catalog::get_table_file_ids(table_id);
+        auto       type      = catalog::getTypeFromNamedColumns(table_columns);
+        auto       iter_scan = std::make_unique<IterScan>(file_ids, std::move(type), true);
+        auto iter_filter = std::make_unique<IterFilter>(std::move(iter_scan), std::move(condition));
+        return DeleteConditional{.table_id = table_id, .iter = std::move(iter_filter)};
+    }
+    return TruncateTable{.table_id = table_id};
 }
 
 Statement compile_statement(AstStatement& ast)
 {
     return std::visit(
-        Overload{
-            [](AstCreateTable& ast) -> Statement { return compile_create_table(ast); },
-            [](AstInsertValue& ast) -> Statement { return compile_insert_value(ast); },
-            [](AstQuery& ast) -> Statement { return compile_query(ast); },
-        },
+        Overload{[](AstCreateTable& ast) -> Statement { return compile_create_table(ast); },
+                 [](AstDropTable& ast) -> Statement { return compile_drop_table(ast); },
+                 [](AstInsertValue& ast) -> Statement { return compile_insert_value(ast); },
+                 [](AstQuery& ast) -> Statement { return compile_query(ast); },
+                 [](AstUpdate&) -> Statement { UNREACHABLE(); },
+                 [](AstDelete& ast) -> Statement { return compile_delete(ast); }},
         ast);
 }

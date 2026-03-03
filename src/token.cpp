@@ -97,6 +97,12 @@ const char* Token::tag_to_cstr(Tag tag)
         return "NULL";
     case Tag::KwLimit:
         return "LIMIT";
+    case Tag::KwDelete:
+        return "DELETE";
+    case Tag::KwUpdate:
+        return "UPDATE";
+    case Tag::KwSet:
+        return "SET";
     case Tag::LParen:
         return "(";
     case Tag::RParen:

@@ -3,6 +3,7 @@
 #include "expr.hpp"
 #include "page.hpp"
 #include "row.hpp"
+#include "row_id.hpp"
 #include "type.hpp"
 #include "value.hpp"
 
@@ -120,12 +121,19 @@ std::optional<Value> IterScan::next()
             entry_id = page::EntryId{};
             continue;
         }
-        const u8* const entry = page->get_entry(entry_id++);
+        const auto      curr_entry_id = entry_id++;
+        const u8* const entry         = page->get_entry(curr_entry_id);
         if (entry == nullptr)
         {
             continue;
         }
-        return row::read(type, entry);
+        auto value = row::read(type, entry);
+        if (emitRowId)
+        {
+            const auto rowId = packRowId(page_id, curr_entry_id);
+            value.emplace_back(rowId); // TODO: is it safe? does not match type, hidden column
+        }
+        return value;
     }
 }
 

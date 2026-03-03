@@ -51,7 +51,8 @@ Prefix calculate_layout(const Value& value)
             },
             column_value);
         prefix.size = align_up(prefix.size, column_align);
-        prefix.columns.push_back({column_size != 0 ? prefix.size : page::Offset{}, column_size});
+        prefix.columns.push_back(
+            {.offset = column_size != 0 ? prefix.size : page::Offset{}, .size = column_size});
         prefix.size += column_size;
     }
     return prefix;
@@ -100,7 +101,7 @@ template <typename T> const T* get_column(const u8* row, ColumnPrefix prefix)
 
 Value read(const Type& type, const u8* row)
 {
-    Value value;
+    Value value; // TODO: reserve
     for (ColumnId column_id{}; column_id < type.size(); column_id++)
     {
         const ColumnPrefix prefix = get_prefix(row, column_id);

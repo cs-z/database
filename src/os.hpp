@@ -11,6 +11,7 @@ namespace os
 [[nodiscard]] bool file_exists(const std::string& name);
 void               file_create(const std::string& name);
 void               file_remove(const std::string& name);
+void               file_truncate(const std::string& name);
 
 class File
 {

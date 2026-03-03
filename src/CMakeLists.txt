@@ -37,6 +37,7 @@ add_library(database_lib
     posix_file.hpp
     row.cpp
     row.hpp
+    row_id.hpp
     sort.cpp
     sort.hpp
     token.cpp

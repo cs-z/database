@@ -80,11 +80,19 @@ public:
 
     [[nodiscard]] const u8* get_entry(const Slot& slot) const
     {
+        if (slot.offset == 0)
+        {
+            return nullptr;
+        }
         return get_pointer(slot.offset);
     }
 
     [[nodiscard]] u8* get_entry(const Slot& slot)
     {
+        if (slot.offset == 0)
+        {
+            return nullptr;
+        }
         return get_pointer(slot.offset);
     }
 
@@ -155,11 +163,19 @@ public:
         return get_pointer(*offset);
     }
 
+    void remove(EntryId entry_id)
+    {
+        ASSERT(entry_id < entry_count);
+        auto& offset = slots[entry_id.get()].offset;
+        ASSERT(offset > 0);
+        offset = 0;
+    }
+
     void remove_beyond(EntryId new_entry_count)
     {
         ASSERT(new_entry_count <= entry_count);
         entry_count = new_entry_count;
-        free_begin  = offsetof(Slotted, slots) + entry_count.get() * sizeof(Slot);
+        free_begin  = offsetof(Slotted, slots) + (entry_count.get() * sizeof(Slot));
     }
 
     // shift entries to the end of the page

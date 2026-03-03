@@ -51,6 +51,7 @@ static bool compare_rows(const Type& type, const OrderBy& order_by, const u8* ro
 
 static void sort_page(const Type& type, const OrderBy& order_by, page::Slotted<>* page)
 {
+    // TODO: pipeline does not emit clang-tidy warning for ranges modernize
     std::sort(page->begin(), page->end(),
               [&type, &order_by, page](const page::Slotted<>::Slot& slot_l,
                                        const page::Slotted<>::Slot& slot_r)
@@ -66,7 +67,7 @@ static std::optional<unsigned int> next_input(const Type& type, const OrderBy& o
 {
     const auto compare = [&type, &order_by](const u8* row_l, const u8* row_r)
     { return compare_rows(type, order_by, row_l, row_r); };
-    const auto* iter = std::min_element(rows.begin(), rows.end(), compare);
+    const auto* iter = std::ranges::min_element(rows, compare);
     if (*iter == nullptr)
     {
         return std::nullopt;
@@ -248,7 +249,7 @@ static os::TempFile merge_sorted_pages(const Type& type, const OrderBy& order_by
     SectionQueue queue;
     for (page::Id page_id{}; page_id < page_count_out; page_id++)
     {
-        queue.push({page_id, page_id + 1});
+        queue.push({.begin = page_id, .end = page_id + 1});
     }
     queue.flush();
 
@@ -286,7 +287,7 @@ static os::TempFile merge_sorted_pages(const Type& type, const OrderBy& order_by
             }
 
             const auto [begin, end] = output.end_section();
-            queue.push({begin, end});
+            queue.push({.begin = begin, .end = end});
         }
 
         if (remainder > 0)
@@ -310,7 +311,7 @@ static os::TempFile merge_sorted_pages(const Type& type, const OrderBy& order_by
             }
 
             const auto [begin, end] = output.end_section();
-            queue.push({begin, end});
+            queue.push({.begin = begin, .end = end});
         }
 
         queue.flush();

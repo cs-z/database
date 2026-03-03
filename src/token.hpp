@@ -60,6 +60,9 @@ public:
         KwCast,
         KwNull,
         KwLimit,
+        KwDelete,
+        KwUpdate,
+        KwSet,
 
         LParen,
         RParen,

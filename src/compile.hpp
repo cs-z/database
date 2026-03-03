@@ -15,6 +15,11 @@ struct CreateTable
     catalog::NamedColumns columns;
 };
 
+struct DropTable
+{
+    catalog::TableId table_id;
+};
+
 struct InsertValue
 {
     catalog::TableId table_id;
@@ -29,6 +34,18 @@ struct Query
     std::optional<unsigned int> limit;
 };
 
-using Statement = std::variant<CreateTable, InsertValue, Query>;
+struct TruncateTable
+{
+    catalog::TableId table_id;
+};
+
+struct DeleteConditional
+{
+    catalog::TableId table_id;
+    Iter             iter;
+};
+
+using Statement =
+    std::variant<CreateTable, DropTable, InsertValue, Query, TruncateTable, DeleteConditional>;
 
 Statement compile_statement(AstStatement& ast);

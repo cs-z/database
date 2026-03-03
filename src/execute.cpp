@@ -10,6 +10,7 @@
 #include "page.hpp"
 #include "parse.hpp"
 #include "row.hpp"
+#include "row_id.hpp"
 #include "token.hpp"
 #include "type.hpp"
 #include "value.hpp"
@@ -68,6 +69,11 @@ std::vector<Value> execute_internal_statement(const std::string& source)
 static void execute_create_table(const CreateTable& statement)
 {
     catalog::create_table(statement.name, statement.columns);
+}
+
+static void execute_drop_table(const DropTable& statement)
+{
+    catalog::drop_table(statement.table_id);
 }
 
 static void execute_insert_value(const InsertValue& statement)
@@ -184,16 +190,43 @@ static void execute_query(const Query& query)
     }
     std::printf("+\n");
 
-    std::printf("(%u rows in %.1lf ms)\n", count, time_delta.count());
+    std::printf("(%u rows in %.1lf ms)\n\n", count, time_delta.count());
+}
+
+void execute_truncate(const TruncateTable& statement)
+{
+    catalog::truncate_table(statement.table_id);
+}
+
+void execute_delete(const DeleteConditional& statement)
+{
+    const auto file_id = catalog::get_table_file_ids(statement.table_id).dat; // TODO
+    statement.iter->open();
+    for (;;)
+    {
+        auto row = statement.iter->next();
+        if (row.has_value())
+        {
+            const auto rowId               = std::get<ColumnValueInteger>(row->back());
+            const auto [page_id, entry_id] = unpackRowId(rowId);
+            buffer::Pin<page::Slotted<>> page{file_id, page_id};
+            page->remove(entry_id);
+        }
+        else
+        {
+            break;
+        }
+    }
+    statement.iter->close();
 }
 
 void execute_statement(const Statement& statement)
 {
-    std::visit(
-        Overload{
-            [](const CreateTable& statement) { execute_create_table(statement); },
-            [](const InsertValue& statement) { execute_insert_value(statement); },
-            [](const Query& statement) { execute_query(statement); },
-        },
-        statement);
+    std::visit(Overload{[](const CreateTable& statement) { execute_create_table(statement); },
+                        [](const DropTable& statement) { execute_drop_table(statement); },
+                        [](const InsertValue& statement) { execute_insert_value(statement); },
+                        [](const Query& statement) { execute_query(statement); },
+                        [](const TruncateTable& statement) { execute_truncate(statement); },
+                        [](const DeleteConditional& statement) { execute_delete(statement); }},
+               statement);
 }

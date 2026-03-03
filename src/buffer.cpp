@@ -185,7 +185,7 @@ void flush(catalog::FileId file_id)
 
 void* request(catalog::FileId file_id, page::Id page_id, bool append, FrameId& frame_out)
 {
-    const Id   id   = {file_id, page_id};
+    const Id   id   = {.file_id = file_id, .page_id = page_id};
     const auto iter = ids_used.find(id);
     if (iter == ids_used.end())
     {
@@ -235,7 +235,7 @@ void test()
             {
                 const page::Id page_id_append{page_count};
                 Pin<char>      page_append{file_id, page_id_append, true};
-                const auto     c_append = static_cast<char>('A' + rand() % ('Z' - 'A' + 1));
+                const auto     c_append = static_cast<char>('A' + (rand() % ('Z' - 'A' + 1)));
                 memset(page_append.get_page(), c_append, page::SIZE);
                 file_data.push_back(c_append);
             }
@@ -246,7 +246,7 @@ void test()
 
                 const page::Id page_id_set(rand() % (page_count + 1));
                 Pin<char>      page_set{file_id, page_id_set};
-                const auto     c_set = static_cast<char>('A' + rand() % ('Z' - 'A' + 1));
+                const auto     c_set = static_cast<char>('A' + (rand() % ('Z' - 'A' + 1)));
                 memset(page_set.get_page(), c_set, page::SIZE);
                 file_data.at(page_id_set.get()) = c_set;
 
