@@ -19,77 +19,77 @@ template <typename Key, typename Value, typename Loader>
 class Cache
 {
 public:
-    Cache(std::size_t capacity, Loader loader) : capacity{capacity}, loader{std::move(loader)}
+    Cache(std::size_t capacity, Loader loader) : capacity_{capacity}, loader_{std::move(loader)}
     {
         assert(capacity > 0);
     }
 
-    [[nodiscard]] std::size_t getCapacity() const
+    [[nodiscard]] std::size_t GetCapacity() const
     {
-        return capacity;
+        return capacity_;
     }
 
-    [[nodiscard]] std::size_t getSize() const
+    [[nodiscard]] std::size_t GetSize() const
     {
-        return cache.size();
+        return cache_.size();
     }
 
-    [[nodiscard]] const Loader& getLoader() const
+    [[nodiscard]] const Loader& GetLoader() const
     {
-        return loader;
+        return loader_;
     }
 
-    [[nodiscard]] Value& get(const Key& key)
+    [[nodiscard]] Value& Get(const Key& key)
     {
         // Cache hit
-        if (auto it = cache.find(key); it != cache.end())
+        if (auto it = cache_.find(key); it != cache_.end())
         {
-            pairs.splice(pairs.begin(), pairs, it->second);
+            pairs_.splice(pairs_.begin(), pairs_, it->second);
             return it->second->second;
         }
         // Cache miss
-        auto value = loader(key);
-        if (getSize() < capacity)
+        auto value = loader_(key);
+        if (GetSize() < capacity_)
         {
             // Create new node
-            pairs.emplace_front(key, std::move(value));
+            pairs_.emplace_front(key, std::move(value));
         }
         else
         {
             // Reuse last node
-            auto last = std::prev(pairs.end());
-            cache.erase(last->first);
+            auto last = std::prev(pairs_.end());
+            cache_.erase(last->first);
             last->first  = key;
             last->second = std::move(value);
-            pairs.splice(pairs.begin(), pairs, last);
+            pairs_.splice(pairs_.begin(), pairs_, last);
         }
         // New node is at front
-        cache.emplace(key, pairs.begin());
-        return pairs.front().second;
+        cache_.emplace(key, pairs_.begin());
+        return pairs_.front().second;
     }
 
-    void remove(const Key& key)
+    void Remove(const Key& key)
     {
-        if (auto it = cache.find(key); it != cache.end())
+        if (auto it = cache_.find(key); it != cache_.end())
         {
-            pairs.erase(it->second);
-            cache.erase(it);
+            pairs_.erase(it->second);
+            cache_.erase(it);
         }
     }
 
-    void clear()
+    void Clear()
     {
-        cache.clear();
-        pairs.clear();
+        cache_.clear();
+        pairs_.clear();
     }
 
 private:
     using Pair = std::pair<Key, Value>;
     using Iter = typename std::list<Pair>::iterator;
 
-    std::size_t capacity;
-    Loader      loader;
+    std::size_t capacity_;
+    Loader      loader_;
 
-    std::list<Pair>               pairs;
-    std::unordered_map<Key, Iter> cache;
+    std::list<Pair>               pairs_;
+    std::unordered_map<Key, Iter> cache_;
 };

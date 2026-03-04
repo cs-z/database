@@ -86,12 +86,12 @@ public:
 
     using Data = std::variant<DataOp2, DataFunction, DataConstant>;
 
-    Token(Tag tag, SourceText text) : tag{tag}, text{std::move(text)}
+    Token(Tag tag, SourceText text) : tag_{tag}, text_{std::move(text)}
     {
     }
 
     Token(Tag tag, Data data, SourceText text)
-        : tag{tag}, text{std::move(text)}, data{std::move(data)}
+        : tag_{tag}, text_{std::move(text)}, data_{std::move(data)}
     {
     }
 
@@ -100,31 +100,31 @@ public:
     Token& operator=(const Token& other) noexcept = default;
     Token& operator=(Token&& other) noexcept      = default;
 
-    [[nodiscard]] Tag get_tag() const
+    [[nodiscard]] Tag GetTag() const
     {
-        return tag;
+        return tag_;
     }
-    [[nodiscard]] const SourceText& get_text() const
+    [[nodiscard]] const SourceText& GetText() const
     {
-        return text;
+        return text_;
     } // TODO: maybe move
 
-    template <typename DataT> [[nodiscard]] const DataT& get_data() const
+    template <typename DataT> [[nodiscard]] const DataT& GetData() const
     {
-        ASSERT(std::holds_alternative<DataT>(data));
-        return std::get<DataT>(data);
+        ASSERT(std::holds_alternative<DataT>(data_));
+        return std::get<DataT>(data_);
     }
 
-    template <typename DataT> [[nodiscard]] std::pair<DataT, SourceText> take()
+    template <typename DataT> [[nodiscard]] std::pair<DataT, SourceText> Take()
     {
-        ASSERT(std::holds_alternative<DataT>(data));
-        return {std::move(std::get<DataT>(data)), std::move(text)};
+        ASSERT(std::holds_alternative<DataT>(data_));
+        return {std::move(std::get<DataT>(data_)), std::move(text_)};
     }
 
-    static const char* tag_to_cstr(Tag tag);
+    [[nodiscard]] static const char* TagToCstr(Tag tag);
 
 private:
-    Tag        tag;
-    SourceText text;
-    Data       data;
+    Tag        tag_;
+    SourceText text_;
+    Data       data_;
 };

@@ -17,12 +17,12 @@
 
 namespace os
 {
-static const std::string DATA_DIR = "data/";
+static const std::string kDataDir = "data/";
 
-static int file_open(const std::string& name)
+static int FileOpen(const std::string& name)
 {
-    ASSERT(file_exists(name));
-    const std::string path = DATA_DIR + name;
+    ASSERT(FileExists(name));
+    const std::string path = kDataDir + name;
     const int         fd   = ::open(path.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
     if (fd < 0)
     {
@@ -31,7 +31,7 @@ static int file_open(const std::string& name)
     return fd;
 }
 
-static void file_close(int fd) noexcept
+static void FileClose(int fd) noexcept
 {
     const int err = ::close(fd);
     if (err < 0)
@@ -42,19 +42,19 @@ static void file_close(int fd) noexcept
     }
 }
 
-static void file_seek(int fd, page::Id page_id)
+static void FileSeek(int fd, page::Id page_id)
 {
-    const auto offset = static_cast<off_t>(page_id.get()) * page::SIZE;
+    const auto offset = static_cast<off_t>(page_id.Get()) * page::kSize;
     if (::lseek(fd, offset, SEEK_SET) != offset)
     {
         throw ServerError{"lseek", std::to_string(fd), errno};
     }
 }
 
-static void file_read(int fd, page::Id page_id, void* buffer)
+static void FileRead(int fd, page::Id page_id, void* buffer)
 {
-    file_seek(fd, page_id);
-    const std::size_t bytes          = page::SIZE;
+    FileSeek(fd, page_id);
+    const std::size_t bytes          = page::kSize;
     const ssize_t     bytes_returned = ::read(fd, buffer, bytes);
     if (bytes_returned < 0)
     {
@@ -67,10 +67,10 @@ static void file_read(int fd, page::Id page_id, void* buffer)
     }
 }
 
-static void file_write(int fd, page::Id page_id, const void* buffer)
+static void FileWrite(int fd, page::Id page_id, const void* buffer)
 {
-    file_seek(fd, page_id);
-    const std::size_t bytes          = page::SIZE;
+    FileSeek(fd, page_id);
+    const std::size_t bytes          = page::kSize;
     const ssize_t     bytes_returned = ::write(fd, buffer, bytes);
     if (bytes_returned < 0)
     {
@@ -83,9 +83,9 @@ static void file_write(int fd, page::Id page_id, const void* buffer)
     }
 }
 
-static int file_create_temp()
+static int FileCreateTemp()
 {
-    const std::string path = DATA_DIR;
+    const std::string path = kDataDir;
     const int         fd   = ::open(path.c_str(), O_TMPFILE | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd < 0)
     {
@@ -94,14 +94,14 @@ static int file_create_temp()
     return fd;
 }
 
-static void file_remove_temp(int fd) noexcept
+static void FileRemoveTemp(int fd) noexcept
 {
-    file_close(fd);
+    FileClose(fd);
 }
 
-bool file_exists(const std::string& name)
+bool FileExists(const std::string& name)
 {
-    const std::string path = DATA_DIR + name;
+    const std::string path = kDataDir + name;
     // std::cout << "?: " << path << "\n";
     struct stat stat = {};
     const int   err  = ::stat(path.c_str(), &stat);
@@ -112,82 +112,82 @@ bool file_exists(const std::string& name)
     return err == 0;
 }
 
-void file_create(const std::string& name)
+void FileCreate(const std::string& name)
 {
-    ASSERT(!file_exists(name));
-    const std::string path = DATA_DIR + name;
+    ASSERT(!FileExists(name));
+    const std::string path = kDataDir + name;
     const int         fd   = ::open(path.c_str(), O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
     if (fd < 0)
     {
         throw ServerError{"open", path, errno};
     }
-    file_close(fd); // TODO: use it
+    FileClose(fd); // TODO: use it
 }
 
-void file_remove(const std::string& name)
+void FileRemove(const std::string& name)
 {
-    ASSERT(file_exists(name));
-    const std::string path = DATA_DIR + name;
+    ASSERT(FileExists(name));
+    const std::string path = kDataDir + name;
     if (::unlink(path.c_str()) < 0)
     {
         throw ServerError{"unlink", path, errno};
     }
 }
 
-void file_truncate(const std::string& name)
+void FileTruncate(const std::string& name)
 {
-    ASSERT(file_exists(name));
-    const std::string path = DATA_DIR + name;
+    ASSERT(FileExists(name));
+    const std::string path = kDataDir + name;
     if (::truncate(path.c_str(), 0) != 0)
     {
         throw ServerError{"truncate", path, errno};
     }
 }
 
-File::File(const std::string& name) : fd{file_open(name)}
+File::File(const std::string& name) : fd_{FileOpen(name)}
 {
 }
 
 File::~File() noexcept
 {
-    file_close(fd);
+    FileClose(fd_);
 }
 
-void File::read(page::Id page_id, void* buffer) const
+void File::Read(page::Id page_id, void* buffer) const
 {
-    file_read(fd, page_id, buffer);
+    FileRead(fd_, page_id, buffer);
 }
 
-void File::write(page::Id page_id, const void* buffer) const
+void File::Write(page::Id page_id, const void* buffer) const
 {
-    file_write(fd, page_id, buffer);
+    FileWrite(fd_, page_id, buffer);
 }
 
-TempFile::TempFile() : fd{file_create_temp()}
+TempFile::TempFile() : fd_{FileCreateTemp()}
 {
 }
 
 TempFile::~TempFile() noexcept
 {
-    if (fd)
+    if (fd_)
     {
-        file_remove_temp(*fd);
+        FileRemoveTemp(*fd_);
     }
 }
 
-void TempFile::read(page::Id page_id, void* buffer) const
+void TempFile::Read(page::Id page_id, void* buffer) const
 {
-    ASSERT(fd);
-    file_read(*fd, page_id, buffer);
+    ASSERT(fd_);
+    FileRead(*fd_, page_id, buffer);
 }
 
-void TempFile::write(page::Id page_id, const void* buffer) const
+void TempFile::Write(page::Id page_id, const void* buffer) const
 {
-    ASSERT(fd);
-    file_write(*fd, page_id, buffer);
+    ASSERT(fd_);
+    FileWrite(*fd_, page_id, buffer);
 }
 
-unsigned int random()
+unsigned int Random()
 {
     unsigned int      value          = {};
     const std::size_t bytes          = sizeof(value);

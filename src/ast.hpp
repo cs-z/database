@@ -25,7 +25,7 @@ struct AstExpr
     {
         std::optional<SourceText> table;
         SourceText                name;
-        [[nodiscard]] std::string to_string() const;
+        [[nodiscard]] std::string ToString() const;
     };
     struct DataCast
     {
@@ -67,8 +67,8 @@ struct AstExpr
     Data       data;
     SourceText text;
 
-    [[nodiscard]] std::string to_string() const;
-    void                      print() const;
+    [[nodiscard]] std::string ToString() const;
+    void                      Print() const;
 };
 
 struct AstSelectList
@@ -125,7 +125,7 @@ struct AstSource
     Data       data;
     SourceText text;
 
-    void print() const;
+    void Print() const;
 };
 
 struct AstGroupBy
@@ -161,7 +161,7 @@ struct AstQuery
     AstSelect                   select;
     std::optional<AstOrderBy>   order_by;
     std::optional<unsigned int> limit;
-    void                        print() const;
+    void                        Print() const;
 };
 
 struct AstCreateTable

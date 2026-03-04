@@ -18,49 +18,48 @@
 
 namespace fst
 {
-constexpr page::EntryId ENTRIES_PER_PAGE{page::SIZE / sizeof(page::Offset) / 2};
+constexpr page::EntryId kEntriesPerPage{page::kSize / sizeof(page::Offset) / 2};
 
 struct PageHead
 {
-    static constexpr unsigned int LEVEL_MAX = 6; // TODO
+    static constexpr unsigned int kMaxLevel = 6; // TODO
 
-    static constexpr std::array<page::Id, LEVEL_MAX + 1> LEVEL_PAGES = {
+    static constexpr std::array<page::Id, kMaxLevel + 1> kLevelPages = {
         static_cast<page::Id>(0),
         static_cast<page::Id>(1),
-        static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
-        static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
-        static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
-        static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
-        static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()) *
-            static_cast<page::Id>(ENTRIES_PER_PAGE.get()),
+        static_cast<page::Id>(kEntriesPerPage.Get()),
+        static_cast<page::Id>(kEntriesPerPage.Get()) * static_cast<page::Id>(kEntriesPerPage.Get()),
+        static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()),
+        static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()),
+        static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()) *
+            static_cast<page::Id>(kEntriesPerPage.Get()),
     };
 
-    static constexpr std::array<page::Id, LEVEL_MAX + 1> LEVEL_BEGIN = {
+    static constexpr std::array<page::Id, kMaxLevel + 1> kLevelBegin = {
         page::Id{1},
-        page::Id{1} + LEVEL_PAGES[0],
-        page::Id{1} + LEVEL_PAGES[0] + LEVEL_PAGES[1],
-        page::Id{1} + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2],
-        page::Id{1} + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3],
-        page::Id{1} + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3] +
-            LEVEL_PAGES[4],
-        page::Id{1} + LEVEL_PAGES[0] + LEVEL_PAGES[1] + LEVEL_PAGES[2] + LEVEL_PAGES[3] +
-            LEVEL_PAGES[4] + LEVEL_PAGES[5],
+        page::Id{1} + kLevelPages[0],
+        page::Id{1} + kLevelPages[0] + kLevelPages[1],
+        page::Id{1} + kLevelPages[0] + kLevelPages[1] + kLevelPages[2],
+        page::Id{1} + kLevelPages[0] + kLevelPages[1] + kLevelPages[2] + kLevelPages[3],
+        page::Id{1} + kLevelPages[0] + kLevelPages[1] + kLevelPages[2] + kLevelPages[3] +
+            kLevelPages[4],
+        page::Id{1} + kLevelPages[0] + kLevelPages[1] + kLevelPages[2] + kLevelPages[3] +
+            kLevelPages[4] + kLevelPages[5],
     };
 
     unsigned int pages;
     unsigned int levels;
     unsigned int bottom; // number of pages in the bottom level
 
-    void init()
+    void Init()
     {
         pages  = 0;
         levels = 0;
@@ -73,7 +72,7 @@ struct PageHead
 // 	ASSERT(page);
 // 	page::EntryId index { 1 };
 // 	page::EntryId count { 1 };
-// 	while (count <= ENTRIES_PER_PAGE) {
+// 	while (count <= kEntriesPerPage) {
 // 		for (page::EntryId i {}; i < count; i++) {
 // 			std::printf("%u ", page[(index + i).get()]);
 // 		}
@@ -83,44 +82,44 @@ struct PageHead
 // 	}
 // }
 
-static inline page::Offset page_get_root(const page::Offset* page)
+static inline page::Offset PageGetRoot(const page::Offset* page)
 {
     ASSERT(page);
     return page[1];
 }
 
-static void page_init(page::Offset* page)
+static void PageInit(page::Offset* page)
 {
     ASSERT(page);
-    memset(page, 0, page::SIZE);
+    memset(page, 0, page::kSize);
 }
 
-static bool page_set(page::Offset* page, page::EntryId entry_id, page::Offset size)
+static bool PageSet(page::Offset* page, page::EntryId entry_id, page::Offset size)
 {
     ASSERT(page);
-    ASSERT(entry_id < ENTRIES_PER_PAGE);
-    page::EntryId index = ENTRIES_PER_PAGE + entry_id;
-    while (index > 0 && page[index.get()] != size)
+    ASSERT(entry_id < kEntriesPerPage);
+    page::EntryId index = kEntriesPerPage + entry_id;
+    while (index > 0 && page[index.Get()] != size)
     {
-        page[index.get()] = size;
+        page[index.Get()] = size;
         index             = index / 2;
-        size              = std::max(page[(index * 2).get()], page[(index * 2 + 1).get()]);
+        size              = std::max(page[(index * 2).Get()], page[(index * 2 + 1).Get()]);
     }
     return index == 0;
 }
 
-static page::EntryId page_get(const page::Offset* page, page::Offset size)
+static page::EntryId PageGet(const page::Offset* page, page::Offset size)
 {
     ASSERT(page);
     ASSERT(size > 0);
-    ASSERT(page_get_root(page) >= size);
+    ASSERT(PageGetRoot(page) >= size);
     page::EntryId index{1};
-    while (index < ENTRIES_PER_PAGE)
+    while (index < kEntriesPerPage)
     {
         const page::EntryId index_l = index * 2;
         const page::EntryId index_r = index * 2 + 1;
-        const page::Offset  size_l  = page[index_l.get()];
-        const page::Offset  size_r  = page[index_r.get()];
+        const page::Offset  size_l  = page[index_l.Get()];
+        const page::Offset  size_r  = page[index_r.Get()];
         // TODO: best fit or worst fit
         if (size_l >= size)
         {
@@ -134,69 +133,69 @@ static page::EntryId page_get(const page::Offset* page, page::Offset size)
         }
         UNREACHABLE();
     }
-    ASSERT(ENTRIES_PER_PAGE <= index && index < 2 * ENTRIES_PER_PAGE);
-    ASSERT(page[index.get()] >= size);
-    return index - ENTRIES_PER_PAGE;
+    ASSERT(kEntriesPerPage <= index && index < 2 * kEntriesPerPage);
+    ASSERT(page[index.Get()] >= size);
+    return index - kEntriesPerPage;
 }
 
-void init(catalog::FileId file_id)
+void Init(catalog::FileId file_id)
 {
     const buffer::Pin<PageHead> page_head{file_id, page::Id{}, true};
-    page_head->init();
+    page_head->Init();
 }
 
-page::Id get_page_count(catalog::FileId file_id)
+page::Id GetPageCount(catalog::FileId file_id)
 {
     const buffer::Pin<const PageHead> page_head{file_id, page::Id{}};
     return page::Id{page_head->pages};
 }
 
-static page::Id append(catalog::FileId file_id, page::Offset value)
+static page::Id Append(catalog::FileId file_id, page::Offset value)
 {
     const buffer::Pin<PageHead> page_head{file_id, page::Id{}};
-    if (page_head->pages % ENTRIES_PER_PAGE == 0)
+    if (page_head->pages % kEntriesPerPage == 0)
     {
-        if (page_head->bottom == PageHead::LEVEL_PAGES[page_head->levels])
+        if (page_head->bottom == PageHead::kLevelPages[page_head->levels])
         {
-            ASSERT(page_head->levels < PageHead::LEVEL_MAX);
-            for (page::Id page_id{}; page_id < PageHead::LEVEL_PAGES[page_head->levels]; page_id++)
+            ASSERT(page_head->levels < PageHead::kMaxLevel);
+            for (page::Id page_id{}; page_id < PageHead::kLevelPages[page_head->levels]; page_id++)
             {
                 const buffer::Pin<const page::Offset> src{
-                    file_id, page::Id{PageHead::LEVEL_BEGIN[page_head->levels] + page_id}};
+                    file_id, page::Id{PageHead::kLevelBegin[page_head->levels] + page_id}};
                 const buffer::Pin<page::Offset> dst{
-                    file_id, page::Id{PageHead::LEVEL_BEGIN[page_head->levels + 1] + page_id},
+                    file_id, page::Id{PageHead::kLevelBegin[page_head->levels + 1] + page_id},
                     true};
-                std::memcpy(dst.get_page(), src.get_page(), page::SIZE);
+                std::memcpy(dst.GetPage(), src.GetPage(), page::kSize);
             }
             for (unsigned int level = 1; level <= page_head->levels; level++)
             {
-                for (page::Id page_id{}; page_id < PageHead::LEVEL_PAGES[level]; page_id++)
+                for (page::Id page_id{}; page_id < PageHead::kLevelPages[level]; page_id++)
                 {
                     const buffer::Pin<page::Offset> page{
-                        file_id, page::Id{PageHead::LEVEL_BEGIN[level] + page_id}};
-                    page_init(page.get_page());
+                        file_id, page::Id{PageHead::kLevelBegin[level] + page_id}};
+                    PageInit(page.GetPage());
                 }
             }
-            for (page::Id page_id{}; page_id < PageHead::LEVEL_PAGES[page_head->levels]; page_id++)
+            for (page::Id page_id{}; page_id < PageHead::kLevelPages[page_head->levels]; page_id++)
             {
                 const buffer::Pin<const page::Offset> page{
-                    file_id, page::Id{PageHead::LEVEL_BEGIN[page_head->levels + 1] + page_id}};
-                const page::Offset value = page_get_root(page.get_page());
-                update(file_id, page_id, value);
+                    file_id, page::Id{PageHead::kLevelBegin[page_head->levels + 1] + page_id}};
+                const page::Offset value = PageGetRoot(page.GetPage());
+                Update(file_id, page_id, value);
             }
             page_head->levels++;
         }
         const buffer::Pin<page::Offset> page{
-            file_id, page::Id{PageHead::LEVEL_BEGIN[page_head->levels] + page_head->bottom++},
+            file_id, page::Id{PageHead::kLevelBegin[page_head->levels] + page_head->bottom++},
             true};
-        page_init(page.get_page());
+        PageInit(page.GetPage());
     }
     const page::Id page_id = page::Id{page_head->pages++};
-    update(file_id, page_id, value);
+    Update(file_id, page_id, value);
     return page_id;
 }
 
-void update(catalog::FileId file_id, page::Id page_id, page::Offset size)
+void Update(catalog::FileId file_id, page::Id page_id, page::Offset size)
 {
     const buffer::Pin<const PageHead> page_head{file_id, page::Id{0}};
     ASSERT(page_id < page_head->pages);
@@ -205,13 +204,13 @@ void update(catalog::FileId file_id, page::Id page_id, page::Offset size)
     while (level > 0)
     {
         const page::EntryId entry_id =
-            static_cast<page::EntryId>(page_id.get() % ENTRIES_PER_PAGE.get());
-        page_id = page_id / ENTRIES_PER_PAGE.get();
+            static_cast<page::EntryId>(page_id.Get() % kEntriesPerPage.Get());
+        page_id = page_id / kEntriesPerPage.Get();
         const buffer::Pin<page::Offset> page{file_id,
-                                             page::Id{PageHead::LEVEL_BEGIN[level] + page_id}};
-        if (page_set(page.get_page(), entry_id, size))
+                                             page::Id{PageHead::kLevelBegin[level] + page_id}};
+        if (PageSet(page.GetPage(), entry_id, size))
         {
-            size = page_get_root(page.get_page());
+            size = PageGetRoot(page.GetPage());
         }
         else
         {
@@ -221,77 +220,77 @@ void update(catalog::FileId file_id, page::Id page_id, page::Offset size)
     }
 }
 
-static std::optional<page::Id> find(catalog::FileId file_id, page::Offset value)
+static std::optional<page::Id> Find(catalog::FileId file_id, page::Offset value)
 {
     const buffer::Pin<const PageHead> page_head{file_id, page::Id{0}};
     if (page_head->levels == 0)
     {
         return std::nullopt;
     }
-    const buffer::Pin<const page::Offset> page{file_id, page::Id{PageHead::LEVEL_BEGIN[1]}};
-    if (page_get_root(page.get_page()) < value)
+    const buffer::Pin<const page::Offset> page{file_id, page::Id{PageHead::kLevelBegin[1]}};
+    if (PageGetRoot(page.GetPage()) < value)
     {
         return std::nullopt;
     }
-    page::Id page_id{page_get(page.get_page(), value).get()};
+    page::Id page_id{PageGet(page.GetPage(), value).Get()};
     for (unsigned int level = 2; level <= page_head->levels; level++)
     {
         const buffer::Pin<const page::Offset> page{
-            file_id, page::Id{PageHead::LEVEL_BEGIN[level] + page_id}};
-        const page::EntryId entry_id = page_get(page.get_page(), value);
-        page_id                      = page_id * static_cast<page::Id>(ENTRIES_PER_PAGE.get()) +
-                  static_cast<page::Id>(entry_id.get());
+            file_id, page::Id{PageHead::kLevelBegin[level] + page_id}};
+        const page::EntryId entry_id = PageGet(page.GetPage(), value);
+        page_id                      = page_id * static_cast<page::Id>(kEntriesPerPage.Get()) +
+                  static_cast<page::Id>(entry_id.Get());
         ASSERT(page_id < page_head->pages);
     }
     return page_id;
 }
 
-std::pair<page::Id, bool> find_or_append(catalog::FileId file_id, page::Offset size)
+std::pair<page::Id, bool> FindOrAppend(catalog::FileId file_id, page::Offset size)
 {
-    auto page_opt = find(file_id, size);
+    auto page_opt = Find(file_id, size);
     if (page_opt)
     {
         return std::make_pair(*page_opt, false);
     }
-    return std::make_pair(append(file_id, 0), true);
+    return std::make_pair(Append(file_id, 0), true);
 }
 
-void test()
+void Test()
 {
-    const unsigned int seed = os::random();
+    const unsigned int seed = os::Random();
     srand(seed);
 
     std::printf("testing fst\n");
 
-    buffer::init();
-    catalog::init();
+    buffer::Init();
+    catalog::Init();
 
-    const catalog::FileId file_id = catalog::get_table_file_ids(catalog::TableId{}).fst;
-    init(file_id);
+    const catalog::FileId file_id = catalog::GetTableFileIds(catalog::TableId{}).fst;
+    Init(file_id);
 
     std::vector<page::Offset>     test;
-    static constexpr unsigned int pageCount = 1'000;
-    for (unsigned int i = 0; i < pageCount; i++)
+    static constexpr unsigned int kPageCount = 1'000;
+    for (unsigned int i = 0; i < kPageCount; i++)
     {
         const page::Offset value_append = (rand() % 100'000U) + 1U;
-        append(file_id, value_append);
+        Append(file_id, value_append);
         test.push_back(value_append);
-        static constexpr unsigned int iterationCount = 10;
-        for (unsigned int j = 0; j < iterationCount; j++)
+        static constexpr unsigned int kIterationCount = 10;
+        for (unsigned int j = 0; j < kIterationCount; j++)
         {
             const page::Id     index_set(rand() % test.size());
             const page::Offset value_set = (rand() % 100'000U) + 1U;
-            update(file_id, index_set, value_set);
-            test.at(index_set.get())                 = value_set;
+            Update(file_id, index_set, value_set);
+            test.at(index_set.Get())                 = value_set;
             const page::Offset            value_find = (rand() % 100'000U) + 1U;
-            const std::optional<page::Id> page_id    = find(file_id, value_find);
+            const std::optional<page::Id> page_id    = Find(file_id, value_find);
             const page::Offset            test_max   = *std::ranges::max_element(test);
             ASSERT((!page_id && test_max < value_find) ||
-                   (page_id && test.at(page_id->get()) >= value_find));
+                   (page_id && test.at(page_id->Get()) >= value_find));
         }
     }
 
-    buffer::destroy();
+    buffer::Destroy();
 
     std::printf("testing fst done\n");
 }

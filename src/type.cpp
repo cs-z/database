@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-std::string column_type_to_string(ColumnType type)
+std::string ColumnTypeToString(ColumnType type)
 {
     switch (type)
     {
@@ -27,17 +27,17 @@ std::string column_type_to_string(ColumnType type)
     UNREACHABLE();
 }
 
-std::string column_type_to_catalog_string(ColumnType type)
+std::string ColumnTypeToCatalogString(ColumnType type)
 {
-    return column_type_to_string(type);
+    return ColumnTypeToString(type);
 }
 
-ColumnType column_type_from_catalog_string(const std::string& name)
+ColumnType ColumnTypeFromCatalogString(const std::string& name)
 {
-    return parse_type(name);
+    return ParseType(name);
 }
 
-void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, SourceText>& to)
+void CompileCast(std::optional<ColumnType> from, const std::pair<ColumnType, SourceText>& to)
 {
     if (from)
     {
@@ -79,31 +79,31 @@ void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, So
             break;
         }
     }
-    throw ClientError{"invalid cast from " + (from ? column_type_to_string(*from) : "NULL") +
-                          " to " + column_type_to_string(to.first),
+    throw ClientError{"invalid cast from " + (from ? ColumnTypeToString(*from) : "NULL") + " to " +
+                          ColumnTypeToString(to.first),
                       to.second};
 }
 
-Type::Type() : align{alignof(row::ColumnPrefix)}
+Type::Type() : align_{alignof(row::ColumnPrefix)}
 {
 }
 
-void Type::push(ColumnType column)
+void Type::Push(ColumnType column)
 {
     switch (column)
     {
     case ColumnType::BOOLEAN:
-        align = std::max<page::Offset>(align, alignof(ColumnValueBoolean));
+        align_ = std::max<page::Offset>(align_, alignof(ColumnValueBoolean));
         break;
     case ColumnType::INTEGER:
-        align = std::max<page::Offset>(align, alignof(ColumnValueInteger));
+        align_ = std::max<page::Offset>(align_, alignof(ColumnValueInteger));
         break;
     case ColumnType::REAL:
-        align = std::max<page::Offset>(align, alignof(ColumnValueReal));
+        align_ = std::max<page::Offset>(align_, alignof(ColumnValueReal));
         break;
     case ColumnType::VARCHAR:
-        align = std::max<page::Offset>(align, alignof(char));
+        align_ = std::max<page::Offset>(align_, alignof(char));
         break;
     }
-    columns.push_back(column);
+    columns_.push_back(column);
 }

@@ -22,19 +22,19 @@ class IterSort : public IterBase
 {
 public:
     IterSort(Iter parent, OrderBy columns)
-        : IterBase{parent->type}, parent{std::move(parent)}, columns{std::move(columns)}
+        : IterBase{parent->type}, parent_{std::move(parent)}, columns_{std::move(columns)}
     {
     }
     ~IterSort() override = default;
 
-    void                 open() override;
-    void                 restart() override;
-    void                 close() override;
-    std::optional<Value> next() override;
+    void                 Open() override;
+    void                 Restart() override;
+    void                 Close() override;
+    std::optional<Value> Next() override;
 
 private:
-    Iter          parent;
-    const OrderBy columns;
+    Iter          parent_;
+    const OrderBy columns_;
 
-    Iter sorted_iter;
+    Iter sorted_iter_;
 };

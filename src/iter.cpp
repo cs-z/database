@@ -12,240 +12,240 @@
 #include <utility>
 #include <vector>
 
-void IterProject::open()
+void IterProject::Open()
 {
-    parent->open();
+    parent_->Open();
 }
 
-void IterProject::restart()
+void IterProject::Restart()
 {
-    parent->restart();
+    parent_->Restart();
 }
 
-void IterProject::close()
+void IterProject::Close()
 {
-    parent->close();
+    parent_->Close();
 }
 
-std::optional<Value> IterProject::next()
+std::optional<Value> IterProject::Next()
 {
-    std::optional<Value> value = parent->next();
+    std::optional<Value> value = parent_->Next();
     if (!value)
     {
         return std::nullopt;
     }
-    return map_value(std::move(*value), columns);
+    return MapValue(std::move(*value), columns_);
 }
 
-Type IterProject::map_type(const Type& type, const std::vector<ColumnId>& columns)
+Type IterProject::MapType(const Type& type, const std::vector<ColumnId>& columns)
 {
     Type new_type;
     for (ColumnId column : columns)
     {
-        new_type.push(type.at(column.get()));
+        new_type.Push(type.At(column.Get()));
     }
     return new_type;
 }
 
-Value IterProject::map_value(Value&& value, const std::vector<ColumnId>& columns)
+Value IterProject::MapValue(Value&& value, const std::vector<ColumnId>& columns)
 {
     Value new_value;
     for (ColumnId column : columns)
     {
-        new_value.push_back(std::move(value.at(column.get())));
+        new_value.push_back(std::move(value.at(column.Get())));
     }
     return new_value;
 }
 
-void IterExpr::open()
+void IterExpr::Open()
 {
-    parent->open();
+    parent_->Open();
 }
 
-void IterExpr::restart()
+void IterExpr::Restart()
 {
-    parent->restart();
+    parent_->Restart();
 }
 
-void IterExpr::close()
+void IterExpr::Close()
 {
-    parent->close();
+    parent_->Close();
 }
 
-std::optional<Value> IterExpr::next()
+std::optional<Value> IterExpr::Next()
 {
-    const std::optional<Value> value = parent->next();
+    const std::optional<Value> value = parent_->Next();
     if (!value)
     {
         return std::nullopt;
     }
     Value result;
-    for (const ExprPtr& expr : exprs)
+    for (const ExprPtr& expr : exprs_)
     {
-        result.push_back(expr->eval(&*value));
+        result.push_back(expr->Eval(&*value));
     }
     return result;
 }
 
-void IterScan::open()
+void IterScan::Open()
 {
-    page_id  = {};
-    entry_id = {};
+    page_id_  = {};
+    entry_id_ = {};
 }
 
-void IterScan::restart()
+void IterScan::Restart()
 {
-    open();
+    Open();
 }
 
-void IterScan::close()
+void IterScan::Close()
 {
-    page = {};
+    page_ = {};
 }
 
-std::optional<Value> IterScan::next()
+std::optional<Value> IterScan::Next()
 {
     for (;;)
     {
-        if (entry_id == 0)
+        if (entry_id_ == 0)
         {
-            if (page_id == page_count)
+            if (page_id_ == page_count_)
             {
                 return std::nullopt;
             }
-            page = {file_id, page_id};
+            page_ = {file_id_, page_id_};
         }
-        if (entry_id == page->get_entry_count())
+        if (entry_id_ == page_->GetEntryCount())
         {
-            page_id++;
-            entry_id = page::EntryId{};
+            page_id_++;
+            entry_id_ = page::EntryId{};
             continue;
         }
-        const auto      curr_entry_id = entry_id++;
-        const u8* const entry         = page->get_entry(curr_entry_id);
+        const auto      curr_entry_id = entry_id_++;
+        const U8* const entry         = page_->GetEntry(curr_entry_id);
         if (entry == nullptr)
         {
             continue;
         }
-        auto value = row::read(type, entry);
-        if (emitRowId)
+        auto value = row::Read(type, entry);
+        if (emit_row_id_)
         {
-            const auto rowId = packRowId(page_id, curr_entry_id);
-            value.emplace_back(rowId); // TODO: is it safe? does not match type, hidden column
+            const auto row_id = PackRowId(page_id_, curr_entry_id);
+            value.emplace_back(row_id); // TODO: is it safe? does not match type, hidden column
         }
         return value;
     }
 }
 
-void IterScanTemp::open()
+void IterScanTemp::Open()
 {
-    page_id  = {};
-    entry_id = {};
+    page_id_  = {};
+    entry_id_ = {};
 }
 
-void IterScanTemp::restart()
+void IterScanTemp::Restart()
 {
-    open();
+    Open();
 }
 
-void IterScanTemp::close()
+void IterScanTemp::Close()
 {
 }
 
-std::optional<Value> IterScanTemp::next()
+std::optional<Value> IterScanTemp::Next()
 {
     for (;;)
     {
-        if (entry_id == 0)
+        if (entry_id_ == 0)
         {
-            if (page_id == page_count)
+            if (page_id_ == page_count_)
             {
                 return std::nullopt;
             }
-            file.read(page_id, page.get());
+            file_.Read(page_id_, page_.Get());
         }
-        if (entry_id == page->get_entry_count())
+        if (entry_id_ == page_->GetEntryCount())
         {
-            page_id++;
-            entry_id = page::EntryId{};
+            page_id_++;
+            entry_id_ = page::EntryId{};
             continue;
         }
-        const u8* const entry = page->get_entry(entry_id++);
+        const U8* const entry = page_->GetEntry(entry_id_++);
         if (entry == nullptr)
         {
             continue;
         }
-        return row::read(type, entry);
+        return row::Read(type, entry);
     }
 }
 
-void IterJoinCross::open()
+void IterJoinCross::Open()
 {
-    iter_l->open();
-    iter_r->open();
-    value_l = iter_l->next();
+    iter_l_->Open();
+    iter_r_->Open();
+    value_l_ = iter_l_->Next();
 }
 
-void IterJoinCross::restart()
+void IterJoinCross::Restart()
 {
-    iter_l->restart();
-    iter_r->restart();
-    value_l = iter_l->next();
+    iter_l_->Restart();
+    iter_r_->Restart();
+    value_l_ = iter_l_->Next();
 }
 
-void IterJoinCross::close()
+void IterJoinCross::Close()
 {
-    iter_l->close();
-    iter_r->close();
+    iter_l_->Close();
+    iter_r_->Close();
 }
 
-std::optional<Value> IterJoinCross::next()
+std::optional<Value> IterJoinCross::Next()
 {
     for (;;)
     {
-        if (!value_l)
+        if (!value_l_)
         {
             return std::nullopt;
         }
-        std::optional<Value> value_r = iter_r->next();
+        std::optional<Value> value_r = iter_r_->Next();
         if (!value_r)
         {
-            iter_r->restart();
-            value_l = iter_l->next();
+            iter_r_->Restart();
+            value_l_ = iter_l_->Next();
             continue;
         }
         Value value;
-        value.insert(value.end(), value_l->begin(), value_l->end());
+        value.insert(value.end(), value_l_->begin(), value_l_->end());
         value.insert(value.end(), value_r->begin(), value_r->end());
         return value;
     }
 }
 
-void IterJoinQualified::open()
+void IterJoinQualified::Open()
 {
-    parent->open();
+    parent_->Open();
 }
 
-void IterJoinQualified::restart()
+void IterJoinQualified::Restart()
 {
-    parent->restart();
+    parent_->Restart();
 }
 
-void IterJoinQualified::close()
+void IterJoinQualified::Close()
 {
-    parent->close();
+    parent_->Close();
 }
 
-std::optional<Value> IterJoinQualified::next()
+std::optional<Value> IterJoinQualified::Next()
 {
     for (;;)
     {
-        std::optional<Value> value = parent->next();
+        std::optional<Value> value = parent_->Next();
         if (!value)
         {
             return std::nullopt;
         }
-        const Bool condition_value = std::get<ColumnValueBoolean>(condition->eval(&*value));
+        const Bool condition_value = std::get<ColumnValueBoolean>(condition_->Eval(&*value));
         if (condition_value != Bool::TRUE)
         {
             continue;
@@ -254,31 +254,31 @@ std::optional<Value> IterJoinQualified::next()
     }
 }
 
-void IterFilter::open()
+void IterFilter::Open()
 {
-    parent->open();
+    parent_->Open();
 }
 
-void IterFilter::restart()
+void IterFilter::Restart()
 {
-    parent->restart();
+    parent_->Restart();
 }
 
-void IterFilter::close()
+void IterFilter::Close()
 {
-    parent->close();
+    parent_->Close();
 }
 
-std::optional<Value> IterFilter::next()
+std::optional<Value> IterFilter::Next()
 {
     for (;;)
     {
-        std::optional<Value> value = parent->next();
+        std::optional<Value> value = parent_->Next();
         if (!value)
         {
             return std::nullopt;
         }
-        const Bool condition_value = std::get<ColumnValueBoolean>(condition->eval(&*value));
+        const Bool condition_value = std::get<ColumnValueBoolean>(condition_->Eval(&*value));
         if (condition_value != Bool::TRUE)
         {
             continue;

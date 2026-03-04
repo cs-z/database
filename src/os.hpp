@@ -8,10 +8,10 @@
 
 namespace os
 {
-[[nodiscard]] bool file_exists(const std::string& name);
-void               file_create(const std::string& name);
-void               file_remove(const std::string& name);
-void               file_truncate(const std::string& name);
+[[nodiscard]] bool FileExists(const std::string& name);
+void               FileCreate(const std::string& name);
+void               FileRemove(const std::string& name);
+void               FileTruncate(const std::string& name);
 
 class File
 {
@@ -25,11 +25,11 @@ public:
     File(File&&)            = delete;
     File& operator=(File&&) = delete;
 
-    void read(page::Id page_id, void* buffer) const;
-    void write(page::Id page_id, const void* buffer) const;
+    void Read(page::Id page_id, void* buffer) const;
+    void Write(page::Id page_id, const void* buffer) const;
 
 private:
-    const int fd;
+    const int fd_;
 };
 
 class TempFile
@@ -40,27 +40,27 @@ public:
 
     TempFile(TempFile&& other) noexcept
     {
-        fd       = other.fd;
-        other.fd = std::nullopt;
+        fd_       = other.fd_;
+        other.fd_ = std::nullopt;
     }
 
     TempFile& operator=(TempFile&& other) noexcept
     {
-        ASSERT(!fd); // TODO
-        fd       = other.fd;
-        other.fd = std::nullopt;
+        ASSERT(!fd_); // TODO
+        fd_       = other.fd_;
+        other.fd_ = std::nullopt;
         return *this;
     }
 
     TempFile(const TempFile&)            = delete;
     TempFile& operator=(const TempFile&) = delete;
 
-    void read(page::Id page_id, void* buffer) const;
-    void write(page::Id page_id, const void* buffer) const;
+    void Read(page::Id page_id, void* buffer) const;
+    void Write(page::Id page_id, const void* buffer) const;
 
 private:
-    std::optional<int> fd;
+    std::optional<int> fd_;
 };
 
-[[nodiscard]] unsigned int random();
+[[nodiscard]] unsigned int Random();
 } // namespace os

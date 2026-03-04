@@ -12,15 +12,15 @@
 #include <utility>
 #include <variant>
 
-void Aggregator::init()
+void Aggregator::Init()
 {
-    min   = {};
-    max   = {};
-    sum   = {};
-    count = {};
+    min_   = {};
+    max_   = {};
+    sum_   = {};
+    count_ = {};
 }
 
-void Aggregator::feed(const ColumnValue& value)
+void Aggregator::Feed(const ColumnValue& value)
 {
     std::visit(
         Overload{
@@ -31,61 +31,61 @@ void Aggregator::feed(const ColumnValue& value)
             [](const ColumnValueBoolean&) { UNREACHABLE(); },
             [this](const ColumnValueInteger& value)
             {
-                if (this->count == 0)
+                if (count_ == 0)
                 {
-                    this->min = value;
-                    this->max = value;
-                    this->sum = value;
+                    min_ = value;
+                    max_ = value;
+                    sum_ = value;
                 }
                 else
                 {
-                    this->min = std::min(std::get<ColumnValueInteger>(this->min), value);
-                    this->max = std::max(std::get<ColumnValueInteger>(this->max), value);
-                    this->sum = std::get<ColumnValueInteger>(this->sum) + value;
+                    min_ = std::min(std::get<ColumnValueInteger>(min_), value);
+                    max_ = std::max(std::get<ColumnValueInteger>(max_), value);
+                    sum_ = std::get<ColumnValueInteger>(sum_) + value;
                 }
-                this->count++;
+                count_++;
             },
             [this](const ColumnValueReal& value)
             {
-                if (this->count == 0)
+                if (count_ == 0)
                 {
-                    this->min = value;
-                    this->max = value;
-                    this->sum = value;
+                    min_ = value;
+                    max_ = value;
+                    sum_ = value;
                 }
                 else
                 {
-                    this->min = std::min(std::get<ColumnValueReal>(this->min), value);
-                    this->max = std::max(std::get<ColumnValueReal>(this->max), value);
-                    sum       = std::get<ColumnValueReal>(this->sum) + value;
+                    min_ = std::min(std::get<ColumnValueReal>(min_), value);
+                    max_ = std::max(std::get<ColumnValueReal>(max_), value);
+                    sum_ = std::get<ColumnValueReal>(sum_) + value;
                 }
-                this->count++;
+                count_++;
             },
             [this](const ColumnValueVarchar& value)
             {
-                if (this->count == 0)
+                if (count_ == 0)
                 {
-                    this->min = value;
-                    this->max = value;
+                    min_ = value;
+                    max_ = value;
                 }
                 else
                 {
-                    if (compare_strings(value, std::get<ColumnValueVarchar>(this->min)) < 0)
+                    if (CompareStrings(value, std::get<ColumnValueVarchar>(min_)) < 0)
                     {
-                        this->min = value;
+                        min_ = value;
                     }
-                    if (compare_strings(value, std::get<ColumnValueVarchar>(this->max)) > 0)
+                    if (CompareStrings(value, std::get<ColumnValueVarchar>(max_)) > 0)
                     {
-                        this->max = value;
+                        max_ = value;
                     }
                 }
-                this->count++;
+                count_++;
             },
         },
         value);
 }
 
-ColumnValue Aggregator::get(Function function)
+ColumnValue Aggregator::Get(Function function)
 {
     switch (function)
     {
@@ -96,30 +96,30 @@ ColumnValue Aggregator::get(Function function)
                 [](const ColumnValueBoolean&) -> ColumnValue { UNREACHABLE(); },
                 [this](const ColumnValueInteger& value) -> ColumnValue
                 {
-                    ASSERT(this->count > 0);
-                    return value / this->count;
+                    ASSERT(count_ > 0);
+                    return value / count_;
                 },
                 [this](const ColumnValueReal& value) -> ColumnValue
                 {
-                    ASSERT(this->count > 0);
-                    return value / static_cast<ColumnValueReal>(this->count);
+                    ASSERT(count_ > 0);
+                    return value / static_cast<ColumnValueReal>(count_);
                 },
                 [](const ColumnValueVarchar&) -> ColumnValue { UNREACHABLE(); },
             },
-            sum);
+            sum_);
     case Function::MAX:
-        return max;
+        return max_;
     case Function::MIN:
-        return min;
+        return min_;
     case Function::SUM:
-        return sum;
+        return sum_;
     case Function::COUNT:
-        return count;
+        return count_;
     }
     UNREACHABLE();
 }
 
-static Iter create_iter(Iter&& parent, const Aggregates& aggregates)
+static Iter CreateIter(Iter&& parent, const Aggregates& aggregates)
 {
     if (!aggregates.group_by.empty())
     {
@@ -134,28 +134,28 @@ static Iter create_iter(Iter&& parent, const Aggregates& aggregates)
 }
 
 IterAggregate::IterAggregate(Iter&& parent, Aggregates&& aggregates)
-    : IterBase{parent->type}, parent{create_iter(std::move(parent), aggregates)},
-      aggregates{std::move(aggregates)}, aggregators{this->aggregates.exprs.size()}
+    : IterBase{parent->type}, parent_{CreateIter(std::move(parent), aggregates)},
+      aggregates_{std::move(aggregates)}, aggregators_{aggregates_.exprs.size()}
 {
 }
 
-void IterAggregate::open()
+void IterAggregate::Open()
 {
-    done = false;
-    parent->open();
+    done_ = false;
+    parent_->Open();
 }
 
-void IterAggregate::restart()
+void IterAggregate::Restart()
 {
-    open();
+    Open();
 }
 
-void IterAggregate::close()
+void IterAggregate::Close()
 {
-    parent->close();
+    parent_->Close();
 }
 
-std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupBy&  group_by,
+std::optional<std::optional<Value>> IterAggregate::Feed(const Aggregates::GroupBy&  group_by,
                                                         const std::optional<Value>& value)
 {
     // TODO
@@ -172,14 +172,14 @@ std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupB
         value_key = Value{};
         for (ColumnId key_id : group_by)
         {
-            value_key->push_back(value->at(key_id.get()));
+            value_key->push_back(value->at(key_id.Get()));
         }
     }
 
-    const bool should_return_null = !current_key && !value_key;
-    const bool key_changed = current_key && value_key && !value_equal(*current_key, *value_key);
-    const bool should_return_value = (current_key && !value_key) || key_changed;
-    const bool should_init         = !current_key || key_changed;
+    const bool should_return_null = !current_key_ && !value_key;
+    const bool key_changed = current_key_ && value_key && !ValueEqual(*current_key_, *value_key);
+    const bool should_return_value = (current_key_ && !value_key) || key_changed;
+    const bool should_init         = !current_key_ || key_changed;
     const bool should_feed         = value_key.has_value();
 
     std::optional<std::optional<Value>> result;
@@ -191,17 +191,17 @@ std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupB
 
     if (should_return_value)
     {
-        ASSERT(current_key);
-        Value result_value = std::move(*current_key);
-        for (std::size_t i = 0; i < aggregates.exprs.size(); i++)
+        ASSERT(current_key_);
+        Value result_value = std::move(*current_key_);
+        for (std::size_t i = 0; i < aggregates_.exprs.size(); i++)
         {
-            if (aggregates.exprs[i].arg)
+            if (aggregates_.exprs[i].arg)
             {
-                result_value.push_back(aggregators[i].get(aggregates.exprs[i].function));
+                result_value.push_back(aggregators_[i].Get(aggregates_.exprs[i].function));
             }
             else
             {
-                result_value.emplace_back(count);
+                result_value.emplace_back(count_);
             }
         }
         result = {result_value};
@@ -211,48 +211,48 @@ std::optional<std::optional<Value>> IterAggregate::feed(const Aggregates::GroupB
     {
         if (value_key)
         {
-            current_key = std::move(value_key);
+            current_key_ = std::move(value_key);
         }
-        for (Aggregator& aggregator : aggregators)
+        for (Aggregator& aggregator : aggregators_)
         {
-            aggregator.init();
+            aggregator.Init();
         }
-        count = 0;
+        count_ = 0;
     }
 
     if (should_feed)
     {
         ASSERT(value);
-        for (std::size_t i = 0; i < aggregates.exprs.size(); i++)
+        for (std::size_t i = 0; i < aggregates_.exprs.size(); i++)
         {
-            if (aggregates.exprs[i].arg)
+            if (aggregates_.exprs[i].arg)
             {
-                const ColumnValue column_value = aggregates.exprs[i].arg->eval(&*value);
-                aggregators[i].feed(column_value);
+                const ColumnValue column_value = aggregates_.exprs[i].arg->Eval(&*value);
+                aggregators_[i].Feed(column_value);
             }
         }
-        count++;
+        count_++;
     }
 
     return result;
 }
 
-std::optional<Value> IterAggregate::next()
+std::optional<Value> IterAggregate::Next()
 {
-    if (done)
+    if (done_)
     {
         return std::nullopt;
     }
-    if (!aggregates.group_by.empty())
+    if (!aggregates_.group_by.empty())
     {
         for (;;)
         {
-            const std::optional<Value> value = parent->next();
+            const std::optional<Value> value = parent_->Next();
             if (!value)
             {
-                done = true;
+                done_ = true;
             }
-            const std::optional<std::optional<Value>> result = feed(aggregates.group_by, value);
+            const std::optional<std::optional<Value>> result = Feed(aggregates_.group_by, value);
             if (result)
             {
                 return *result;
@@ -261,41 +261,41 @@ std::optional<Value> IterAggregate::next()
     }
     else
     {
-        for (Aggregator& aggregator : aggregators)
+        for (Aggregator& aggregator : aggregators_)
         {
-            aggregator.init();
+            aggregator.Init();
         }
-        count = 0;
+        count_ = 0;
         for (;;)
         {
-            const std::optional<Value> value = parent->next();
+            const std::optional<Value> value = parent_->Next();
             if (!value)
             {
                 break;
             }
-            for (std::size_t i = 0; i < aggregates.exprs.size(); i++)
+            for (std::size_t i = 0; i < aggregates_.exprs.size(); i++)
             {
-                if (aggregates.exprs[i].arg)
+                if (aggregates_.exprs[i].arg)
                 {
-                    const ColumnValue column_value = aggregates.exprs[i].arg->eval(&*value);
-                    aggregators[i].feed(column_value);
+                    const ColumnValue column_value = aggregates_.exprs[i].arg->Eval(&*value);
+                    aggregators_[i].Feed(column_value);
                 }
             }
-            count++;
+            count_++;
         }
         Value result;
-        for (std::size_t i = 0; i < aggregates.exprs.size(); i++)
+        for (std::size_t i = 0; i < aggregates_.exprs.size(); i++)
         {
-            if (aggregates.exprs[i].arg)
+            if (aggregates_.exprs[i].arg)
             {
-                result.push_back(aggregators[i].get(aggregates.exprs[i].function));
+                result.push_back(aggregators_[i].Get(aggregates_.exprs[i].function));
             }
             else
             {
-                result.emplace_back(count);
+                result.emplace_back(count_);
             }
         }
-        done = true;
+        done_ = true;
         return result;
     }
 }

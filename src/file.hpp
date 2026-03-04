@@ -9,10 +9,10 @@
 class File
 {
 public:
-    virtual ~File()                                                               = default;
-    virtual page::Id getPageCount()                                               = 0;
-    virtual void     readPage(page::Id id, std::span<u8, page::SIZE> page)        = 0;
-    virtual void     writePage(page::Id id, std::span<const u8, page::SIZE> page) = 0;
-    virtual page::Id appendPage()                                                 = 0;
-    virtual void     truncate(page::Id newPageCount)                              = 0;
+    virtual ~File()                                                                = default;
+    virtual page::Id GetPageCount()                                                = 0;
+    virtual void     ReadPage(page::Id id, std::span<U8, page::kSize> page)        = 0;
+    virtual void     WritePage(page::Id id, std::span<const U8, page::kSize> page) = 0;
+    virtual page::Id AppendPage()                                                  = 0;
+    virtual void     Truncate(page::Id new_page_count)                             = 0;
 };

@@ -5,26 +5,26 @@
 
 #include <string>
 
-inline bool is_printable(char c)
+[[nodiscard]] inline bool IsPrintable(char c)
 {
-    static constexpr char minPrintable = 0x20;
-    static constexpr char maxPrintable = 0x7E;
-    return minPrintable <= c && c <= maxPrintable;
+    static constexpr char kMinPrintable = 0x20;
+    static constexpr char kMaxPrintable = 0x7E;
+    return kMinPrintable <= c && c <= kMaxPrintable;
 }
 
-inline bool is_alphabetic(char c)
+[[nodiscard]] inline bool IsAlphabetic(char c)
 {
     return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
 }
 
-inline bool is_digit(char c)
+[[nodiscard]] inline bool IsDigit(char c)
 {
     return '0' <= c && c <= '9';
 }
 
-inline bool is_alphanumeric(char c)
+[[nodiscard]] inline bool IsAlphanumeric(char c)
 {
-    return is_alphabetic(c) || is_digit(c);
+    return IsAlphabetic(c) || IsDigit(c);
 }
 
 class Lexer
@@ -32,24 +32,24 @@ class Lexer
 public:
     Lexer(const std::string& source);
 
-    [[nodiscard]] const Token& get_token() const
+    [[nodiscard]] const Token& GetToken() const
     {
-        return token;
+        return token_;
     }
 
-    [[nodiscard]] bool accept(Token::Tag tag) const;
-    bool               accept_step(Token::Tag tag);
+    [[nodiscard]] bool Accept(Token::Tag tag) const;
+    bool               AcceptStep(Token::Tag tag);
 
-    Token& expect(Token::Tag tag);
-    Token  expect_step(Token::Tag tag);
+    Token& Expect(Token::Tag tag);
+    Token  ExpectStep(Token::Tag tag);
 
-    [[noreturn]] void unexpected();
+    [[noreturn]] void Unexpected();
 
-    Token step_token();
+    Token StepToken();
 
 private:
-    [[nodiscard]] Token next_token();
+    [[nodiscard]] Token NextToken();
 
-    const char* ptr;
-    Token       token;
+    const char* ptr_;
+    Token       token_;
 };

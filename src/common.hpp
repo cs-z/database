@@ -3,15 +3,10 @@
 #include <cstdint>
 #include <string>
 
-using u8  = std::uint8_t;
-using u16 = std::uint16_t;
-using u32 = std::uint32_t;
-using u64 = std::uint64_t;
-
-using i8  = std::int8_t;
-using i16 = std::int16_t;
-using i32 = std::int32_t;
-using i64 = std::int64_t;
+using U8  = std::uint8_t;
+using U16 = std::uint16_t;
+using U32 = std::uint32_t;
+using U64 = std::uint64_t;
 
 // helper for std::visit
 template <typename... Ts> struct Overload : Ts...
@@ -28,7 +23,7 @@ public:
     using Type = T;
 
     constexpr StrongId() = default;
-    explicit constexpr StrongId(T id) : id{id}
+    explicit constexpr StrongId(T id) : id_{id}
     {
     }
 
@@ -39,130 +34,130 @@ public:
 
     constexpr bool operator<(const StrongId& other) const
     {
-        return id < other.id;
+        return id_ < other.id_;
     }
     constexpr bool operator<(T other) const
     {
-        return id < other;
+        return id_ < other;
     }
     constexpr bool operator<=(const StrongId& other) const
     {
-        return id <= other.id;
+        return id_ <= other.id_;
     }
     constexpr bool operator<=(T other) const
     {
-        return id <= other;
+        return id_ <= other;
     }
     constexpr bool operator>(const StrongId& other) const
     {
-        return id > other.id;
+        return id_ > other.id_;
     }
     constexpr bool operator>(T other) const
     {
-        return id > other;
+        return id_ > other;
     }
     constexpr bool operator>=(const StrongId& other) const
     {
-        return id >= other.id;
+        return id_ >= other.id_;
     }
     constexpr bool operator>=(T other) const
     {
-        return id >= other;
+        return id_ >= other;
     }
     constexpr bool operator==(const StrongId& other) const
     {
-        return id == other.id;
+        return id_ == other.id_;
     }
     constexpr bool operator==(T other) const
     {
-        return id == other;
+        return id_ == other;
     }
 
     friend constexpr StrongId operator+(const StrongId& a, const StrongId& b)
     {
-        return static_cast<StrongId>(a.id + b.id);
+        return static_cast<StrongId>(a.id_ + b.id_);
     }
     friend constexpr StrongId operator+(const StrongId& a, T b)
     {
-        return static_cast<StrongId>(a.id + b);
+        return static_cast<StrongId>(a.id_ + b);
     }
     friend constexpr StrongId operator+(T a, const StrongId& b)
     {
-        return static_cast<StrongId>(a + b.id);
+        return static_cast<StrongId>(a + b.id_);
     }
 
     friend constexpr StrongId operator-(const StrongId& a, const StrongId& b)
     {
-        return static_cast<StrongId>(a.id - b.id);
+        return static_cast<StrongId>(a.id_ - b.id_);
     }
     friend constexpr StrongId operator-(const StrongId& a, T b)
     {
-        return static_cast<StrongId>(a.id - b);
+        return static_cast<StrongId>(a.id_ - b);
     }
     friend constexpr StrongId operator-(T a, const StrongId& b)
     {
-        return static_cast<StrongId>(a - b.id);
+        return static_cast<StrongId>(a - b.id_);
     }
 
     friend constexpr StrongId operator*(const StrongId& a, const StrongId& b)
     {
-        return static_cast<StrongId>(a.id * b.id);
+        return static_cast<StrongId>(a.id_ * b.id_);
     }
     friend constexpr StrongId operator*(const StrongId& a, T b)
     {
-        return static_cast<StrongId>(a.id * b);
+        return static_cast<StrongId>(a.id_ * b);
     }
     friend constexpr StrongId operator*(T a, const StrongId& b)
     {
-        return static_cast<StrongId>(a * b.id);
+        return static_cast<StrongId>(a * b.id_);
     }
 
     friend constexpr StrongId operator/(const StrongId& a, const StrongId& b)
     {
-        return static_cast<StrongId>(a.id / b.id);
+        return static_cast<StrongId>(a.id_ / b.id_);
     }
     friend constexpr StrongId operator/(const StrongId& a, T b)
     {
-        return static_cast<StrongId>(a.id / b);
+        return static_cast<StrongId>(a.id_ / b);
     }
     friend constexpr StrongId operator/(T a, const StrongId& b)
     {
-        return static_cast<StrongId>(a / b.id);
+        return static_cast<StrongId>(a / b.id_);
     }
 
     friend constexpr StrongId operator%(const StrongId& a, const StrongId& b)
     {
-        return static_cast<StrongId>(a.id % b.id);
+        return static_cast<StrongId>(a.id_ % b.id_);
     }
     friend constexpr StrongId operator%(const StrongId& a, T b)
     {
-        return static_cast<StrongId>(a.id % b);
+        return static_cast<StrongId>(a.id_ % b);
     }
     friend constexpr StrongId operator%(T a, const StrongId& b)
     {
-        return static_cast<StrongId>(a % b.id);
+        return static_cast<StrongId>(a % b.id_);
     }
 
     constexpr StrongId operator++(int)
     {
-        return StrongId{id++};
+        return StrongId{id_++};
     }
     constexpr StrongId operator--(int)
     {
-        return StrongId{id--};
+        return StrongId{id_--};
     }
 
-    [[nodiscard]] constexpr T get() const
+    [[nodiscard]] constexpr T Get() const
     {
-        return id;
+        return id_;
     }
-    [[nodiscard]] std::string to_string() const
+    [[nodiscard]] std::string ToString() const
     {
-        return std::to_string(id);
+        return std::to_string(id_);
     }
 
 private:
-    T id;
+    T id_;
 };
 
 namespace std
@@ -171,7 +166,7 @@ template <typename Tag, typename T> struct hash<StrongId<Tag, T>>
 {
     std::size_t operator()(const StrongId<Tag, T>& id) const
     {
-        return std::hash<T>{}(id.get());
+        return std::hash<T>{}(id.Get());
     }
 };
 } // namespace std
@@ -186,9 +181,9 @@ using ColumnId = StrongId<ColumnTag, unsigned int>;
 #define ASSERT(expr) static_cast<bool>(expr) ? void(0) : abort_expr(#expr, __FILE__, __LINE__)
 #define UNREACHABLE() abort_expr("UNREACHABLE", __FILE__, __LINE__)
 
-constexpr std::size_t FLEXIBLE_ARRAY = 1;
+constexpr std::size_t kFlexibleArray = 1;
 
-template <typename T> constexpr T align_up(T value, T align)
+template <typename T> constexpr T AlignUp(T value, T align)
 {
     ASSERT(align > 0);
     const T rem = value % align;
@@ -199,7 +194,7 @@ template <typename T> constexpr T align_up(T value, T align)
     return value;
 }
 
-template <typename T> constexpr T align_down(T value, T align)
+template <typename T> constexpr T AlignDown(T value, T align)
 {
     ASSERT(align > 0);
     const T rem = value % align;

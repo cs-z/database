@@ -12,44 +12,44 @@ using Value = std::string;
 
 TEST(CacheStressTest, RandomizedOperations)
 {
-    static constexpr std::size_t seed           = 42UL;
-    static constexpr std::size_t capacity       = 100UL;
-    static constexpr std::size_t operationCount = 25'000UL;
+    static constexpr std::size_t kSeed           = 42UL;
+    static constexpr std::size_t kCapacity       = 100UL;
+    static constexpr std::size_t kOperationCount = 25'000UL;
 
     auto loader = [](Key key) -> Value { return "value_" + std::to_string(key); };
 
-    Cache<Key, Value, decltype(loader)> cache{capacity, loader};
+    Cache<Key, Value, decltype(loader)> cache{kCapacity, loader};
 
-    std::mt19937 rng{seed};
+    std::mt19937 rng{kSeed};
 
-    static constexpr Key               minKey = 1;
-    static constexpr Key               maxKey = 300;
-    std::uniform_int_distribution<Key> keyDist{minKey, maxKey};
+    static constexpr Key               kMinKey = 1;
+    static constexpr Key               kMaxKey = 300;
+    std::uniform_int_distribution<Key> key_dist{kMinKey, kMaxKey};
 
-    static constexpr int               percentMin    = 1;
-    static constexpr int               percentGet    = 90;
-    static constexpr int               percentRemove = 99;
-    static constexpr int               percentMax    = 100;
-    std::uniform_int_distribution<int> operationDist{percentMin, percentMax};
+    static constexpr int               kPercentMin    = 1;
+    static constexpr int               kPercentGet    = 90;
+    static constexpr int               kPercentRemove = 99;
+    static constexpr int               kPercentMax    = 100;
+    std::uniform_int_distribution<int> operation_dist{kPercentMin, kPercentMax};
 
-    for ([[maybe_unused]] const auto i : std::views::iota(0UL, operationCount))
+    for ([[maybe_unused]] const auto i : std::views::iota(0UL, kOperationCount))
     {
-        const auto operation = operationDist(rng);
-        const auto key       = keyDist(rng);
-        if (operation <= percentGet)
+        const auto operation = operation_dist(rng);
+        const auto key       = key_dist(rng);
+        if (operation <= kPercentGet)
         {
-            const auto& value = cache.get(key);
+            const auto& value = cache.Get(key);
             EXPECT_EQ(value, loader(key));
         }
-        else if (operation <= percentRemove)
+        else if (operation <= kPercentRemove)
         {
-            cache.remove(key);
+            cache.Remove(key);
         }
         else
         {
-            cache.clear();
-            EXPECT_EQ(cache.getSize(), 0);
+            cache.Clear();
+            EXPECT_EQ(cache.GetSize(), 0);
         }
-        EXPECT_LE(cache.getSize(), capacity);
+        EXPECT_LE(cache.GetSize(), kCapacity);
     }
 }

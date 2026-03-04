@@ -21,10 +21,9 @@
 
 // K-way merge sort
 
-static constexpr unsigned int K = 2; // TODO
+static constexpr unsigned int kKWay = 2; // TODO
 
-static bool compare_rows(const Type& type, const OrderBy& order_by, const u8* row_l,
-                         const u8* row_r)
+static bool CompareRows(const Type& type, const OrderBy& order_by, const U8* row_l, const U8* row_r)
 {
     if (row_r == nullptr)
     {
@@ -36,7 +35,7 @@ static bool compare_rows(const Type& type, const OrderBy& order_by, const u8* ro
     }
     for (const OrderBy::Column& column : order_by.columns)
     {
-        const int result = row::compare(type, column.column_id, row_l, row_r);
+        const int result = row::Compare(type, column.column_id, row_l, row_r);
         if (result < 0)
         {
             return column.asc;
@@ -49,24 +48,24 @@ static bool compare_rows(const Type& type, const OrderBy& order_by, const u8* ro
     return true;
 }
 
-static void sort_page(const Type& type, const OrderBy& order_by, page::Slotted<>* page)
+static void SortPage(const Type& type, const OrderBy& order_by, page::Slotted<>* page)
 {
     // TODO: pipeline does not emit clang-tidy warning for ranges modernize
-    std::sort(page->begin(), page->end(),
+    std::sort(page->Begin(), page->End(),
               [&type, &order_by, page](const page::Slotted<>::Slot& slot_l,
                                        const page::Slotted<>::Slot& slot_r)
               {
-                  const u8* entry_l = page->get_entry(slot_l);
-                  const u8* entry_r = page->get_entry(slot_r);
-                  return compare_rows(type, order_by, entry_l, entry_r);
+                  const U8* entry_l = page->GetEntry(slot_l);
+                  const U8* entry_r = page->GetEntry(slot_r);
+                  return CompareRows(type, order_by, entry_l, entry_r);
               });
 }
 
-static std::optional<unsigned int> next_input(const Type& type, const OrderBy& order_by,
-                                              const std::array<const u8*, K>& rows)
+static std::optional<unsigned int> NextInput(const Type& type, const OrderBy& order_by,
+                                             const std::array<const U8*, kKWay>& rows)
 {
-    const auto compare = [&type, &order_by](const u8* row_l, const u8* row_r)
-    { return compare_rows(type, order_by, row_l, row_r); };
+    const auto compare = [&type, &order_by](const U8* row_l, const U8* row_r)
+    { return CompareRows(type, order_by, row_l, row_r); };
     const auto* iter = std::ranges::min_element(rows, compare);
     if (*iter == nullptr)
     {
@@ -78,35 +77,35 @@ static std::optional<unsigned int> next_input(const Type& type, const OrderBy& o
 class Input
 {
 public:
-    void init(const os::TempFile& file, page::Id page_begin, page::Id page_end)
+    void Init(const os::TempFile& file, page::Id page_begin, page::Id page_end)
     {
-        this->file       = &file;
-        this->page_begin = page_begin;
-        this->page_end   = page_end;
+        this->file_       = &file;
+        this->page_begin_ = page_begin;
+        this->page_end_   = page_end;
 
-        page_id  = page_begin;
-        entry_id = page::EntryId{};
+        page_id_  = page_begin;
+        entry_id_ = page::EntryId{};
     }
 
-    const u8* next(page::Offset& size)
+    const U8* Next(page::Offset& size)
     {
         for (;;)
         {
-            if (entry_id == 0)
+            if (entry_id_ == 0)
             {
-                if (page_id == page_end)
+                if (page_id_ == page_end_)
                 {
                     return nullptr;
                 }
-                file->read(page_id, page.get());
+                file_->Read(page_id_, page_.Get());
             }
-            if (entry_id == page->get_entry_count())
+            if (entry_id_ == page_->GetEntryCount())
             {
-                page_id++;
-                entry_id = page::EntryId{};
+                page_id_++;
+                entry_id_ = page::EntryId{};
                 continue;
             }
-            const u8* const entry = page->get_entry(entry_id++, size);
+            const U8* const entry = page_->GetEntry(entry_id_++, size);
             if (entry == nullptr)
             {
                 continue;
@@ -116,31 +115,31 @@ public:
     }
 
 private:
-    buffer::Buffer<page::Slotted<>> page;
+    buffer::Buffer<page::Slotted<>> page_;
 
-    const os::TempFile* file;
-    page::Id            page_begin, page_end;
+    const os::TempFile* file_;
+    page::Id            page_begin_, page_end_;
 
-    page::Id      page_id;
-    page::EntryId entry_id;
+    page::Id      page_id_;
+    page::EntryId entry_id_;
 };
 
 class Output
 {
 public:
-    Output(const os::TempFile& file) : file{file}, page_id{}, page_id_begin{}
+    Output(const os::TempFile& file) : file_{file}, page_id_{}, page_id_begin_{}
     {
-        page->init({});
+        page_->Init({});
     }
 
-    void append(const u8* row, page::Offset align, page::Offset size)
+    void Append(const U8* row, page::Offset align, page::Offset size)
     {
         for (;;)
         {
-            u8* const entry = page->insert(align, size, {});
+            U8* const entry = page_->Insert(align, size, {});
             if (entry == nullptr)
             {
-                write();
+                Write();
                 continue;
             }
             std::memcpy(entry, row, size);
@@ -148,28 +147,28 @@ public:
         }
     }
 
-    std::pair<page::Id, page::Id> end_section()
+    std::pair<page::Id, page::Id> EndSection()
     {
-        write();
-        const page::Id begin = page_id_begin;
-        const page::Id end   = page_id;
-        page_id_begin        = page_id;
+        Write();
+        const page::Id begin = page_id_begin_;
+        const page::Id end   = page_id_;
+        page_id_begin_       = page_id_;
         return {begin, end};
     }
 
 private:
-    void write()
+    void Write()
     {
-        if (page->get_entry_count() > 0)
+        if (page_->GetEntryCount() > 0)
         {
-            file.write(page_id++, page.get());
+            file_.Write(page_id_++, page_.Get());
         }
-        page->init({});
+        page_->Init({});
     }
 
-    const os::TempFile&             file;
-    page::Id                        page_id, page_id_begin;
-    buffer::Buffer<page::Slotted<>> page;
+    const os::TempFile&             file_;
+    page::Id                        page_id_, page_id_begin_;
+    buffer::Buffer<page::Slotted<>> page_;
 };
 
 // stores sections of data file, which will be merged together
@@ -182,66 +181,66 @@ public:
         page::Id begin, end;
     };
 
-    [[nodiscard]] page::Id get_size() const
+    [[nodiscard]] page::Id GetSize() const
     {
-        return size;
+        return size_;
     }
 
-    SectionQueue() : page_begin{0}, page_r{0}, page_w{0}, entry_r{0}, entry_w{0}, size{0}
+    SectionQueue() : page_begin_{0}, page_r_{0}, page_w_{0}, entry_r_{0}, entry_w_{0}, size_{0}
     {
     }
 
-    void push(Section section)
+    void Push(Section section)
     {
-        size++;
-        ASSERT(entry_w < SECTION_PER_PAGE);
-        buffer_w.get()[(entry_w++).get()] = section;
-        if (entry_w == SECTION_PER_PAGE)
+        size_++;
+        ASSERT(entry_w_ < kSectionsPerPage);
+        buffer_w_.Get()[(entry_w_++).Get()] = section;
+        if (entry_w_ == kSectionsPerPage)
         {
-            file.write(page::Id{page_w++}, buffer_w.get());
-            entry_w = page::EntryId{};
+            file_.Write(page::Id{page_w_++}, buffer_w_.Get());
+            entry_w_ = page::EntryId{};
         }
     }
 
-    [[nodiscard]] Section pop()
+    [[nodiscard]] Section Pop()
     {
-        size--;
-        if (entry_r == 0 || entry_r == SECTION_PER_PAGE)
+        size_--;
+        if (entry_r_ == 0 || entry_r_ == kSectionsPerPage)
         {
-            file.read(page_r++, buffer_r.get());
-            entry_r = page::EntryId{};
+            file_.Read(page_r_++, buffer_r_.Get());
+            entry_r_ = page::EntryId{};
         }
-        return buffer_r.get()[(entry_r++).get()];
+        return buffer_r_.Get()[(entry_r_++).Get()];
     }
 
-    void flush()
+    void Flush()
     {
-        if (entry_w > 0)
+        if (entry_w_ > 0)
         {
-            file.write(page_w++, buffer_w.get());
-            entry_w = page::EntryId{};
+            file_.Write(page_w_++, buffer_w_.Get());
+            entry_w_ = page::EntryId{};
         }
-        page_r     = page_begin;
-        entry_r    = page::EntryId{};
-        page_begin = page_w;
+        page_r_     = page_begin_;
+        entry_r_    = page::EntryId{};
+        page_begin_ = page_w_;
     }
 
 private:
-    static constexpr unsigned int SECTION_PER_PAGE = page::SIZE / sizeof(Section);
+    static constexpr unsigned int kSectionsPerPage = page::kSize / sizeof(Section);
 
-    const os::TempFile file;
+    const os::TempFile file_;
 
-    page::Id      page_begin;
-    page::Id      page_r, page_w;
-    page::EntryId entry_r, entry_w;
+    page::Id      page_begin_;
+    page::Id      page_r_, page_w_;
+    page::EntryId entry_r_, entry_w_;
 
-    page::Id size;
+    page::Id size_;
 
-    buffer::Buffer<Section> buffer_r, buffer_w;
+    buffer::Buffer<Section> buffer_r_, buffer_w_;
 };
 
-static os::TempFile merge_sorted_pages(const Type& type, const OrderBy& order_by, os::TempFile file,
-                                       page::Id& page_count_out)
+static os::TempFile MergeSortedPages(const Type& type, const OrderBy& order_by, os::TempFile file,
+                                     page::Id& page_count_out)
 {
     os::TempFile file_src = std::move(file);
     os::TempFile file_dst;
@@ -249,45 +248,45 @@ static os::TempFile merge_sorted_pages(const Type& type, const OrderBy& order_by
     SectionQueue queue;
     for (page::Id page_id{}; page_id < page_count_out; page_id++)
     {
-        queue.push({.begin = page_id, .end = page_id + 1});
+        queue.Push({.begin = page_id, .end = page_id + 1});
     }
-    queue.flush();
+    queue.Flush();
 
-    std::array<Input, K>        inputs;
-    std::array<const u8*, K>    rows;
-    std::array<page::Offset, K> sizes;
+    std::array<Input, kKWay>        inputs;
+    std::array<const U8*, kKWay>    rows;
+    std::array<page::Offset, kKWay> sizes;
 
-    const page::Offset align = type.get_align();
+    const page::Offset align = type.GetAlign();
 
-    while (queue.get_size() > 1)
+    while (queue.GetSize() > 1)
     {
 
         Output output{file_dst};
 
-        const page::Id merges    = queue.get_size() / K;
-        const page::Id remainder = queue.get_size() % K;
+        const page::Id merges    = queue.GetSize() / kKWay;
+        const page::Id remainder = queue.GetSize() % kKWay;
 
         for (page::Id i{}; i < merges; i++)
         {
 
-            for (page::Id k{}; k < K; k++)
+            for (page::Id k{}; k < kKWay; k++)
             {
-                const auto [begin, end] = queue.pop();
-                inputs[k.get()].init(file_src, begin, end);
-                rows[k.get()] = inputs[k.get()].next(sizes[k.get()]);
+                const auto [begin, end] = queue.Pop();
+                inputs[k.Get()].Init(file_src, begin, end);
+                rows[k.Get()] = inputs[k.Get()].Next(sizes[k.Get()]);
             }
 
-            std::optional<unsigned int> input_k = next_input(type, order_by, rows);
+            std::optional<unsigned int> input_k = NextInput(type, order_by, rows);
             while (input_k)
             {
                 const unsigned int k = *input_k;
-                output.append(rows[k], align, sizes[k]);
-                rows[k] = inputs[k].next(sizes[k]);
-                input_k = next_input(type, order_by, rows);
+                output.Append(rows[k], align, sizes[k]);
+                rows[k] = inputs[k].Next(sizes[k]);
+                input_k = NextInput(type, order_by, rows);
             }
 
-            const auto [begin, end] = output.end_section();
-            queue.push({.begin = begin, .end = end});
+            const auto [begin, end] = output.EndSection();
+            queue.Push({.begin = begin, .end = end});
         }
 
         if (remainder > 0)
@@ -295,39 +294,39 @@ static os::TempFile merge_sorted_pages(const Type& type, const OrderBy& order_by
 
             for (page::Id k{}; k < remainder; k++)
             {
-                const auto [begin, end] = queue.pop();
-                inputs[k.get()].init(file_src, begin, end);
-                rows[k.get()] = inputs[k.get()].next(sizes[k.get()]);
+                const auto [begin, end] = queue.Pop();
+                inputs[k.Get()].Init(file_src, begin, end);
+                rows[k.Get()] = inputs[k.Get()].Next(sizes[k.Get()]);
             }
 
-            std::optional<unsigned int> input_k = next_input(type, order_by, rows);
+            std::optional<unsigned int> input_k = NextInput(type, order_by, rows);
             while (input_k)
             {
                 const unsigned int k = *input_k;
-                ASSERT(k < remainder.get()); // TODO: id / int
-                output.append(rows[k], align, sizes[k]);
-                rows[k] = inputs[k].next(sizes[k]);
-                input_k = next_input(type, order_by, rows);
+                ASSERT(k < remainder.Get()); // TODO: id / int
+                output.Append(rows[k], align, sizes[k]);
+                rows[k] = inputs[k].Next(sizes[k]);
+                input_k = NextInput(type, order_by, rows);
             }
 
-            const auto [begin, end] = output.end_section();
-            queue.push({.begin = begin, .end = end});
+            const auto [begin, end] = output.EndSection();
+            queue.Push({.begin = begin, .end = end});
         }
 
-        queue.flush();
+        queue.Flush();
 
         std::swap(file_src, file_dst);
     }
 
-    ASSERT(queue.get_size() == 1);
-    const auto [begin, end] = queue.pop();
+    ASSERT(queue.GetSize() == 1);
+    const auto [begin, end] = queue.Pop();
     ASSERT(begin == 0);
 
     page_count_out = end;
     return file_src;
 }
 
-static os::TempFile merge_sort(Iter iter, const OrderBy& order_by, page::Id& page_count_out)
+static os::TempFile MergeSort(Iter iter, const OrderBy& order_by, page::Id& page_count_out)
 {
     os::TempFile file;
 
@@ -335,71 +334,71 @@ static os::TempFile merge_sort(Iter iter, const OrderBy& order_by, page::Id& pag
 
     page::Id                        page_id = page::Id{};
     buffer::Buffer<page::Slotted<>> page;
-    page->init({});
+    page->Init({});
 
     const Type&        type  = iter->type;
-    const page::Offset align = type.get_align();
+    const page::Offset align = type.GetAlign();
 
-    iter->open();
+    iter->Open();
     for (;;)
     {
-        std::optional<Value> value = iter->next();
+        std::optional<Value> value = iter->Next();
         if (!value)
         {
             break;
         }
-        const row::Prefix prefix = row::calculate_layout(*value);
+        const row::Prefix prefix = row::CalculateLayout(*value);
 
         for (;;)
         {
-            u8* const entry = page->insert(align, prefix.size, {});
+            U8* const entry = page->Insert(align, prefix.size, {});
             if (entry == nullptr)
             {
-                sort_page(type, order_by, page.get());
-                file.write(page_id++, page.get());
-                page->init({});
+                SortPage(type, order_by, page.Get());
+                file.Write(page_id++, page.Get());
+                page->Init({});
                 continue;
             }
-            row::write(prefix, *value, entry);
+            row::Write(prefix, *value, entry);
             break;
         }
     }
-    iter->close();
+    iter->Close();
 
-    if (page->get_entry_count() > 0)
+    if (page->GetEntryCount() > 0)
     {
-        sort_page(type, order_by, page.get());
-        file.write(page_id++, page.get());
+        SortPage(type, order_by, page.Get());
+        file.Write(page_id++, page.Get());
     }
 
     page_count_out = page_id;
-    return merge_sorted_pages(type, order_by, std::move(file), page_count_out);
+    return MergeSortedPages(type, order_by, std::move(file), page_count_out);
 }
 
-void IterSort::open()
+void IterSort::Open()
 {
     // puts("SORTING");
-    ASSERT(!sorted_iter);
+    ASSERT(!sorted_iter_);
     page::Id     page_count;
-    os::TempFile file       = merge_sort(std::move(parent), columns, page_count);
+    os::TempFile file       = MergeSort(std::move(parent_), columns_, page_count);
     Type         type_clone = type; // TODO
-    sorted_iter =
+    sorted_iter_ =
         std::make_unique<IterScanTemp>(std::move(file), page_count, std::move(type_clone));
-    sorted_iter->open();
+    sorted_iter_->Open();
 }
 
-void IterSort::restart()
+void IterSort::Restart()
 {
-    ASSERT(sorted_iter);
-    sorted_iter->restart();
+    ASSERT(sorted_iter_);
+    sorted_iter_->Restart();
 }
 
-void IterSort::close()
+void IterSort::Close()
 {
-    sorted_iter->close();
+    sorted_iter_->Close();
 }
 
-std::optional<Value> IterSort::next()
+std::optional<Value> IterSort::Next()
 {
-    return sorted_iter->next();
+    return sorted_iter_->Next();
 }

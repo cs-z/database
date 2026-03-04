@@ -10,7 +10,7 @@
 
 namespace row
 {
-Prefix calculate_layout(const Value& value)
+Prefix CalculateLayout(const Value& value)
 {
     Prefix prefix;
     prefix.size = value.size() * sizeof(ColumnPrefix);
@@ -50,7 +50,7 @@ Prefix calculate_layout(const Value& value)
                 },
             },
             column_value);
-        prefix.size = align_up(prefix.size, column_align);
+        prefix.size = AlignUp(prefix.size, column_align);
         prefix.columns.push_back(
             {.offset = column_size != 0 ? prefix.size : page::Offset{}, .size = column_size});
         prefix.size += column_size;
@@ -58,13 +58,13 @@ Prefix calculate_layout(const Value& value)
     return prefix;
 }
 
-template <typename T> T* get_column(u8* row, ColumnId column)
+template <typename T> T* GetColumn(U8* row, ColumnId column)
 {
-    const page::Offset offset = reinterpret_cast<ColumnPrefix*>(row)[column.get()].offset;
+    const page::Offset offset = reinterpret_cast<ColumnPrefix*>(row)[column.Get()].offset;
     return reinterpret_cast<T*>(row + offset);
 }
 
-void write(const Prefix& prefix, const Value& value, u8* row)
+void Write(const Prefix& prefix, const Value& value, U8* row)
 {
     ASSERT(prefix.columns.size() == value.size());
     std::memcpy(row, prefix.columns.data(), prefix.columns.size() * sizeof(ColumnPrefix));
@@ -74,62 +74,62 @@ void write(const Prefix& prefix, const Value& value, u8* row)
             Overload{
                 [](const ColumnValueNull&) {},
                 [row, column_id](const ColumnValueBoolean& value)
-                { *get_column<ColumnValueBoolean>(row, column_id) = value; },
+                { *GetColumn<ColumnValueBoolean>(row, column_id) = value; },
                 [row, column_id](const ColumnValueInteger& value)
-                { *get_column<ColumnValueInteger>(row, column_id) = value; },
+                { *GetColumn<ColumnValueInteger>(row, column_id) = value; },
                 [row, column_id](const ColumnValueReal& value)
-                { *get_column<ColumnValueReal>(row, column_id) = value; },
+                { *GetColumn<ColumnValueReal>(row, column_id) = value; },
                 [row, column_id](const ColumnValueVarchar& value)
                 {
                     // NOLINTNEXTLINE(bugprone-not-null-terminated-result)
-                    std::memcpy(get_column<char>(row, column_id), value.data(), value.size());
+                    std::memcpy(GetColumn<char>(row, column_id), value.data(), value.size());
                 },
             },
-            value[column_id.get()]);
+            value[column_id.Get()]);
     }
 }
 
-ColumnPrefix get_prefix(const u8* row, ColumnId column)
+ColumnPrefix GetPrefix(const U8* row, ColumnId column)
 {
-    return reinterpret_cast<const ColumnPrefix*>(row)[column.get()];
+    return reinterpret_cast<const ColumnPrefix*>(row)[column.Get()];
 }
 
-template <typename T> const T* get_column(const u8* row, ColumnPrefix prefix)
+template <typename T> const T* GetColumn(const U8* row, ColumnPrefix prefix)
 {
     return reinterpret_cast<const T*>(row + prefix.offset);
 }
 
-Value read(const Type& type, const u8* row)
+Value Read(const Type& type, const U8* row)
 {
     Value value; // TODO: reserve
-    for (ColumnId column_id{}; column_id < type.size(); column_id++)
+    for (ColumnId column_id{}; column_id < type.Size(); column_id++)
     {
-        const ColumnPrefix prefix = get_prefix(row, column_id);
+        const ColumnPrefix prefix = GetPrefix(row, column_id);
         if (prefix.offset == 0)
         {
             value.emplace_back(ColumnValueNull{});
             continue;
         }
-        switch (type.at(column_id.get()))
+        switch (type.At(column_id.Get()))
         {
         case ColumnType::BOOLEAN:
         {
-            value.emplace_back(*get_column<ColumnValueBoolean>(row, prefix));
+            value.emplace_back(*GetColumn<ColumnValueBoolean>(row, prefix));
             break;
         }
         case ColumnType::INTEGER:
         {
-            value.emplace_back(*get_column<ColumnValueInteger>(row, prefix));
+            value.emplace_back(*GetColumn<ColumnValueInteger>(row, prefix));
             break;
         }
         case ColumnType::REAL:
         {
-            value.emplace_back(*get_column<ColumnValueReal>(row, prefix));
+            value.emplace_back(*GetColumn<ColumnValueReal>(row, prefix));
             break;
         }
         case ColumnType::VARCHAR:
         {
-            const char* const begin = get_column<char>(row, prefix);
+            const char* const begin = GetColumn<char>(row, prefix);
             value.emplace_back(ColumnValueVarchar{begin, prefix.size});
             break;
         }
@@ -138,10 +138,10 @@ Value read(const Type& type, const u8* row)
     return value;
 }
 
-int compare(const Type& type, ColumnId column, const u8* row_l, const u8* row_r)
+int Compare(const Type& type, ColumnId column, const U8* row_l, const U8* row_r)
 {
-    const ColumnPrefix prefix_l = get_prefix(row_l, column);
-    const ColumnPrefix prefix_r = get_prefix(row_r, column);
+    const ColumnPrefix prefix_l = GetPrefix(row_l, column);
+    const ColumnPrefix prefix_r = GetPrefix(row_r, column);
     if (prefix_r.offset == 0)
     {
         return -1;
@@ -150,7 +150,7 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const u8* row_r)
     {
         return +1;
     }
-    switch (type.at(column.get()))
+    switch (type.At(column.Get()))
     {
     case ColumnType::BOOLEAN:
     {
@@ -158,8 +158,8 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const u8* row_r)
     }
     case ColumnType::INTEGER:
     {
-        const ColumnValueInteger column_value_l = *get_column<ColumnValueInteger>(row_l, prefix_l);
-        const ColumnValueInteger column_value_r = *get_column<ColumnValueInteger>(row_r, prefix_r);
+        const ColumnValueInteger column_value_l = *GetColumn<ColumnValueInteger>(row_l, prefix_l);
+        const ColumnValueInteger column_value_r = *GetColumn<ColumnValueInteger>(row_r, prefix_r);
         if (column_value_l < column_value_r)
         {
             return -1;
@@ -172,8 +172,8 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const u8* row_r)
     }
     case ColumnType::REAL:
     {
-        const ColumnValueReal column_value_l = *get_column<ColumnValueReal>(row_l, prefix_l);
-        const ColumnValueReal column_value_r = *get_column<ColumnValueReal>(row_r, prefix_r);
+        const ColumnValueReal column_value_l = *GetColumn<ColumnValueReal>(row_l, prefix_l);
+        const ColumnValueReal column_value_r = *GetColumn<ColumnValueReal>(row_r, prefix_r);
         if (column_value_l < column_value_r)
         {
             return -1;
@@ -186,18 +186,18 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const u8* row_r)
     }
     case ColumnType::VARCHAR:
     {
-        const char* column_value_l = get_column<char>(row_l, prefix_l);
-        const char* column_value_r = get_column<char>(row_r, prefix_r);
-        return compare_strings({column_value_l, prefix_l.size}, {column_value_r, prefix_r.size});
+        const char* column_value_l = GetColumn<char>(row_l, prefix_l);
+        const char* column_value_r = GetColumn<char>(row_r, prefix_r);
+        return CompareStrings({column_value_l, prefix_l.size}, {column_value_r, prefix_r.size});
     }
     }
     UNREACHABLE();
 }
 
-int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row_r)
+int Compare(const Type& type, ColumnId column, const U8* row_l, const Value& row_r)
 {
-    const ColumnPrefix prefix_l = get_prefix(row_l, column);
-    const ColumnValue& value_r  = row_r.at(column.get());
+    const ColumnPrefix prefix_l = GetPrefix(row_l, column);
+    const ColumnValue& value_r  = row_r.at(column.Get());
     if (std::holds_alternative<ColumnValueNull>(value_r))
     {
         return -1;
@@ -206,7 +206,7 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row
     {
         return +1;
     }
-    switch (type.at(column.get()))
+    switch (type.At(column.Get()))
     {
     case ColumnType::BOOLEAN:
     {
@@ -214,7 +214,7 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row
     }
     case ColumnType::INTEGER:
     {
-        const ColumnValueInteger column_value_l = *get_column<ColumnValueInteger>(row_l, prefix_l);
+        const ColumnValueInteger column_value_l = *GetColumn<ColumnValueInteger>(row_l, prefix_l);
         const ColumnValueInteger column_value_r = std::get<ColumnValueInteger>(value_r);
         if (column_value_l < column_value_r)
         {
@@ -228,7 +228,7 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row
     }
     case ColumnType::REAL:
     {
-        const ColumnValueReal column_value_l = *get_column<ColumnValueReal>(row_l, prefix_l);
+        const ColumnValueReal column_value_l = *GetColumn<ColumnValueReal>(row_l, prefix_l);
         const ColumnValueReal column_value_r = std::get<ColumnValueReal>(value_r);
         if (column_value_l < column_value_r)
         {
@@ -242,9 +242,9 @@ int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row
     }
     case ColumnType::VARCHAR:
     {
-        const char* column_value_l = get_column<char>(row_l, prefix_l);
-        return compare_strings({column_value_l, prefix_l.size},
-                               std::get<ColumnValueVarchar>(value_r));
+        const char* column_value_l = GetColumn<char>(row_l, prefix_l);
+        return CompareStrings({column_value_l, prefix_l.size},
+                              std::get<ColumnValueVarchar>(value_r));
     }
     }
     UNREACHABLE();

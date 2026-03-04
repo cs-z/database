@@ -6,5 +6,5 @@
 
 #include <string>
 
-ColumnType   parse_type(const std::string& name); // for catalog
-AstStatement parse_statement(Lexer& lexer);
+[[nodiscard]] ColumnType   ParseType(const std::string& name); // for catalog
+[[nodiscard]] AstStatement ParseStatement(Lexer& lexer);

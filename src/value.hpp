@@ -4,6 +4,7 @@
 #include "type.hpp"
 #include "value.hpp"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,11 +20,11 @@ enum class Bool : std::uint8_t
 
 using ColumnValueNull    = std::monostate;
 using ColumnValueBoolean = Bool;
-using ColumnValueInteger = i64; // TODO: javascript i63
+using ColumnValueInteger = std::int64_t; // TODO: javascript i63
 using ColumnValueReal    = double;
 using ColumnValueVarchar = std::string;
 
-inline int compare_strings(std::string_view a, std::string_view b)
+inline int CompareStrings(std::string_view a, std::string_view b)
 {
     const auto size_min = std::min(a.size(), b.size());
     const int  result   = memcmp(a.data(), b.data(), size_min);
@@ -45,12 +46,12 @@ inline int compare_strings(std::string_view a, std::string_view b)
 using ColumnValue = std::variant<ColumnValueNull, ColumnValueBoolean, ColumnValueInteger,
                                  ColumnValueReal, ColumnValueVarchar>;
 
-std::optional<ColumnType> column_value_to_type(const ColumnValue& value);
-std::string               column_value_to_string(const ColumnValue& value, bool quote);
-ColumnValue               column_value_eval_cast(const ColumnValue& value, ColumnType to);
+std::optional<ColumnType> ColumnValueToType(const ColumnValue& value);
+std::string               ColumnValueToString(const ColumnValue& value, bool quote);
+ColumnValue               ColumnValueEvalCast(const ColumnValue& value, ColumnType to);
 
 using Value = std::vector<ColumnValue>;
 
-void        value_print(const Value& value);
-std::string value_to_list(const Value& value);
-bool        value_equal(const Value& a, const Value& b);
+void        ValuePrint(const Value& value);
+std::string ValueToList(const Value& value);
+bool        ValueEqual(const Value& a, const Value& b);

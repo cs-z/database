@@ -67,6 +67,6 @@ struct Expr
     {
     }
 
-    void        print() const;
-    ColumnValue eval(const Value* value) const;
+    void        Print() const;
+    ColumnValue Eval(const Value* value) const;
 };

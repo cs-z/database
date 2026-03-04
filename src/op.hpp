@@ -17,7 +17,7 @@ enum class Function : std::uint8_t
     COUNT,
 };
 
-inline const char* function_to_cstr(Function function)
+inline const char* FunctionToCstr(Function function)
 {
     switch (function)
     {
@@ -44,11 +44,11 @@ enum class Op1 : std::uint8_t
     Not,
 };
 
-std::string               op1_to_string(Op1 op, const std::string& expr);
-int                       op1_prec(Op1 op);
-std::optional<ColumnType> op1_compile(const std::pair<Op1, SourceText>& op,
-                                      std::optional<ColumnType>         type);
-ColumnValue               op1_eval(Op1 op, const ColumnValue& value);
+std::string               Op1ToString(Op1 op, const std::string& expr);
+int                       Op1Prec(Op1 op);
+std::optional<ColumnType> Op1Compile(const std::pair<Op1, SourceText>& op,
+                                     std::optional<ColumnType>         type);
+ColumnValue               Op1Eval(Op1 op, const ColumnValue& value);
 
 enum class Op2 : std::uint8_t
 {
@@ -67,10 +67,10 @@ enum class Op2 : std::uint8_t
     LogicOr,
 };
 
-const char*               op2_cstr(Op2 op);
-int                       op2_prec(Op2 op);
-std::optional<ColumnType> op2_compile(const std::pair<Op2, SourceText>& op,
-                                      std::optional<ColumnType>         type_l,
-                                      std::optional<ColumnType>         type_r);
-ColumnValue               op2_eval(const std::pair<Op2, SourceText>& op, const ColumnValue& value_l,
-                                   const ColumnValue& value_r);
+const char*               Op2Cstr(Op2 op);
+int                       Op2Prec(Op2 op);
+std::optional<ColumnType> Op2Compile(const std::pair<Op2, SourceText>& op,
+                                     std::optional<ColumnType>         type_l,
+                                     std::optional<ColumnType>         type_r);
+ColumnValue               Op2Eval(const std::pair<Op2, SourceText>& op, const ColumnValue& value_l,
+                                  const ColumnValue& value_r);

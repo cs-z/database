@@ -7,7 +7,7 @@
 #include <string>
 #include <variant>
 
-std::optional<ColumnType> column_value_to_type(const ColumnValue& value)
+std::optional<ColumnType> ColumnValueToType(const ColumnValue& value)
 {
     return std::visit(
         Overload{
@@ -23,7 +23,7 @@ std::optional<ColumnType> column_value_to_type(const ColumnValue& value)
         value);
 }
 
-std::string column_value_to_string(const ColumnValue& value, bool quote)
+std::string ColumnValueToString(const ColumnValue& value, bool quote)
 {
     return std::visit(
         Overload{
@@ -63,7 +63,7 @@ std::string column_value_to_string(const ColumnValue& value, bool quote)
         value);
 }
 
-ColumnValue column_value_eval_cast(const ColumnValue& value, ColumnType to)
+ColumnValue ColumnValueEvalCast(const ColumnValue& value, ColumnType to)
 {
     return std::visit(
         Overload{
@@ -78,7 +78,7 @@ ColumnValue column_value_eval_cast(const ColumnValue& value, ColumnType to)
                 case ColumnType::BOOLEAN:
                     return value;
                 case ColumnType::VARCHAR:
-                    return column_value_to_string(value, false);
+                    return ColumnValueToString(value, false);
                 }
                 UNREACHABLE();
             },
@@ -93,7 +93,7 @@ ColumnValue column_value_eval_cast(const ColumnValue& value, ColumnType to)
                 case ColumnType::REAL:
                     return static_cast<ColumnValueReal>(value);
                 case ColumnType::VARCHAR:
-                    return column_value_to_string(value, false);
+                    return ColumnValueToString(value, false);
                 }
                 UNREACHABLE();
             },
@@ -108,7 +108,7 @@ ColumnValue column_value_eval_cast(const ColumnValue& value, ColumnType to)
                 case ColumnType::REAL:
                     return value;
                 case ColumnType::VARCHAR:
-                    return column_value_to_string(value, false);
+                    return ColumnValueToString(value, false);
                 }
                 UNREACHABLE();
             },
@@ -129,12 +129,12 @@ ColumnValue column_value_eval_cast(const ColumnValue& value, ColumnType to)
         value);
 }
 
-void value_print(const Value& value)
+void ValuePrint(const Value& value)
 {
     std::printf("(");
     for (std::size_t i = 0; i < value.size(); i++)
     {
-        std::printf("%s", column_value_to_string(value[i], true).c_str());
+        std::printf("%s", ColumnValueToString(value[i], true).c_str());
         if (i + 1 < value.size())
         {
             std::printf(", ");
@@ -143,12 +143,12 @@ void value_print(const Value& value)
     std::printf(")");
 }
 
-std::string value_to_list(const Value& value)
+std::string ValueToList(const Value& value)
 {
     std::string list = "(";
     for (std::size_t i = 0; i < value.size(); i++)
     {
-        list += column_value_to_string(value[i], true);
+        list += ColumnValueToString(value[i], true);
         if (i + 1 < value.size())
         {
             list += ", ";
@@ -157,7 +157,7 @@ std::string value_to_list(const Value& value)
     return list + ")";
 }
 
-bool value_equal(const Value& a, const Value& b)
+bool ValueEqual(const Value& a, const Value& b)
 {
     ASSERT(a.size() == b.size());
     for (std::size_t i = 0; i < a.size(); i++)

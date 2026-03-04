@@ -48,4 +48,4 @@ struct DeleteConditional
 using Statement =
     std::variant<CreateTable, DropTable, InsertValue, Query, TruncateTable, DeleteConditional>;
 
-Statement compile_statement(AstStatement& ast);
+[[nodiscard]] Statement CompileStatement(AstStatement& ast);

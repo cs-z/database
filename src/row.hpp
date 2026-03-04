@@ -21,11 +21,11 @@ struct Prefix
     std::vector<ColumnPrefix> columns;
 };
 
-Prefix calculate_layout(const Value& value);
+[[nodiscard]] Prefix CalculateLayout(const Value& value);
 
-void  write(const Prefix& prefix, const Value& value, u8* row);
-Value read(const Type& type, const u8* row);
+void                Write(const Prefix& prefix, const Value& value, U8* row);
+[[nodiscard]] Value Read(const Type& type, const U8* row);
 
-int compare(const Type& type, ColumnId column, const u8* row_l, const u8* row_r);
-int compare(const Type& type, ColumnId column, const u8* row_l, const Value& row_r);
+[[nodiscard]] int Compare(const Type& type, ColumnId column, const U8* row_l, const U8* row_r);
+[[nodiscard]] int Compare(const Type& type, ColumnId column, const U8* row_l, const Value& row_r);
 } // namespace row

@@ -5,7 +5,7 @@
 
 #include <variant>
 
-ColumnValue Expr::eval(const Value* value) const
+ColumnValue Expr::Eval(const Value* value) const
 {
     return std::visit(
         Overload{
@@ -13,41 +13,41 @@ ColumnValue Expr::eval(const Value* value) const
             [&value](const Expr::DataColumn& expr)
             {
                 ASSERT(value);
-                return value->at(expr.column_id.get());
+                return value->at(expr.column_id.Get());
             },
             [&value](const Expr::DataCast& expr)
             {
-                const ColumnValue column_value = expr.expr->eval(value);
-                return column_value_eval_cast(column_value, expr.to);
+                const ColumnValue column_value = expr.expr->Eval(value);
+                return ColumnValueEvalCast(column_value, expr.to);
             },
             [&value](const Expr::DataOp1& expr)
             {
-                const ColumnValue column_value = expr.expr->eval(value);
-                return op1_eval(expr.op.first, column_value);
+                const ColumnValue column_value = expr.expr->Eval(value);
+                return Op1Eval(expr.op.first, column_value);
             },
             [&value](const Expr::DataOp2& expr)
             {
-                const ColumnValue column_value_l = expr.expr_l->eval(value);
-                const ColumnValue column_value_r = expr.expr_r->eval(value);
-                return op2_eval(expr.op, column_value_l, column_value_r);
+                const ColumnValue column_value_l = expr.expr_l->Eval(value);
+                const ColumnValue column_value_r = expr.expr_r->Eval(value);
+                return Op2Eval(expr.op, column_value_l, column_value_r);
             },
             [&value](const Expr::DataBetween& expr)
             {
-                const ColumnValue column_value     = expr.expr->eval(value);
-                const ColumnValue column_value_min = expr.min->eval(value);
-                const ColumnValue column_value_max = expr.max->eval(value);
+                const ColumnValue column_value     = expr.expr->Eval(value);
+                const ColumnValue column_value_min = expr.min->Eval(value);
+                const ColumnValue column_value_max = expr.max->Eval(value);
                 const ColumnValue comp_l =
-                    op2_eval({expr.negated ? Op2::CompL : Op2::CompGe, expr.between_text},
-                             column_value, column_value_min);
+                    Op2Eval({expr.negated ? Op2::CompL : Op2::CompGe, expr.between_text},
+                            column_value, column_value_min);
                 const ColumnValue comp_r =
-                    op2_eval({expr.negated ? Op2::CompG : Op2::CompLe, expr.between_text},
-                             column_value, column_value_max);
-                return op2_eval({expr.negated ? Op2::LogicOr : Op2::LogicAnd, expr.between_text},
-                                comp_l, comp_r);
+                    Op2Eval({expr.negated ? Op2::CompG : Op2::CompLe, expr.between_text},
+                            column_value, column_value_max);
+                return Op2Eval({expr.negated ? Op2::LogicOr : Op2::LogicAnd, expr.between_text},
+                               comp_l, comp_r);
             },
             [&value](const Expr::DataIn& expr) -> ColumnValue
             {
-                const ColumnValue column_value = expr.expr->eval(value);
+                const ColumnValue column_value = expr.expr->Eval(value);
                 if (column_value.index() == 0)
                 {
                     return Bool::UNKNOWN;
@@ -55,7 +55,7 @@ ColumnValue Expr::eval(const Value* value) const
                 bool has_null = false;
                 for (const ExprPtr& element_expr : expr.list)
                 {
-                    const ColumnValue element = element_expr->eval(value);
+                    const ColumnValue element = element_expr->Eval(value);
                     if (element.index() == 0)
                     {
                         has_null = true;
@@ -74,7 +74,7 @@ ColumnValue Expr::eval(const Value* value) const
             [&value](const Expr::DataFunction& expr)
             {
                 ASSERT(value);
-                return value->at(expr.column_id.get());
+                return value->at(expr.column_id.Get());
             },
         },
         data);

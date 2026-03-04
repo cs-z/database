@@ -16,18 +16,18 @@
 #include <iterator>
 #include <string>
 
-static std::string trim(const std::string& text);
-static void        parse_and_execute_statement(const std::string& source);
-static void        parse_and_execute_file(const std::string& file_name);
+static std::string Trim(const std::string& text);
+static void        ParseAndExecuteStatement(const std::string& source);
+static void        ParseAndExecuteFile(const std::string& file_name);
 
 int main(int argc, const char** argv)
 {
-    buffer::init();
-    catalog::init();
+    buffer::Init();
+    catalog::Init();
 
     if (argc > 1)
     {
-        parse_and_execute_file(argv[1]);
+        ParseAndExecuteFile(argv[1]);
     }
     else
     {
@@ -35,7 +35,7 @@ int main(int argc, const char** argv)
         std::printf("> ");
         while (std::getline(std::cin, source))
         {
-            source = trim(source);
+            source = Trim(source);
             if (source.empty())
             {
                 // ignore
@@ -44,15 +44,15 @@ int main(int argc, const char** argv)
             {
                 break;
             }
-            parse_and_execute_statement(source);
+            ParseAndExecuteStatement(source);
             std::printf("> ");
         }
     }
 
-    buffer::destroy();
+    buffer::Destroy();
 }
 
-static std::string trim(const std::string& text)
+static std::string Trim(const std::string& text)
 {
     std::size_t begin = 0;
     while (begin < text.size() && std::isspace(text[begin]) != 0)
@@ -71,27 +71,27 @@ static std::string trim(const std::string& text)
     return text.substr(begin, end - begin + 1);
 }
 
-static void parse_and_execute_statement(const std::string& source)
+static void ParseAndExecuteStatement(const std::string& source)
 {
     try
     {
         Lexer        lexer{source};
-        AstStatement ast = parse_statement(lexer);
-        lexer.accept_step(Token::Semicolon);
-        if (!lexer.accept(Token::End))
+        AstStatement ast = ParseStatement(lexer);
+        lexer.AcceptStep(Token::Semicolon);
+        if (!lexer.Accept(Token::End))
         {
-            lexer.unexpected();
+            lexer.Unexpected();
         }
-        const Statement statement = compile_statement(ast);
-        execute_statement(statement);
+        const Statement statement = CompileStatement(ast);
+        ExecuteStatement(statement);
     }
     catch (const ClientError& error)
     {
-        error.print_error(source);
+        error.PrintError(source);
     }
     catch (const ServerError& error)
     {
-        error.print_error();
+        error.PrintError();
     }
     catch (const std::exception& error)
     {
@@ -99,7 +99,7 @@ static void parse_and_execute_statement(const std::string& source)
     }
 }
 
-static void parse_and_execute_file(const std::string& file_name)
+static void ParseAndExecuteFile(const std::string& file_name)
 {
     std::string source;
     try
@@ -111,26 +111,26 @@ static void parse_and_execute_file(const std::string& file_name)
         }
         source = {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
         Lexer lexer{source};
-        while (!lexer.accept(Token::End))
+        while (!lexer.Accept(Token::End))
         {
-            const SourceText text_begin = lexer.get_token().get_text();
-            AstStatement     ast        = parse_statement(lexer);
-            const SourceText text_end   = lexer.get_token().get_text();
+            const SourceText text_begin = lexer.GetToken().GetText();
+            AstStatement     ast        = ParseStatement(lexer);
+            const SourceText text_end   = lexer.GetToken().GetText();
             const SourceText text{text_begin, text_end};
-            const Statement  statement = compile_statement(ast);
+            const Statement  statement = CompileStatement(ast);
             std::printf("> ");
-            text.print_escaped();
-            execute_statement(statement);
-            lexer.accept_step(Token::Semicolon);
+            text.PrintEscaped();
+            ExecuteStatement(statement);
+            lexer.AcceptStep(Token::Semicolon);
         }
     }
     catch (const ClientError& error)
     {
-        error.print_error(source);
+        error.PrintError(source);
     }
     catch (const ServerError& error)
     {
-        error.print_error();
+        error.PrintError();
     }
     catch (const std::exception& error)
     {

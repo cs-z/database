@@ -13,31 +13,31 @@ namespace buffer
 struct FrameTag
 {
 };
-using FrameId = StrongId<FrameTag, u32>;
+using FrameId = StrongId<FrameTag, U32>;
 
-void init();
-void destroy();
-void flush(catalog::FileId file_id);
+void Init();
+void Destroy();
+void Flush(catalog::FileId file_id);
 
-void* request(catalog::FileId file_id, page::Id page_id, bool append, FrameId& frame_out);
-void  release(FrameId frame, bool dirty);
+void* Request(catalog::FileId file_id, page::Id page_id, bool append, FrameId& frame_out);
+void  Release(FrameId frame, bool dirty);
 
 template <typename PageT> class Pin
 {
 public:
-    Pin() : file_id{}, frame{}, page_id{}, page{}
+    Pin() : file_id_{}, frame_{}, page_id_{}, page_{}
     {
     }
 
     Pin(catalog::FileId file_id, page::Id page_id, bool append = false)
-        : file_id{file_id}, page_id{page_id},
-          page{reinterpret_cast<PageT*>(request(file_id, page_id, append, frame))}
+        : file_id_{file_id}, page_id_{page_id},
+          page_{reinterpret_cast<PageT*>(Request(file_id, page_id, append, frame_))}
     {
     }
 
     operator bool() const
     {
-        return page != nullptr;
+        return page_ != nullptr;
     }
 
     Pin(const Pin&)            = delete;
@@ -45,72 +45,72 @@ public:
 
     template <typename PageOtherT = PageT> Pin(Pin<PageOtherT>&& other)
     {
-        file_id       = other.file_id;
-        frame         = other.frame;
-        page_id       = other.page_id;
-        page          = reinterpret_cast<PageT*>(other.page);
-        other.file_id = {};
-        other.frame   = {};
-        other.page_id = {};
-        other.page    = {};
+        file_id_       = other.file_id_;
+        frame_         = other.frame_;
+        page_id_       = other.page_id_;
+        page_          = reinterpret_cast<PageT*>(other.page_);
+        other.file_id_ = {};
+        other.frame_   = {};
+        other.page_id_ = {};
+        other.page_    = {};
     }
 
     template <typename PageOtherT = PageT> Pin& operator=(Pin<PageOtherT>&& other)
     {
-        release();
-        file_id       = other.file_id;
-        frame         = other.frame;
-        page_id       = other.page_id;
-        page          = reinterpret_cast<PageT*>(other.page);
-        other.file_id = {};
-        other.frame   = {};
-        other.page_id = {};
-        other.page    = {};
+        Release();
+        file_id_       = other.file_id_;
+        frame_         = other.frame_;
+        page_id_       = other.page_id_;
+        page_          = reinterpret_cast<PageT*>(other.page_);
+        other.file_id_ = {};
+        other.frame_   = {};
+        other.page_id_ = {};
+        other.page_    = {};
         return *this;
     }
 
     ~Pin()
     {
-        release();
+        Release();
     }
 
     // create new pin using the same file
     template <typename PageResultT = PageT>
-    Pin<PageResultT> shift(page::Id page_id, bool append = false) const
+    Pin<PageResultT> Shift(page::Id page_id, bool append = false) const
     {
-        return {file_id, page_id, append};
+        return {file_id_, page_id, append};
     }
 
-    [[nodiscard]] catalog::FileId get_file_id() const
+    [[nodiscard]] catalog::FileId GetFileId() const
     {
-        return file_id;
+        return file_id_;
     }
-    [[nodiscard]] page::Id get_page_id() const
+    [[nodiscard]] page::Id GetPageId() const
     {
-        return page_id;
+        return page_id_;
     }
-    [[nodiscard]] PageT* get_page() const
+    [[nodiscard]] PageT* GetPage() const
     {
-        return page;
+        return page_;
     }
     [[nodiscard]] PageT* operator->() const
     {
-        return page;
+        return page_;
     }
 
 private:
-    void release()
+    void Release()
     {
-        if (page)
+        if (page_)
         {
-            buffer::release(frame, !std::is_const_v<PageT>);
+            buffer::Release(frame_, !std::is_const_v<PageT>);
         }
     }
 
-    catalog::FileId file_id;
-    FrameId         frame;
-    page::Id        page_id;
-    PageT*          page;
+    catalog::FileId file_id_;
+    FrameId         frame_;
+    page::Id        page_id_;
+    PageT*          page_;
 
     template <typename> friend class Pin;
 };
@@ -119,39 +119,39 @@ template <typename PageT = void> class Buffer
 {
 public:
     Buffer(FrameId frame_count = FrameId{1})
-        : frame_count{frame_count},
-          buffer{std::aligned_alloc(page::SIZE,
-                                    static_cast<std::size_t>(frame_count.get()) * page::SIZE)}
+        : frame_count_{frame_count},
+          buffer_{std::aligned_alloc(page::kSize,
+                                     static_cast<std::size_t>(frame_count.Get()) * page::kSize)}
     {
-        ASSERT(buffer);
-        memset(buffer, 0, static_cast<std::size_t>(frame_count.get()) * page::SIZE); // TODO: remove
+        ASSERT(buffer_);
+        memset(buffer_, 0,
+               static_cast<std::size_t>(frame_count.Get()) * page::kSize); // TODO: remove
     }
 
     ~Buffer()
     {
-        std::free(buffer);
+        std::free(buffer_);
     }
 
-    void* get_frame(FrameId frame)
+    void* GetFrame(FrameId frame)
     {
-        ASSERT(frame < frame_count);
-        return reinterpret_cast<char*>(buffer) + static_cast<std::size_t>(frame.get() * page::SIZE);
+        ASSERT(frame < frame_count_);
+        return reinterpret_cast<char*>(buffer_) +
+               static_cast<std::size_t>(frame.Get() * page::kSize);
     }
 
-    [[nodiscard]] PageT* get() const
+    [[nodiscard]] PageT* Get() const
     {
-        return reinterpret_cast<PageT*>(buffer);
+        return reinterpret_cast<PageT*>(buffer_);
     }
     PageT* operator->() const
     {
-        return reinterpret_cast<PageT*>(buffer);
+        return reinterpret_cast<PageT*>(buffer_);
     }
 
 private:
-    const FrameId frame_count;
-    void* const   buffer;
+    const FrameId frame_count_;
+    void* const   buffer_;
 };
-
-void test();
 
 } // namespace buffer

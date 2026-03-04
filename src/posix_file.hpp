@@ -1,5 +1,6 @@
 #include "file.hpp"
 
+#include <cstdint>
 #include <filesystem>
 #include <span>
 #include <sys/types.h>
@@ -7,7 +8,7 @@
 class PosixFile final : public File
 {
 public:
-    enum class Mode
+    enum class Mode : std::uint8_t
     {
         Open,
         Create,
@@ -23,15 +24,15 @@ public:
     PosixFile(const PosixFile&)            = delete;
     PosixFile& operator=(const PosixFile&) = delete;
 
-    [[nodiscard]] page::Id getPageCount() override;
-    void                   readPage(page::Id id, std::span<u8, page::SIZE> page) override;
-    void                   writePage(page::Id id, std::span<const u8, page::SIZE> page) override;
-    [[nodiscard]] page::Id appendPage() override;
-    void                   truncate(page::Id newPageCount) override;
+    [[nodiscard]] page::Id GetPageCount() override;
+    void                   ReadPage(page::Id id, std::span<U8, page::kSize> page) override;
+    void                   WritePage(page::Id id, std::span<const U8, page::kSize> page) override;
+    [[nodiscard]] page::Id AppendPage() override;
+    void                   Truncate(page::Id new_page_count) override;
 
 private:
-    [[nodiscard]] static constexpr off_t getPageOffset(page::Id id);
-    void                                 resize(page::Id newPageCount) const;
+    [[nodiscard]] static constexpr off_t GetPageOffset(page::Id id);
+    void                                 Resize(page::Id new_page_count) const;
 
-    int fd = -1;
+    int fd_ = -1; // TODO: optional int
 };

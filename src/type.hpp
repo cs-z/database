@@ -16,7 +16,8 @@ enum class ColumnType : std::uint8_t
     VARCHAR,
 };
 
-inline bool column_type_is_comparable(ColumnType type)
+// TODO: make constexpr
+inline bool ColumnTypeIsComparable(ColumnType type)
 {
     switch (type)
     {
@@ -30,7 +31,8 @@ inline bool column_type_is_comparable(ColumnType type)
     UNREACHABLE();
 }
 
-inline bool column_type_is_arithmetic(ColumnType type)
+// TODO: make constexpr
+inline bool ColumnTypeIsArithmetic(ColumnType type)
 {
     switch (type)
     {
@@ -44,31 +46,31 @@ inline bool column_type_is_arithmetic(ColumnType type)
     UNREACHABLE();
 }
 
-std::string column_type_to_string(ColumnType type);
-void compile_cast(std::optional<ColumnType> from, const std::pair<ColumnType, SourceText>& to);
-std::string column_type_to_catalog_string(ColumnType type);
-ColumnType  column_type_from_catalog_string(const std::string& name);
+std::string ColumnTypeToString(ColumnType type);
+void CompileCast(std::optional<ColumnType> from, const std::pair<ColumnType, SourceText>& to);
+std::string ColumnTypeToCatalogString(ColumnType type);
+ColumnType  ColumnTypeFromCatalogString(const std::string& name);
 
 class Type
 {
 public:
     Type(); // TODO: reserve?
-    void push(ColumnType column);
+    void Push(ColumnType column);
 
-    [[nodiscard]] page::Offset get_align() const
+    [[nodiscard]] page::Offset GetAlign() const
     {
-        return align;
+        return align_;
     }
-    [[nodiscard]] std::size_t size() const
+    [[nodiscard]] std::size_t Size() const
     {
-        return columns.size();
+        return columns_.size();
     }
-    [[nodiscard]] ColumnType at(std::size_t index) const
+    [[nodiscard]] ColumnType At(std::size_t index) const
     {
-        return columns.at(index);
+        return columns_.at(index);
     }
 
 private:
-    page::Offset            align;
-    std::vector<ColumnType> columns;
+    page::Offset            align_;
+    std::vector<ColumnType> columns_;
 };

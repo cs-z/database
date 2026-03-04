@@ -8,18 +8,18 @@
 #include <stdexcept>
 #include <string>
 
-static inline char escape_char(char c)
+[[nodiscard]] static inline char EscapeChar(char c)
 {
-    return is_printable(c) ? c : ' ';
+    return IsPrintable(c) ? c : ' ';
 }
 
-void SourceText::print_escaped() const
+void SourceText::PrintEscaped() const
 {
-    ASSERT(first && last);
+    ASSERT(first_ && last_);
     bool prev_is_space = false;
-    for (const char* ptr = first; ptr <= last; ptr++)
+    for (const char* ptr = first_; ptr <= last_; ptr++)
     {
-        const char c          = escape_char(*ptr);
+        const char c          = EscapeChar(*ptr);
         const bool c_is_space = std::isspace(c) != 0;
         if (!prev_is_space || !c_is_space)
         {
@@ -30,15 +30,15 @@ void SourceText::print_escaped() const
     std::printf("\n");
 }
 
-void SourceText::print_error(const std::string& source) const
+void SourceText::PrintError(const std::string& source) const
 {
-    ASSERT(first && last);
-    const char* padded_first = first;
+    ASSERT(first_ && last_);
+    const char* padded_first = first_;
     while (padded_first > source.c_str() && padded_first[-1] != '\n' && padded_first[-1] != '\r')
     {
         padded_first--;
     }
-    const char* padded_last = last;
+    const char* padded_last = last_;
     while (padded_last[0] != '\0' && padded_last[0] != '\r' && padded_last[0] != '\n')
     {
         padded_last++;
@@ -46,22 +46,22 @@ void SourceText::print_error(const std::string& source) const
     std::fprintf(stderr, "\n | ");
     for (const char* ptr = padded_first; ptr <= padded_last; ptr++)
     {
-        std::fprintf(stderr, "%c", escape_char(*ptr));
+        std::fprintf(stderr, "%c", EscapeChar(*ptr));
     }
     std::fprintf(stderr, "\n | ");
     for (const char* ptr = padded_first; ptr <= padded_last; ptr++)
     {
-        std::fprintf(stderr, "%c", (first <= ptr && ptr <= last) ? '^' : ' ');
+        std::fprintf(stderr, "%c", (first_ <= ptr && ptr <= last_) ? '^' : ' ');
     }
     std::fprintf(stderr, "\n\n");
 }
 
-void ClientError::print_error(const std::string& source) const
+void ClientError::PrintError(const std::string& source) const
 {
     std::fprintf(stderr, "client error: %s\n", what());
-    if (text)
+    if (text_)
     {
-        text->print_error(source);
+        text_->PrintError(source);
     }
 }
 
@@ -77,7 +77,7 @@ ServerError::ServerError(const char* function, const std::string& arg, int errnu
 {
 }
 
-void ServerError::print_error() const
+void ServerError::PrintError() const
 {
     std::fprintf(stderr, "server error: %s\n", what());
 }

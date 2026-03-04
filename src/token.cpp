@@ -1,7 +1,7 @@
 #include "token.hpp"
 #include "common.hpp"
 
-const char* Token::tag_to_cstr(Tag tag)
+const char* Token::TagToCstr(Tag tag)
 {
     switch (tag)
     {

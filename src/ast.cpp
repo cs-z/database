@@ -8,49 +8,48 @@
 #include <string>
 #include <variant>
 
-std::string AstExpr::DataColumn::to_string() const
+std::string AstExpr::DataColumn::ToString() const
 {
-    return table ? (table->get() + "." + name.get()) : name.get();
+    return table ? (table->Get() + "." + name.Get()) : name.Get();
 }
 
-static void print_column(const AstExpr::DataColumn& column)
+static void PrintColumn(const AstExpr::DataColumn& column)
 {
-    std::printf("%s", column.to_string().c_str());
+    std::printf("%s", column.ToString().c_str());
 }
 
-std::string AstExpr::to_string() const
+std::string AstExpr::ToString() const
 {
     return std::visit(
         Overload{
-            [](const DataConstant& expr) { return column_value_to_string(expr.value, true); },
-            [](const DataColumn& expr) { return expr.to_string(); },
+            [](const DataConstant& expr) { return ColumnValueToString(expr.value, true); },
+            [](const DataColumn& expr) { return expr.ToString(); },
             [](const DataCast& expr) {
-                return "CAST(" + expr.expr->to_string() + " AS " +
-                       column_type_to_string(expr.to.first) + ")";
+                return "CAST(" + expr.expr->ToString() + " AS " +
+                       ColumnTypeToString(expr.to.first) + ")";
             },
-            [](const DataOp1& expr)
-            { return op1_to_string(expr.op.first, expr.expr->to_string()); },
+            [](const DataOp1& expr) { return Op1ToString(expr.op.first, expr.expr->ToString()); },
             [](const DataOp2& expr)
             {
-                return "(" + expr.expr_l->to_string() + " " + op2_cstr(expr.op.first) + " " +
-                       expr.expr_r->to_string() + ")";
+                return "(" + expr.expr_l->ToString() + " " + Op2Cstr(expr.op.first) + " " +
+                       expr.expr_r->ToString() + ")";
             },
             [](const DataBetween& expr)
             {
-                std::string string = expr.expr->to_string();
+                std::string string = expr.expr->ToString();
                 if (expr.negated)
                 {
                     string += " NOT";
                 }
                 string += " BETWEEN ";
-                string += "(" + expr.min->to_string() + ")";
+                string += "(" + expr.min->ToString() + ")";
                 string += " AND ";
-                string += "(" + expr.max->to_string() + ")";
+                string += "(" + expr.max->ToString() + ")";
                 return string;
             },
             [](const DataIn& expr)
             {
-                std::string string = expr.expr->to_string();
+                std::string string = expr.expr->ToString();
                 if (expr.negated)
                 {
                     string += " NOT";
@@ -59,7 +58,7 @@ std::string AstExpr::to_string() const
                 string += "(";
                 for (std::size_t i = 0; i < expr.list.size(); i++)
                 {
-                    string += expr.list[i]->to_string();
+                    string += expr.list[i]->ToString();
                     if (i + 1 < expr.list.size())
                     {
                         string += ", ";
@@ -70,19 +69,19 @@ std::string AstExpr::to_string() const
             },
             [](const DataFunction& expr)
             {
-                return std::string{function_to_cstr(expr.function)} + "(" +
-                       (expr.arg ? expr.arg->to_string() : "*") + ")";
+                return std::string{FunctionToCstr(expr.function)} + "(" +
+                       (expr.arg ? expr.arg->ToString() : "*") + ")";
             },
         },
         data);
 }
 
-void AstExpr::print() const
+void AstExpr::Print() const
 {
-    std::printf("%s", to_string().c_str());
+    std::printf("%s", ToString().c_str());
 }
 
-void AstQuery::print() const
+void AstQuery::Print() const
 {
     std::printf("SELECT ");
     for (std::size_t i = 0; i < select.list.elements.size(); i++)
@@ -91,13 +90,13 @@ void AstQuery::print() const
             Overload{
                 [](const AstSelectList::Wildcard&) { std::printf("*"); },
                 [](const AstSelectList::TableWildcard& element)
-                { std::printf("%s.*", element.table.get().c_str()); },
+                { std::printf("%s.*", element.table.Get().c_str()); },
                 [](const AstSelectList::Expr& element)
                 {
-                    element.expr->print();
+                    element.expr->Print();
                     if (element.alias)
                     {
-                        std::printf(" AS %s", element.alias->get().c_str());
+                        std::printf(" AS %s", element.alias->Get().c_str());
                     }
                 },
             },
@@ -110,7 +109,7 @@ void AstQuery::print() const
     std::printf(" FROM ");
     for (std::size_t i = 0; i < select.sources.size(); i++)
     {
-        select.sources[i]->print();
+        select.sources[i]->Print();
         if (i + 1 < select.sources.size())
         {
             std::printf(", ");
@@ -119,14 +118,14 @@ void AstQuery::print() const
     if (select.where)
     {
         std::printf(" WHERE ");
-        select.where->print();
+        select.where->Print();
     }
     if (select.group_by)
     {
         std::printf(" GROUP BY ");
         for (std::size_t i = 0; i < select.group_by->columns.size(); i++)
         {
-            print_column(select.group_by->columns[i].first);
+            PrintColumn(select.group_by->columns[i].first);
             if (i + 1 < select.group_by->columns.size())
             {
                 std::printf(", ");
@@ -141,8 +140,8 @@ void AstQuery::print() const
             std::visit(
                 Overload{
                     [](const AstOrderBy::Index& column)
-                    { std::printf("%u", column.index.first.get()); },
-                    [](const AstExpr::DataColumn& column) { print_column(column); },
+                    { std::printf("%u", column.index.first.Get()); },
+                    [](const AstExpr::DataColumn& column) { PrintColumn(column); },
                 },
                 order_by->columns[i].column);
             std::printf(" %s", order_by->columns[i].asc ? " ASC" : " DESC");
@@ -158,30 +157,30 @@ void AstQuery::print() const
     }
 }
 
-void AstSource::print() const
+void AstSource::Print() const
 {
     std::visit(
         Overload{
             [](const DataTable& table)
             {
-                std::printf("%s", table.name.get().c_str());
+                std::printf("%s", table.name.Get().c_str());
                 if (table.alias)
                 {
-                    std::printf(" AS %s", table.alias->get().c_str());
+                    std::printf(" AS %s", table.alias->Get().c_str());
                 }
             },
             [](const DataJoinCross& table)
             {
                 std::printf("(");
-                table.source_l->print();
+                table.source_l->Print();
                 std::printf(" CROSS JOIN ");
-                table.source_r->print();
+                table.source_r->Print();
                 std::printf(")");
             },
             [](const DataJoinConditional& table)
             {
                 std::printf("(");
-                table.source_l->print();
+                table.source_l->Print();
                 if (table.join)
                 {
                     switch (*table.join)
@@ -201,9 +200,9 @@ void AstSource::print() const
                     }
                 }
                 std::printf(" JOIN ");
-                table.source_r->print();
+                table.source_r->Print();
                 std::printf(" ON ");
-                table.condition->print();
+                table.condition->Print();
                 std::printf(")");
             },
         },

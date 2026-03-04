@@ -20,49 +20,49 @@ public:
     SourceText& operator=(const SourceText& other) noexcept = default;
     SourceText& operator=(SourceText&& other) noexcept      = default;
 
-    explicit SourceText() : first{}, last{}
+    explicit SourceText() : first_{}, last_{}
     {
     }
 
-    explicit SourceText(const char* ptr) : text{ptr, ptr + 1}, first{ptr}, last{ptr}
+    explicit SourceText(const char* ptr) : text_{ptr, ptr + 1}, first_{ptr}, last_{ptr}
     {
     }
 
     explicit SourceText(std::string text, const char* begin, const char* end)
-        : text{std::move(text)}, first{begin}, last{end - 1}
+        : text_{std::move(text)}, first_{begin}, last_{end - 1}
     {
         ASSERT(begin < end);
     }
 
     explicit SourceText(const char* begin, const char* end)
-        : text{begin, end}, first{begin}, last{end - 1}
+        : text_{begin, end}, first_{begin}, last_{end - 1}
     {
         ASSERT(begin < end);
     }
 
     explicit SourceText(const SourceText& begin, const SourceText& end)
-        : text{begin.first, end.first}, first{begin.first}, last{end.first - 1}
+        : text_{begin.first_, end.first_}, first_{begin.first_}, last_{end.first_ - 1}
     {
-        ASSERT(begin.first < end.first);
+        ASSERT(begin.first_ < end.first_);
     }
 
     SourceText operator+(const SourceText& other) const
     {
-        ASSERT(last < other.first);
-        return SourceText{first, other.last};
+        ASSERT(last_ < other.first_);
+        return SourceText{first_, other.last_};
     }
 
-    [[nodiscard]] const std::string& get() const
+    [[nodiscard]] const std::string& Get() const
     {
-        return text;
+        return text_;
     }
 
-    void print_escaped() const;
-    void print_error(const std::string& source) const;
+    void PrintEscaped() const;
+    void PrintError(const std::string& source) const;
 
 private:
-    std::string text;
-    const char *first, *last;
+    std::string text_;
+    const char *first_, *last_;
 };
 
 class ClientError : public std::runtime_error
@@ -72,13 +72,13 @@ public:
     {
     }
     ClientError(const std::string& message, SourceText text)
-        : std::runtime_error{message}, text{std::move(text)}
+        : std::runtime_error{message}, text_{std::move(text)}
     {
     }
-    void print_error(const std::string& source) const;
+    void PrintError(const std::string& source) const;
 
 private:
-    std::optional<SourceText> text;
+    std::optional<SourceText> text_;
 };
 
 class ServerError : public std::runtime_error
@@ -89,5 +89,5 @@ public:
     }
     ServerError(const char* function, int errnum);
     ServerError(const char* function, const std::string& arg, int errnum);
-    void print_error() const;
+    void PrintError() const;
 };
