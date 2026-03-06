@@ -37,12 +37,12 @@ ColumnValue Expr::Eval(const Value* value) const
                 const ColumnValue column_value_min = expr.min->Eval(value);
                 const ColumnValue column_value_max = expr.max->Eval(value);
                 const ColumnValue comp_l =
-                    Op2Eval({expr.negated ? Op2::CompL : Op2::CompGe, expr.between_text},
+                    Op2Eval({expr.negated ? Op2::kCompL : Op2::kCompGe, expr.between_text},
                             column_value, column_value_min);
                 const ColumnValue comp_r =
-                    Op2Eval({expr.negated ? Op2::CompG : Op2::CompLe, expr.between_text},
+                    Op2Eval({expr.negated ? Op2::kCompG : Op2::kCompLe, expr.between_text},
                             column_value, column_value_max);
-                return Op2Eval({expr.negated ? Op2::LogicOr : Op2::LogicAnd, expr.between_text},
+                return Op2Eval({expr.negated ? Op2::kLogicOr : Op2::kLogicAnd, expr.between_text},
                                comp_l, comp_r);
             },
             [&value](const Expr::DataIn& expr) -> ColumnValue
@@ -50,7 +50,7 @@ ColumnValue Expr::Eval(const Value* value) const
                 const ColumnValue column_value = expr.expr->Eval(value);
                 if (column_value.index() == 0)
                 {
-                    return Bool::UNKNOWN;
+                    return Bool::kUnknown;
                 }
                 bool has_null = false;
                 for (const ExprPtr& element_expr : expr.list)
@@ -62,14 +62,14 @@ ColumnValue Expr::Eval(const Value* value) const
                     }
                     else if (element == column_value)
                     {
-                        return expr.negated ? Bool::FALSE : Bool::TRUE;
+                        return expr.negated ? Bool::kFalse : Bool::kTrue;
                     }
                 }
                 if (has_null)
                 {
-                    return Bool::UNKNOWN;
+                    return Bool::kUnknown;
                 }
-                return expr.negated ? Bool::TRUE : Bool::FALSE;
+                return expr.negated ? Bool::kTrue : Bool::kFalse;
             },
             [&value](const Expr::DataFunction& expr)
             {

@@ -108,11 +108,13 @@ public:
 
     [[nodiscard]] const Slot* Cbegin() const
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
         return slots_;
     }
 
     [[nodiscard]] const Slot* Cend() const
     {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
         return slots_ + entry_count_.Get();
     }
 
@@ -155,6 +157,7 @@ public:
         }
         ASSERT(*offset % align == 0);
 
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
         std::memmove(slots_ + entry_id.Get() + 1, slots_ + entry_id.Get(),
                      (entry_count_ - entry_id).Get() * sizeof(Slot));
         slots_[entry_id.Get()] = Slot{*offset, size, std::move(info)};

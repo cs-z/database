@@ -16,7 +16,7 @@ void               FileTruncate(const std::string& name);
 class File
 {
 public:
-    File(const std::string& name);
+    explicit File(const std::string& name);
     ~File() noexcept;
 
     File(const File&)            = delete;
@@ -38,9 +38,8 @@ public:
     TempFile();
     ~TempFile() noexcept;
 
-    TempFile(TempFile&& other) noexcept
+    TempFile(TempFile&& other) noexcept : fd_{other.fd_}
     {
-        fd_       = other.fd_;
         other.fd_ = std::nullopt;
     }
 

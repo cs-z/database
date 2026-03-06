@@ -28,21 +28,21 @@ jobs:
         os: [ubuntu-latest] # windows-latest
         build_config: [debug, release, static]
         include:
-        - build_config: debug
-          type: Debug
-          tidy: OFF
-          werror: OFF
-        - build_config: release
-          type: Release
-          tidy: OFF
-          werror: OFF
-        - build_config: static
-          type: Release
-          tidy: ON
-          werror: ON
+          - build_config: debug
+            type: Debug
+            tidy: OFF
+            werror: OFF
+          - build_config: release
+            type: Release
+            tidy: OFF
+            werror: OFF
+          - build_config: static
+            type: Release
+            tidy: ON
+            werror: ON
 
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +54,7 @@ jobs:
 
       - name: Configure CMake
         run: >
-          cmake -S . -B build 
+          cmake -S . -B build
           -DCMAKE_BUILD_TYPE=${{ matrix.type }}
           -DENABLE_CLANG_TIDY=${{ matrix.tidy }}
           -DENABLE_WERROR=${{ matrix.werror }}

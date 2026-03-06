@@ -12,7 +12,7 @@
 #include <optional>
 #include <utility>
 
-static int CompareKeys(const Type& key_type, auto key_l, auto key_r)
+static int CompareKeys(const Type& key_type, auto key_l, const auto& key_r)
 {
     for (ColumnId column_id{}; column_id < key_type.Size(); column_id++)
     {
@@ -103,7 +103,7 @@ static std::pair<page::Id, Value> Insert(const auto& page, const Type& key_type,
 static std::pair<page::Id, Value> Split(const buffer::Pin<Leaf>& page, const Type& key_type,
                                         const Value& key, RID rid, page::EntryId index)
 {
-    buffer::Pin<FileHeader> header{page.GetFileId(), page::Id{}};
+    const buffer::Pin<FileHeader> header{page.GetFileId(), page::Id{}};
 
     const page::EntryId entry_count_r = page->GetEntryCount() / 2;
     const page::EntryId entry_count_l = page->GetEntryCount() - entry_count_r;
@@ -114,13 +114,13 @@ static std::pair<page::Id, Value> Split(const buffer::Pin<Leaf>& page, const Typ
 
     const page::Offset align = key_type.GetAlign();
 
-    buffer::Pin<Leaf> new_page{page.GetFileId(), header->Alloc(), true};
+    const buffer::Pin<Leaf> new_page{page.GetFileId(), header->Alloc(), true};
     new_page->Init(
         {.header = Header{true}, .prev = page.GetPageId(), .next = page->GetHeader().next});
 
     if (page->GetHeader().next != 0)
     {
-        buffer::Pin<Leaf> next_page{page.GetFileId(), page->GetHeader().next};
+        const buffer::Pin<Leaf> next_page{page.GetFileId(), page->GetHeader().next};
         next_page->GetHeader().prev = new_page.GetPageId();
     }
     page->GetHeader().next = new_page.GetPageId();
@@ -128,9 +128,9 @@ static std::pair<page::Id, Value> Split(const buffer::Pin<Leaf>& page, const Typ
     for (page::EntryId i{}; i < entry_count_r; i++)
     {
         const page::EntryId index = entry_count_l + i;
-        page::Offset        size;
-        const U8* const     src = page->GetEntry(index, size);
-        U8* const           dst = new_page->Insert(align, size, page->GetEntryInfo(index));
+        page::Offset        size  = 0;
+        const U8* const     src   = page->GetEntry(index, size);
+        U8* const           dst   = new_page->Insert(align, size, page->GetEntryInfo(index));
         ASSERT(dst);
         std::memcpy(dst, src, size);
     }
@@ -156,7 +156,7 @@ static std::pair<page::Id, Value> Split(const buffer::Pin<Leaf>& page, const Typ
 static std::pair<page::Id, Value> Split(const buffer::Pin<Inner>& page, const Type& key_type,
                                         const Value& key, page::Id page_id, page::EntryId index)
 {
-    buffer::Pin<FileHeader> header{page.GetFileId(), page::Id{}};
+    const buffer::Pin<FileHeader> header{page.GetFileId(), page::Id{}};
 
     const auto middle        = page->GetEntryCount() / 2;
     const auto entry_count_l = middle;
@@ -168,7 +168,7 @@ static std::pair<page::Id, Value> Split(const buffer::Pin<Inner>& page, const Ty
 
     const page::Offset align = key_type.GetAlign();
 
-    buffer::Pin<Inner> new_page{page.GetFileId(), header->Alloc(), true};
+    const buffer::Pin<Inner> new_page{page.GetFileId(), header->Alloc(), true};
     new_page->Init({.header = Header{false}, .leftmost_child = page->GetEntryInfo(middle)});
 
     Value new_key = row::Read(key_type, page->GetEntry(middle));
@@ -176,9 +176,9 @@ static std::pair<page::Id, Value> Split(const buffer::Pin<Inner>& page, const Ty
     for (page::EntryId i{}; i < entry_count_r; i++)
     {
         const page::EntryId index = middle + 1 + i;
-        page::Offset        size;
-        const U8* const     src = page->GetEntry(index, size);
-        U8* const           dst = new_page->Insert(align, size, page->GetEntryInfo(index));
+        page::Offset        size  = 0;
+        const U8* const     src   = page->GetEntry(index, size);
+        U8* const           dst   = new_page->Insert(align, size, page->GetEntryInfo(index));
         ASSERT(dst);
         std::memcpy(dst, src, size);
     }
@@ -200,27 +200,27 @@ static std::pair<page::Id, Value> Split(const buffer::Pin<Inner>& page, const Ty
     return std::make_pair(new_page.GetPageId(), std::move(new_key));
 }
 
-void Init(catalog::FileId file_id)
+[[maybe_unused]] static void Init(catalog::FileId file_id)
 {
-    buffer::Pin<FileHeader> header{file_id, page::Id{}, true};
+    const buffer::Pin<FileHeader> header{file_id, page::Id{}, true};
     header->Init();
 
-    buffer::Pin<Leaf> root{file_id, header->Alloc(), true};
+    const buffer::Pin<Leaf> root{file_id, header->Alloc(), true};
     root->Init({.header = Header{true}, .prev = page::Id{}, .next = page::Id{}});
     header->SetRoot(root.GetPageId());
 }
 
-template <typename PageT>
-static auto FindLowerEntry(buffer::Pin<const PageT>& page, const Type& key_type, const Value& key)
+template <typename Page>
+static auto FindLowerEntry(buffer::Pin<const Page>& page, const Type& key_type, const Value& key)
 {
     const auto iter =
         std::lower_bound(page->cbegin(), page->cend(), key,
-                         [&page, &key_type](const typename PageT::Slot& slot, const Value& key)
+                         [&page, &key_type](const typename Page::Slot& slot, const Value& key)
                          {
                              return CompareKeys(key_type, page->GetEntry(slot), key) < 0; // TODO
                          });
     const auto index = static_cast<page::EntryId>(iter - page->cbegin());
-    if constexpr (std::is_same_v<PageT, Leaf>)
+    if constexpr (std::is_same_v<Page, Leaf>)
     {
         if (index < page->get_entry_count() &&
             CompareKeys(key_type, page->GetEntry(index), key) == 0)
@@ -229,7 +229,7 @@ static auto FindLowerEntry(buffer::Pin<const PageT>& page, const Type& key_type,
         }
         return std::optional<page::EntryId>();
     }
-    if constexpr (std::is_same_v<PageT, Inner>)
+    if constexpr (std::is_same_v<Page, Inner>)
     {
         const bool equal = index < page->get_entry_count() &&
                            CompareKeys(key_type, page->GetEntry(index), key) == 0;
@@ -239,15 +239,15 @@ static auto FindLowerEntry(buffer::Pin<const PageT>& page, const Type& key_type,
     UNREACHABLE();
 }
 
-template <typename PageT>
-static auto FindUpperEntry(buffer::Pin<const PageT>& page, const Type& key_type, const Value& key)
+template <typename Page>
+static auto FindUpperEntry(buffer::Pin<const Page>& page, const Type& key_type, const Value& key)
 {
     const auto iter =
         std::upper_bound(page->cbegin(), page->cend(), key,
-                         [&page, &key_type](const Value& key, const typename PageT::Slot& slot)
+                         [&page, &key_type](const Value& key, const typename Page::Slot& slot)
                          { return CompareKeys(key_type, page->GetEntry(slot), key) > 0; });
     const auto index = static_cast<page::EntryId>(iter - page->cbegin());
-    if constexpr (std::is_same_v<PageT, Leaf>)
+    if constexpr (std::is_same_v<Page, Leaf>)
     {
         if (index > 0 && CompareKeys(key_type, page->GetEntry(index - 1), key) == 0)
         {
@@ -255,20 +255,20 @@ static auto FindUpperEntry(buffer::Pin<const PageT>& page, const Type& key_type,
         }
         return std::optional<page::EntryId>();
     }
-    if constexpr (std::is_same_v<PageT, Inner>)
+    if constexpr (std::is_same_v<Page, Inner>)
     {
         return index > 0 ? page->GetEntryInfo(index - 1) : page->get_header().leftmost_child;
     }
     UNREACHABLE();
 }
 
-template <typename PageT>
-static page::EntryId FindInsertEntry(buffer::Pin<PageT>& page, const Type& key_type,
+template <typename Page>
+static page::EntryId FindInsertEntry(const buffer::Pin<Page>& page, const Type& key_type,
                                      const Value& key)
 {
     const auto iter =
         std::upper_bound(page->Cbegin(), page->Cend(), key,
-                         [&page, &key_type](const Value& key, const typename PageT::Slot& slot)
+                         [&page, &key_type](const Value& key, const typename Page::Slot& slot)
                          { return CompareKeys(key_type, page->GetEntry(slot), key) > 0; });
     return static_cast<page::EntryId>(iter - page->Cbegin());
 }
@@ -279,13 +279,13 @@ static std::pair<page ::Id, Value> InsertRecursive(catalog::FileId file_id, page
     buffer::Pin<Header> page{file_id, page_id};
     if (page->is_leaf)
     {
-        buffer::Pin<Leaf>   leaf  = std::move(page);
-        const page::EntryId index = FindInsertEntry(leaf, key_type, key);
+        const buffer::Pin<Leaf> leaf  = std::move(page);
+        const page::EntryId     index = FindInsertEntry(leaf, key_type, key);
         return Insert(leaf, key_type, key, rid, index);
     }
-    buffer::Pin<Inner>  inner = std::move(page);
-    const page::EntryId index = FindInsertEntry(inner, key_type, key);
-    const auto          child =
+    const buffer::Pin<Inner> inner = std::move(page);
+    const page::EntryId      index = FindInsertEntry(inner, key_type, key);
+    const auto               child =
         index > 0 ? inner->GetEntryInfo(index - 1) : inner->GetHeader().leftmost_child;
     auto overflow = InsertRecursive(file_id, child, key_type, key, rid);
     if (overflow.first != 0)
@@ -295,13 +295,14 @@ static std::pair<page ::Id, Value> InsertRecursive(catalog::FileId file_id, page
     return {};
 }
 
-void Insert(catalog::FileId file_id, const Type& key_type, const Value& key, RID rid)
+[[maybe_unused]] static void Insert(catalog::FileId file_id, const Type& key_type, const Value& key,
+                                    RID rid)
 {
-    buffer::Pin<FileHeader> header{file_id, page::Id{}};
+    const buffer::Pin<FileHeader> header{file_id, page::Id{}};
     const auto overflow = InsertRecursive(file_id, header->GetRoot(), key_type, key, rid);
     if (overflow.first != 0)
     {
-        buffer::Pin<Inner> inner{file_id, header->Alloc(), true};
+        const buffer::Pin<Inner> inner{file_id, header->Alloc(), true};
         inner->Init({.header = Header{false}, .leftmost_child = header->GetRoot()});
         const auto result =
             Insert(inner, key_type, overflow.second, overflow.first, page::EntryId{});
@@ -593,8 +594,8 @@ std::nullopt, std::nullopt);
 int main(int argc, const char **argv)
 {
     Type key_type;
-    key_type.push(ColumnType::VARCHAR);
-    key_type.push(ColumnType::VARCHAR);
+    key_type.push(ColumnType::kVarchar);
+    key_type.push(ColumnType::kVarchar);
 
     buffer::init();
     catalog::init();

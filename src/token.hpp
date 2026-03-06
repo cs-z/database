@@ -14,70 +14,70 @@ class Token
 public:
     enum Tag : std::uint8_t
     {
-        KwCreate,
-        KwTable,
-        KwDefault,
-        KwConstraint,
-        KwNot,
-        KwUnique,
-        KwPrimary,
-        KwKey,
-        KwCheck,
-        KwDrop,
-        KwInsert,
-        KwInto,
-        KwValues,
-        KwSelect,
-        KwDistinct,
-        KwAll,
-        KwFrom,
-        KwAs,
-        KwJoin,
-        KwCross,
-        KwInner,
-        KwOuter,
-        KwLeft,
-        KwRight,
-        KwFull,
-        KwOn,
-        KwWhere,
-        KwGroup,
-        KwBy,
-        KwHaving,
-        KwUnion,
-        KwExcept,
-        KwIntersect,
-        KwOrder,
-        KwAsc,
-        KwDesc,
-        KwInteger,
-        KwReal,
-        KwVarchar,
-        KwBetween,
-        KwIn,
-        KwIs,
-        KwExists,
-        KwCast,
-        KwNull,
-        KwLimit,
-        KwDelete,
-        KwUpdate,
-        KwSet,
+        kKeywordCreate,
+        kKeywordTable,
+        kKeywordDefault,
+        kKeywordConstraint,
+        kKeywordNot,
+        kKeywordUnique,
+        kKeywordPrimary,
+        kKeywordKey,
+        kKeywordCheck,
+        kKeywordDrop,
+        kKeywordInsert,
+        kKeywordInto,
+        kKeywordValues,
+        kKeywordSelect,
+        kKeywordDistinct,
+        kKeywordAll,
+        kKeywordFrom,
+        kKeywordAs,
+        kKeywordJoin,
+        kKeywordCross,
+        kKeywordInner,
+        kKeywordOuter,
+        kKeywordLeft,
+        kKeywordRight,
+        kKeywordFull,
+        kKeywordOn,
+        kKeywordWhere,
+        kKeywordGroup,
+        kKeywordBy,
+        kKeywordHaving,
+        kKeywordUnion,
+        kKeywordExcept,
+        kKeywordIntersect,
+        kKeywordOrder,
+        kKeywordAsc,
+        kKeywordDesc,
+        kKeywordInteger,
+        kKeywordReal,
+        kKeywordVarchar,
+        kKeywordBetween,
+        kKeywordIn,
+        kKeywordIs,
+        kKeywordExists,
+        kKeywordCast,
+        kKeywordNull,
+        kKeywordLimit,
+        kKeywordDelete,
+        kKeywordUpdate,
+        kKeywordSet,
 
-        LParen,
-        RParen,
-        Period,
-        Comma,
-        Semicolon,
-        Asterisk,
+        kLParen,
+        kRParen,
+        kPeriod,
+        kComma,
+        kSemicolon,
+        kAsterisk,
 
-        Op2,
-        Function,
-        Identifier,
+        kOp2,
+        kFunction,
+        kIdentifier,
 
-        Constant,
+        kConstant,
 
-        End,
+        kEnd,
     };
 
     using DataOp2      = ::Op2;
@@ -99,6 +99,7 @@ public:
     Token(Token&& other) noexcept                 = default;
     Token& operator=(const Token& other) noexcept = default;
     Token& operator=(Token&& other) noexcept      = default;
+    ~Token()                                      = default;
 
     [[nodiscard]] Tag GetTag() const
     {
@@ -109,16 +110,16 @@ public:
         return text_;
     } // TODO: maybe move
 
-    template <typename DataT> [[nodiscard]] const DataT& GetData() const
+    template <typename T> [[nodiscard]] const T& GetData() const
     {
-        ASSERT(std::holds_alternative<DataT>(data_));
-        return std::get<DataT>(data_);
+        ASSERT(std::holds_alternative<T>(data_));
+        return std::get<T>(data_);
     }
 
-    template <typename DataT> [[nodiscard]] std::pair<DataT, SourceText> Take()
+    template <typename T> [[nodiscard]] std::pair<T, SourceText> Take()
     {
-        ASSERT(std::holds_alternative<DataT>(data_));
-        return {std::move(std::get<DataT>(data_)), std::move(text_)};
+        ASSERT(std::holds_alternative<T>(data_));
+        return {std::move(std::get<T>(data_)), std::move(text_)};
     }
 
     [[nodiscard]] static const char* TagToCstr(Tag tag);

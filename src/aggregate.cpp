@@ -89,7 +89,7 @@ ColumnValue Aggregator::Get(Function function)
 {
     switch (function)
     {
-    case Function::AVG:
+    case Function::kAvg:
         return std::visit(
             Overload{
                 [](const ColumnValueNull& value) -> ColumnValue { return value; },
@@ -107,13 +107,13 @@ ColumnValue Aggregator::Get(Function function)
                 [](const ColumnValueVarchar&) -> ColumnValue { UNREACHABLE(); },
             },
             sum_);
-    case Function::MAX:
+    case Function::kMax:
         return max_;
-    case Function::MIN:
+    case Function::kMin:
         return min_;
-    case Function::SUM:
+    case Function::kSum:
         return sum_;
-    case Function::COUNT:
+    case Function::kCount:
         return count_;
     }
     UNREACHABLE();
@@ -124,7 +124,7 @@ static Iter CreateIter(Iter&& parent, const Aggregates& aggregates)
     if (!aggregates.group_by.empty())
     {
         OrderBy order_by;
-        for (ColumnId column_id : aggregates.group_by)
+        for (const ColumnId column_id : aggregates.group_by)
         {
             order_by.columns.push_back({.column_id = column_id, .asc = true});
         }
@@ -170,7 +170,7 @@ std::optional<std::optional<Value>> IterAggregate::Feed(const Aggregates::GroupB
     if (value)
     {
         value_key = Value{};
-        for (ColumnId key_id : group_by)
+        for (const ColumnId key_id : group_by)
         {
             value_key->push_back(value->at(key_id.Get()));
         }

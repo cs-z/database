@@ -15,7 +15,6 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace buffer
 {
@@ -227,7 +226,7 @@ void Release(FrameId frame, bool dirty)
 
     {
         std::unordered_map<page::Id, unsigned int> pins_count;
-        std::vector<Pin<char>>                     pins;
+        std::vector<Pin<const char>>                     pins;
 
         static constexpr unsigned int page_count = 5'000;
         for (unsigned int page_count = 0; page_count < page_count; page_count++)
@@ -235,7 +234,7 @@ void Release(FrameId frame, bool dirty)
 
             {
                 const page::Id page_id_append{page_count};
-                Pin<char>      page_append{file_id, page_id_append, true};
+                Pin<const char>      page_append{file_id, page_id_append, true};
                 const auto     c_append = static_cast<char>('A' + (rand() % ('Z' - 'A' + 1)));
                 memset(page_append.get_page(), c_append, page::kSize);
                 file_data.push_back(c_append);
@@ -246,7 +245,7 @@ void Release(FrameId frame, bool dirty)
             {
 
                 const page::Id page_id_set(rand() % (page_count + 1));
-                Pin<char>      page_set{file_id, page_id_set};
+                Pin<const char>      page_set{file_id, page_id_set};
                 const auto     c_set = static_cast<char>('A' + (rand() % ('Z' - 'A' + 1)));
                 memset(page_set.get_page(), c_set, page::kSize);
                 file_data.at(page_id_set.get()) = c_set;

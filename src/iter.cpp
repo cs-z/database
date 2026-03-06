@@ -1,4 +1,5 @@
 #include "iter.hpp"
+#include "buffer.hpp"
 #include "common.hpp"
 #include "expr.hpp"
 #include "page.hpp"
@@ -40,7 +41,7 @@ std::optional<Value> IterProject::Next()
 Type IterProject::MapType(const Type& type, const std::vector<ColumnId>& columns)
 {
     Type new_type;
-    for (ColumnId column : columns)
+    for (const ColumnId column : columns)
     {
         new_type.Push(type.At(column.Get()));
     }
@@ -50,7 +51,7 @@ Type IterProject::MapType(const Type& type, const std::vector<ColumnId>& columns
 Value IterProject::MapValue(Value&& value, const std::vector<ColumnId>& columns)
 {
     Value new_value;
-    for (ColumnId column : columns)
+    for (const ColumnId column : columns)
     {
         new_value.push_back(std::move(value.at(column.Get())));
     }
@@ -100,7 +101,7 @@ void IterScan::Restart()
 
 void IterScan::Close()
 {
-    page_ = {};
+    page_ = buffer::Pin<const page::Slotted<>>{};
 }
 
 std::optional<Value> IterScan::Next()
@@ -113,7 +114,7 @@ std::optional<Value> IterScan::Next()
             {
                 return std::nullopt;
             }
-            page_ = {file_id_, page_id_};
+            page_ = buffer::Pin<const page::Slotted<>>{file_id_, page_id_};
         }
         if (entry_id_ == page_->GetEntryCount())
         {
@@ -246,7 +247,7 @@ std::optional<Value> IterJoinQualified::Next()
             return std::nullopt;
         }
         const Bool condition_value = std::get<ColumnValueBoolean>(condition_->Eval(&*value));
-        if (condition_value != Bool::TRUE)
+        if (condition_value != Bool::kTrue)
         {
             continue;
         }
@@ -279,7 +280,7 @@ std::optional<Value> IterFilter::Next()
             return std::nullopt;
         }
         const Bool condition_value = std::get<ColumnValueBoolean>(condition_->Eval(&*value));
-        if (condition_value != Bool::TRUE)
+        if (condition_value != Bool::kTrue)
         {
             continue;
         }

@@ -10,9 +10,9 @@ class PosixFile final : public File
 public:
     enum class Mode : std::uint8_t
     {
-        Open,
-        Create,
-        CreateTemp,
+        kOpen,
+        kCreate,
+        kCreateTemp,
     };
 
     explicit PosixFile(const std::filesystem::path& path, Mode mode);

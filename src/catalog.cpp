@@ -51,8 +51,8 @@ struct Table
 // 	.name = "SYS_STATS",
 // 	.file_ids = { FileId { 0 }, FileId { 1 } },
 // 	.columns = {
-// 		{ "FILE_COUNTER", ColumnType::INTEGER },
-// 		{ "TABLE_COUNTER", ColumnType::INTEGER },
+// 		{ "FILE_COUNTER", ColumnType::kInteger },
+// 		{ "TABLE_COUNTER", ColumnType::kInteger },
 // 	},
 // };
 
@@ -62,8 +62,8 @@ static const Table kTableFiles = {
     .file_ids = {.fst = FileId{2}, .dat = FileId{3}},
     .columns =
         {
-            {"ID", ColumnType::INTEGER},
-            {"NAME", ColumnType::VARCHAR},
+            {"ID", ColumnType::kInteger},
+            {"NAME", ColumnType::kVarchar},
         },
 };
 
@@ -73,10 +73,10 @@ static const Table kTableTables = {
     .file_ids = {.fst = FileId{4}, .dat = FileId{5}},
     .columns =
         {
-            {"ID", ColumnType::INTEGER},
-            {"NAME", ColumnType::VARCHAR},
-            {"FILE_FST_ID", ColumnType::INTEGER},
-            {"FILE_DAT_ID", ColumnType::INTEGER},
+            {"ID", ColumnType::kInteger},
+            {"NAME", ColumnType::kVarchar},
+            {"FILE_FST_ID", ColumnType::kInteger},
+            {"FILE_DAT_ID", ColumnType::kInteger},
         },
 };
 
@@ -86,10 +86,10 @@ static const Table kTableColumns = {
     .file_ids = {.fst = FileId{6}, .dat = FileId{7}},
     .columns =
         {
-            {"TABLE_ID", ColumnType::INTEGER},
-            {"ID", ColumnType::INTEGER},
-            {"NAME", ColumnType::VARCHAR},
-            {"TYPE", ColumnType::VARCHAR},
+            {"TABLE_ID", ColumnType::kInteger},
+            {"ID", ColumnType::kInteger},
+            {"NAME", ColumnType::kVarchar},
+            {"TYPE", ColumnType::kVarchar},
         },
 };
 

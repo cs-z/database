@@ -185,16 +185,16 @@ void AstSource::Print() const
                 {
                     switch (*table.join)
                     {
-                    case DataJoinConditional::Join::INNER:
+                    case DataJoinConditional::Join::kInner:
                         std::printf(" INNER");
                         break;
-                    case DataJoinConditional::Join::LEFT:
+                    case DataJoinConditional::Join::kLeft:
                         std::printf(" LEFT OUTER");
                         break;
-                    case DataJoinConditional::Join::RIGHT:
+                    case DataJoinConditional::Join::kRight:
                         std::printf(" RIGHT OUTER");
                         break;
-                    case DataJoinConditional::Join::FULL:
+                    case DataJoinConditional::Join::kFull:
                         std::printf(" FULL OUTER");
                         break;
                     }

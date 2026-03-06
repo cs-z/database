@@ -1,13 +1,21 @@
 Checks: >
   -*,
   bugprone-*,
+  clang-analyzer-*,
+  -clang-analyzer-cplusplus.NewDeleteLeaks,
+  google-*,
+  -google-readability-todo,
+  misc-*,
+  -misc-use-anonymous-namespace,
+  -misc-non-private-member-variables-in-classes,
+  -misc-no-recursion,
   modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-std-print,
   performance-*,
   portability-*,
   readability-*,
-  misc-include-cleaner,
   -readability-magic-numbers,
-  -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
   -readability-identifier-length
 CheckOptions:
@@ -23,43 +31,51 @@ CheckOptions:
     value: CamelCase
   - key: readability-identifier-naming.ConceptCase
     value: CamelCase
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: CamelCase
   - key: readability-identifier-naming.VariableCase
     value: lower_case
   - key: readability-identifier-naming.ParameterCase
     value: lower_case
-  - key: readability-identifier-naming.StructMemberCase
+  - key: readability-identifier-naming.StaticVariableCase
     value: lower_case
-  - key: readability-identifier-naming.ClassMemberCase
-    value: lower_case
-  - key: readability-identifier-naming.ClassMemberSuffix
-    value: '_'
-  - key: readability-identifier-naming.PrivateMemberCase
+  - key: readability-identifier-naming.MemberCase
     value: lower_case
   - key: readability-identifier-naming.PrivateMemberSuffix
-    value: '_'
-  - key: readability-identifier-naming.ProtectedMemberCase
-    value: lower_case
+    value: "_"
   - key: readability-identifier-naming.ProtectedMemberSuffix
-    value: '_'
+    value: "_"
+  - key: readability-identifier-naming.PublicMemberCase
+    value: lower_case
+  - key: readability-identifier-naming.PublicMemberSuffix
+    value: ""
   - key: readability-identifier-naming.GlobalConstantCase
     value: CamelCase
   - key: readability-identifier-naming.GlobalConstantPrefix
-    value: 'k'
+    value: "k"
   - key: readability-identifier-naming.StaticConstantCase
     value: CamelCase
   - key: readability-identifier-naming.StaticConstantPrefix
-    value: 'k'
+    value: "k"
   - key: readability-identifier-naming.ConstexprVariableCase
     value: CamelCase
   - key: readability-identifier-naming.ConstexprVariablePrefix
-    value: 'k'
+    value: "k"
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantPrefix
+    value: "k"
   - key: readability-identifier-naming.FunctionCase
     value: CamelCase
+  - key: readability-identifier-naming.GlobalFunctionCase
+    value: CamelCase
   - key: readability-identifier-naming.MethodCase
+    value: CamelCase
+  - key: readability-identifier-naming.ConstexprFunctionCase
     value: CamelCase
   - key: readability-identifier-naming.NamespaceCase
     value: lower_case
   - key: readability-identifier-naming.MacroDefinitionCase
     value: UPPER_CASE
-HeaderFilterRegex: '.*'
+HeaderFilterRegex: ".*"
 FormatStyle: file

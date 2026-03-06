@@ -31,7 +31,7 @@
     {
         Lexer        lexer{source};
         AstStatement ast = ParseStatement(lexer);
-        lexer.Expect(Token::End);
+        lexer.Expect(Token::kEnd);
         const Statement    statement = CompileStatement(ast);
         std::vector<Value> values;
         if (const Query* const query = std::get_if<Query>(&statement))
@@ -90,7 +90,7 @@ static void ExecuteInsertValue(const InsertValue& statement)
         page->Init({});
     }
 
-    page::Offset free_size;
+    page::Offset free_size{};
     U8* const    row = page->Insert(align, prefix.size, {}, &free_size);
     ASSERT(row);
     row::Write(prefix, statement.value, row);
@@ -193,12 +193,12 @@ static void ExecuteQuery(const Query& query)
     std::printf("(%u rows in %.1lf ms)\n\n", count, time_delta.count());
 }
 
-void ExecuteTruncate(const TruncateTable& statement)
+static void ExecuteTruncate(const TruncateTable& statement)
 {
     catalog::TruncateTable(statement.table_id);
 }
 
-void ExecuteDelete(const DeleteConditional& statement)
+static void ExecuteDelete(const DeleteConditional& statement)
 {
     const auto file_id = catalog::GetTableFileIds(statement.table_id).dat; // TODO
     statement.iter->Open();
@@ -209,7 +209,7 @@ void ExecuteDelete(const DeleteConditional& statement)
         {
             const auto row_id              = std::get<ColumnValueInteger>(row->back());
             const auto [page_id, entry_id] = UnpackRowId(row_id);
-            buffer::Pin<page::Slotted<>> page{file_id, page_id};
+            const buffer::Pin<page::Slotted<>> page{file_id, page_id};
             page->Remove(entry_id);
         }
         else

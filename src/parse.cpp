@@ -19,20 +19,20 @@
 
 static std::pair<ColumnType, SourceText> ParseType(Lexer& lexer)
 {
-    if (lexer.Accept(Token::KwInteger))
+    if (lexer.Accept(Token::kKeywordInteger))
     {
         const SourceText text = lexer.StepToken().GetText();
-        return {ColumnType::INTEGER, text};
+        return {ColumnType::kInteger, text};
     }
-    if (lexer.Accept(Token::KwReal))
+    if (lexer.Accept(Token::kKeywordReal))
     {
         const SourceText text = lexer.StepToken().GetText();
-        return {ColumnType::REAL, text};
+        return {ColumnType::kReal, text};
     }
-    if (lexer.Accept(Token::KwVarchar))
+    if (lexer.Accept(Token::kKeywordVarchar))
     {
         const SourceText text = lexer.StepToken().GetText();
-        return {ColumnType::VARCHAR, text};
+        return {ColumnType::kVarchar, text};
     }
     lexer.Unexpected();
 }
@@ -41,17 +41,17 @@ ColumnType ParseType(const std::string& name)
 {
     Lexer lexer{name};
     auto [type, text_unused] = ParseType(lexer);
-    lexer.Expect(Token::End);
+    lexer.Expect(Token::kEnd);
     return type;
 }
 
 static std::pair<AstExpr::DataColumn, SourceText> ParseColumn(Lexer& lexer)
 {
-    SourceText name = lexer.ExpectStep(Token::Identifier).GetText();
-    if (lexer.AcceptStep(Token::Period))
+    SourceText name = lexer.ExpectStep(Token::kIdentifier).GetText();
+    if (lexer.AcceptStep(Token::kPeriod))
     {
-        SourceText column = lexer.ExpectStep(Token::Identifier).GetText();
-        SourceText text   = name + column;
+        SourceText       column = lexer.ExpectStep(Token::kIdentifier).GetText();
+        const SourceText text   = name + column;
         return std::make_pair(AstExpr::DataColumn{.table = std::move(name), .name = column},
                               std::move(column));
     }
@@ -63,23 +63,23 @@ using WildcardOrColumn =
     std::variant<AstSelectList::Wildcard, AstSelectList::TableWildcard, AstExprPtr>;
 static std::optional<WildcardOrColumn> ParseWildcardOrColumn(Lexer& lexer)
 {
-    if (lexer.Accept(Token::Asterisk))
+    if (lexer.Accept(Token::kAsterisk))
     {
         SourceText asterisk_text = lexer.StepToken().GetText();
         return {AstSelectList::Wildcard{std::move(asterisk_text)}};
     }
-    if (lexer.Accept(Token::Identifier))
+    if (lexer.Accept(Token::kIdentifier))
     {
         SourceText name = lexer.StepToken().GetText();
-        if (lexer.AcceptStep(Token::Period))
+        if (lexer.AcceptStep(Token::kPeriod))
         {
-            if (lexer.Accept(Token::Asterisk))
+            if (lexer.Accept(Token::kAsterisk))
             {
                 SourceText asterisk_text = lexer.StepToken().GetText();
                 return {AstSelectList::TableWildcard{.table         = std::move(name),
                                                      .asterisk_text = std::move(asterisk_text)}};
             }
-            if (lexer.Accept(Token::Identifier))
+            if (lexer.Accept(Token::kIdentifier))
             {
                 SourceText column = lexer.StepToken().GetText();
                 SourceText text   = name + column;
@@ -108,73 +108,76 @@ static AstExprPtr ParseExpr(Lexer& lexer, ExprContext context, int prec = 0,
 
 static AstExprPtr ParseExprPrimary(Lexer& lexer, ExprContext context, int prec)
 {
-    if (lexer.Accept(Token::LParen))
+    if (lexer.Accept(Token::kLParen))
     {
-        SourceText lparen_text = lexer.StepToken().GetText();
-        AstExprPtr expr        = ParseExpr(lexer, context);
-        SourceText rparen_text = lexer.ExpectStep(Token::RParen).GetText();
-        expr->text             = lparen_text + rparen_text;
+        const SourceText lparen_text = lexer.StepToken().GetText();
+        AstExprPtr       expr        = ParseExpr(lexer, context);
+        const SourceText rparen_text = lexer.ExpectStep(Token::kRParen).GetText();
+        expr->text                   = lparen_text + rparen_text;
         return expr;
     }
-    if (lexer.Accept(Token::KwNull))
+    if (lexer.Accept(Token::kKeywordNull))
     {
         SourceText text = lexer.StepToken().GetText();
         return std::make_unique<AstExpr>(
             AstExpr{.data = AstExpr::DataConstant{ColumnValueNull{}}, .text = std::move(text)});
     }
-    if (lexer.Accept(Token::Constant))
+    if (lexer.Accept(Token::kConstant))
     {
         auto [value, text] = lexer.StepToken().Take<Token::DataConstant>();
         return std::make_unique<AstExpr>(
             AstExpr{.data = AstExpr::DataConstant{std::move(value)}, .text = text});
     }
-    if (lexer.Accept(Token::Identifier))
+    if (lexer.Accept(Token::kIdentifier))
     {
         auto [column, text] = ParseColumn(lexer);
         return std::make_unique<AstExpr>(AstExpr{.data = std::move(column), .text = text});
     }
-    if (lexer.Accept(Token::KwCast))
+    if (lexer.Accept(Token::kKeywordCast))
     {
-        SourceText cast_text = lexer.StepToken().GetText();
-        lexer.ExpectStep(Token::LParen);
+        const SourceText cast_text = lexer.StepToken().GetText();
+        lexer.ExpectStep(Token::kLParen);
         AstExprPtr expr = ParseExpr(lexer, context);
-        lexer.ExpectStep(Token::KwAs);
-        std::pair<ColumnType, SourceText> to          = ParseType(lexer);
-        SourceText                        rparen_text = lexer.ExpectStep(Token::RParen).GetText();
+        lexer.ExpectStep(Token::kKeywordAs);
+        const std::pair<ColumnType, SourceText> to = ParseType(lexer);
+        const SourceText rparen_text               = lexer.ExpectStep(Token::kRParen).GetText();
         return std::make_unique<AstExpr>(
             AstExpr{.data = AstExpr::DataCast{.expr = std::move(expr), .to = to},
                     .text = cast_text + rparen_text});
     }
-    if (prec <= Op1Prec(Op1::Pos) && lexer.Accept(Token::Op2) &&
-        lexer.GetToken().GetData<Token::DataOp2>() == Op2::ArithAdd)
+    if (prec <= Op1Prec(Op1::kPos) && lexer.Accept(Token::kOp2) &&
+        lexer.GetToken().GetData<Token::DataOp2>() == Op2::kArithAdd)
     {
         SourceText op_text = lexer.StepToken().GetText();
-        AstExprPtr expr    = ParseExpr(lexer, context, Op1Prec(Op1::Pos));
+        AstExprPtr expr    = ParseExpr(lexer, context, Op1Prec(Op1::kPos));
         SourceText text    = op_text + expr->text;
-        return std::make_unique<AstExpr>(AstExpr{
-            .data = AstExpr::DataOp1{.expr = std::move(expr), .op = {Op1::Pos, std::move(op_text)}},
-            .text = std::move(text)});
+        return std::make_unique<AstExpr>(
+            AstExpr{.data = AstExpr::DataOp1{.expr = std::move(expr),
+                                             .op   = {Op1::kPos, std::move(op_text)}},
+                    .text = std::move(text)});
     }
-    if (prec <= Op1Prec(Op1::Neg) && lexer.Accept(Token::Op2) &&
-        lexer.GetToken().GetData<Token::DataOp2>() == Op2::ArithSub)
+    if (prec <= Op1Prec(Op1::kNeg) && lexer.Accept(Token::kOp2) &&
+        lexer.GetToken().GetData<Token::DataOp2>() == Op2::kArithSub)
     {
         SourceText op_text = lexer.StepToken().GetText();
-        AstExprPtr expr    = ParseExpr(lexer, context, Op1Prec(Op1::Neg));
+        AstExprPtr expr    = ParseExpr(lexer, context, Op1Prec(Op1::kNeg));
         SourceText text    = op_text + expr->text;
-        return std::make_unique<AstExpr>(AstExpr{
-            .data = AstExpr::DataOp1{.expr = std::move(expr), .op = {Op1::Neg, std::move(op_text)}},
-            .text = std::move(text)});
+        return std::make_unique<AstExpr>(
+            AstExpr{.data = AstExpr::DataOp1{.expr = std::move(expr),
+                                             .op   = {Op1::kNeg, std::move(op_text)}},
+                    .text = std::move(text)});
     }
-    if (prec <= Op1Prec(Op1::Not) && lexer.Accept(Token::KwNot))
+    if (prec <= Op1Prec(Op1::kNot) && lexer.Accept(Token::kKeywordNot))
     {
         SourceText op_text = lexer.StepToken().GetText();
-        AstExprPtr expr    = ParseExpr(lexer, context, Op1Prec(Op1::Not));
+        AstExprPtr expr    = ParseExpr(lexer, context, Op1Prec(Op1::kNot));
         SourceText text    = op_text + expr->text;
-        return std::make_unique<AstExpr>(AstExpr{
-            .data = AstExpr::DataOp1{.expr = std::move(expr), .op = {Op1::Not, std::move(op_text)}},
-            .text = std::move(text)});
+        return std::make_unique<AstExpr>(
+            AstExpr{.data = AstExpr::DataOp1{.expr = std::move(expr),
+                                             .op   = {Op1::kNot, std::move(op_text)}},
+                    .text = std::move(text)});
     }
-    if (lexer.Accept(Token::Function))
+    if (lexer.Accept(Token::kFunction))
     {
         if (context.inside_aggregate)
         {
@@ -185,12 +188,12 @@ static AstExprPtr ParseExprPrimary(Lexer& lexer, ExprContext context, int prec)
             throw ClientError{"aggregations are invalid here", lexer.GetToken().GetText()};
         }
         auto [function, function_text] = lexer.StepToken().Take<Token::DataFunction>();
-        lexer.ExpectStep(Token::LParen);
+        lexer.ExpectStep(Token::kLParen);
         AstExprPtr arg;
-        if (lexer.Accept(Token::Asterisk))
+        if (lexer.Accept(Token::kAsterisk))
         {
             SourceText arg_text = lexer.StepToken().GetText();
-            if (function != Function::COUNT)
+            if (function != Function::kCount)
             {
                 throw ClientError{"invalid argument", std::move(arg_text)};
             }
@@ -200,7 +203,7 @@ static AstExprPtr ParseExprPrimary(Lexer& lexer, ExprContext context, int prec)
             arg =
                 ParseExpr(lexer, ExprContext{.accept_aggregate = false, .inside_aggregate = true});
         }
-        SourceText rparen_text = lexer.ExpectStep(Token::RParen).GetText();
+        const SourceText rparen_text = lexer.ExpectStep(Token::kRParen).GetText();
         return std::make_unique<AstExpr>(
             AstExpr{.data = AstExpr::DataFunction{.function = function, .arg = std::move(arg)},
                     .text = function_text + rparen_text});
@@ -214,11 +217,11 @@ static AstExprPtr ParseExpr(Lexer& lexer, ExprContext context, int prec, AstExpr
     AstExprPtr expr = primary ? std::move(primary) : ParseExprPrimary(lexer, context, prec);
     for (;;)
     {
-        if (lexer.Accept(Token::Op2) || lexer.Accept(Token::Asterisk))
+        if (lexer.Accept(Token::kOp2) || lexer.Accept(Token::kAsterisk))
         {
-            const Op2 op       = lexer.GetToken().GetTag() == Token::Op2
+            const Op2 op       = lexer.GetToken().GetTag() == Token::kOp2
                                      ? lexer.GetToken().GetData<Token::DataOp2>()
-                                     : Op2::ArithMul;
+                                     : Op2::kArithMul;
             const int prec_new = Op2Prec(op);
             if (prec_new < prec)
             {
@@ -234,37 +237,37 @@ static AstExprPtr ParseExpr(Lexer& lexer, ExprContext context, int prec, AstExpr
                                       .text = std::move(text)});
             continue;
         }
-        if (prec <= Op1Prec(Op1::IsNull) && lexer.Accept(Token::KwIs))
+        if (prec <= Op1Prec(Op1::kIsNull) && lexer.Accept(Token::kKeywordIs))
         {
-            SourceText is_text   = lexer.StepToken().GetText();
-            const bool negated   = lexer.AcceptStep(Token::KwNot);
-            SourceText null_text = lexer.ExpectStep(Token::KwNull).GetText();
-            SourceText op_text   = is_text + null_text;
-            SourceText text      = expr->text + null_text;
-            expr                 = std::make_unique<AstExpr>(
+            const SourceText is_text   = lexer.StepToken().GetText();
+            const bool       negated   = lexer.AcceptStep(Token::kKeywordNot);
+            const SourceText null_text = lexer.ExpectStep(Token::kKeywordNull).GetText();
+            SourceText       op_text   = is_text + null_text;
+            SourceText       text      = expr->text + null_text;
+            expr                       = std::make_unique<AstExpr>(
                 AstExpr{.data = AstExpr::DataOp1{.expr = std::move(expr),
-                                                                 .op   = {negated ? Op1::IsNotNull : Op1::IsNull,
+                                                                       .op   = {negated ? Op1::kIsNotNull : Op1::kIsNull,
                                                         std::move(op_text)}},
-                                        .text = std::move(text)});
+                                              .text = std::move(text)});
             continue;
         }
-        if (prec <= Op1Prec(Op1::IsNull) &&
-            (lexer.Accept(Token::KwNot) || lexer.Accept(Token::KwBetween) ||
-             lexer.Accept(Token::KwIn)))
+        if (prec <= Op1Prec(Op1::kIsNull) &&
+            (lexer.Accept(Token::kKeywordNot) || lexer.Accept(Token::kKeywordBetween) ||
+             lexer.Accept(Token::kKeywordIn)))
         {
-            const bool negated = lexer.AcceptStep(Token::KwNot);
-            if (lexer.Accept(Token::KwBetween))
+            const bool negated = lexer.AcceptStep(Token::kKeywordNot);
+            if (lexer.Accept(Token::kKeywordBetween))
             {
                 SourceText between_text = lexer.StepToken().GetText();
-                AstExprPtr min          = ParseExpr(lexer, context, Op2Prec(Op2::LogicAnd) + 1);
-                if (!lexer.Accept(Token::Op2) ||
-                    lexer.GetToken().GetData<Token::DataOp2>() != Op2::LogicAnd)
+                AstExprPtr min          = ParseExpr(lexer, context, Op2Prec(Op2::kLogicAnd) + 1);
+                if (!lexer.Accept(Token::kOp2) ||
+                    lexer.GetToken().GetData<Token::DataOp2>() != Op2::kLogicAnd)
                 {
-                    throw ClientError{std::string{"expected "} + Op2Cstr(Op2::LogicAnd),
+                    throw ClientError{std::string{"expected "} + Op2Cstr(Op2::kLogicAnd),
                                       lexer.GetToken().GetText()};
                 }
                 lexer.StepToken();
-                AstExprPtr max  = ParseExpr(lexer, context, Op2Prec(Op2::LogicAnd) + 1);
+                AstExprPtr max  = ParseExpr(lexer, context, Op2Prec(Op2::kLogicAnd) + 1);
                 SourceText text = expr->text + max->text;
                 expr            = std::make_unique<AstExpr>(AstExpr{
                     AstExpr{.data = AstExpr::DataBetween{.expr         = std::move(expr),
@@ -275,23 +278,23 @@ static AstExprPtr ParseExpr(Lexer& lexer, ExprContext context, int prec, AstExpr
                                        .text = std::move(text)}});
                 continue;
             }
-            if (lexer.Accept(Token::KwIn))
+            if (lexer.Accept(Token::kKeywordIn))
             {
                 SourceText in_text = lexer.StepToken().GetText();
-                lexer.ExpectStep(Token::LParen);
+                lexer.ExpectStep(Token::kLParen);
                 std::vector<AstExprPtr> list;
                 do
                 {
                     list.push_back(ParseExpr(lexer, context));
-                } while (lexer.AcceptStep(Token::Comma));
-                SourceText rparen_text = lexer.ExpectStep(Token::RParen).GetText();
-                SourceText text        = expr->text + rparen_text;
-                expr                   = std::make_unique<AstExpr>(
+                } while (lexer.AcceptStep(Token::kComma));
+                const SourceText rparen_text = lexer.ExpectStep(Token::kRParen).GetText();
+                SourceText       text        = expr->text + rparen_text;
+                expr                         = std::make_unique<AstExpr>(
                     AstExpr{.data = AstExpr::DataIn{.expr    = std::move(expr),
-                                                                      .list    = std::move(list),
-                                                                      .negated = negated,
-                                                                      .in_text = std::move(in_text)},
-                                              .text = std::move(text)});
+                                                                            .list    = std::move(list),
+                                                                            .negated = negated,
+                                                                            .in_text = std::move(in_text)},
+                                                    .text = std::move(text)});
                 continue;
             }
             UNREACHABLE();
@@ -307,9 +310,9 @@ static AstSelectList::Expr ParseSelectListElementExpr(Lexer& lexer, AstExprPtr p
         ParseExpr(lexer, ExprContext{.accept_aggregate = true, .inside_aggregate = false}, 0,
                   std::move(primary));
     std::optional<SourceText> alias;
-    if (lexer.AcceptStep(Token::KwAs))
+    if (lexer.AcceptStep(Token::kKeywordAs))
     {
-        alias = lexer.ExpectStep(Token::Identifier).GetText();
+        alias = lexer.ExpectStep(Token::kIdentifier).GetText();
     }
     return {.expr = std::move(expr), .alias = std::move(alias)};
 }
@@ -338,7 +341,7 @@ static AstSelectList ParseSelectList(Lexer& lexer)
     do
     {
         elements.push_back(ParseSelectListElement(lexer));
-    } while (lexer.AcceptStep(Token::Comma));
+    } while (lexer.AcceptStep(Token::kComma));
     return {std::move(elements)};
 }
 
@@ -346,23 +349,23 @@ static AstSourcePtr ParseSource(Lexer& lexer);
 
 static AstSourcePtr ParseSourcePrimary(Lexer& lexer)
 {
-    if (lexer.Accept(Token::Identifier))
+    if (lexer.Accept(Token::kIdentifier))
     {
         SourceText                table = lexer.StepToken().GetText();
         std::optional<SourceText> alias;
-        if (lexer.Accept(Token::Identifier) || lexer.AcceptStep(Token::KwAs))
+        if (lexer.Accept(Token::kIdentifier) || lexer.AcceptStep(Token::kKeywordAs))
         {
-            alias = lexer.ExpectStep(Token::Identifier).GetText();
+            alias = lexer.ExpectStep(Token::kIdentifier).GetText();
         }
         SourceText text = alias ? table + *alias : table;
         return std::make_unique<AstSource>(AstSource{
             .data = AstSource::DataTable{.name = std::move(table), .alias = std::move(alias)},
             .text = std::move(text)});
     }
-    if (lexer.AcceptStep(Token::LParen))
+    if (lexer.AcceptStep(Token::kLParen))
     {
         AstSourcePtr source = ParseSource(lexer);
-        lexer.ExpectStep(Token::RParen);
+        lexer.ExpectStep(Token::kRParen);
         return source;
     }
     lexer.Unexpected();
@@ -373,9 +376,9 @@ static AstSourcePtr ParseSource(Lexer& lexer)
     AstSourcePtr source_l = ParseSourcePrimary(lexer);
     for (;;)
     {
-        if (lexer.AcceptStep(Token::KwCross))
+        if (lexer.AcceptStep(Token::kKeywordCross))
         {
-            lexer.ExpectStep(Token::KwJoin);
+            lexer.ExpectStep(Token::kKeywordJoin);
             AstSourcePtr source_r = ParseSourcePrimary(lexer);
             SourceText   text     = source_l->text + source_r->text;
             source_l              = std::make_unique<AstSource>(
@@ -384,34 +387,34 @@ static AstSourcePtr ParseSource(Lexer& lexer)
                                        .text = std::move(text)});
             continue;
         }
-        if (lexer.Accept(Token::KwJoin) || lexer.Accept(Token::KwInner) ||
-            lexer.Accept(Token::KwLeft) || lexer.Accept(Token::KwRight) ||
-            lexer.Accept(Token::KwFull))
+        if (lexer.Accept(Token::kKeywordJoin) || lexer.Accept(Token::kKeywordInner) ||
+            lexer.Accept(Token::kKeywordLeft) || lexer.Accept(Token::kKeywordRight) ||
+            lexer.Accept(Token::kKeywordFull))
         {
-            SourceText join_text = lexer.GetToken().GetText();
+            const SourceText join_text = lexer.GetToken().GetText();
             std::optional<AstSource::DataJoinConditional::Join> join;
-            if (lexer.AcceptStep(Token::KwInner))
+            if (lexer.AcceptStep(Token::kKeywordInner))
             {
-                join = AstSource::DataJoinConditional::Join::INNER;
+                join = AstSource::DataJoinConditional::Join::kInner;
             }
-            else if (lexer.AcceptStep(Token::KwLeft))
+            else if (lexer.AcceptStep(Token::kKeywordLeft))
             {
-                lexer.AcceptStep(Token::KwOuter);
-                join = AstSource::DataJoinConditional::Join::LEFT;
+                lexer.AcceptStep(Token::kKeywordOuter);
+                join = AstSource::DataJoinConditional::Join::kLeft;
             }
-            else if (lexer.AcceptStep(Token::KwRight))
+            else if (lexer.AcceptStep(Token::kKeywordRight))
             {
-                lexer.AcceptStep(Token::KwOuter);
-                join = AstSource::DataJoinConditional::Join::RIGHT;
+                lexer.AcceptStep(Token::kKeywordOuter);
+                join = AstSource::DataJoinConditional::Join::kRight;
             }
-            else if (lexer.AcceptStep(Token::KwFull))
+            else if (lexer.AcceptStep(Token::kKeywordFull))
             {
-                lexer.AcceptStep(Token::KwOuter);
-                join = AstSource::DataJoinConditional::Join::FULL;
+                lexer.AcceptStep(Token::kKeywordOuter);
+                join = AstSource::DataJoinConditional::Join::kFull;
             }
-            lexer.ExpectStep(Token::KwJoin);
+            lexer.ExpectStep(Token::kKeywordJoin);
             AstSourcePtr source_r = ParseSourcePrimary(lexer);
-            lexer.ExpectStep(Token::KwOn);
+            lexer.ExpectStep(Token::kKeywordOn);
             AstExprPtr condition =
                 ParseExpr(lexer, ExprContext{.accept_aggregate = false, .inside_aggregate = false});
             SourceText text = join_text + condition->text;
@@ -430,25 +433,25 @@ static AstSourcePtr ParseSource(Lexer& lexer)
 
 static std::vector<AstSourcePtr> ParseSources(Lexer& lexer)
 {
-    lexer.ExpectStep(Token::KwFrom);
+    lexer.ExpectStep(Token::kKeywordFrom);
     std::vector<AstSourcePtr> sources;
     do
     {
         sources.push_back(ParseSource(lexer));
-    } while (lexer.AcceptStep(Token::Comma));
+    } while (lexer.AcceptStep(Token::kComma));
     return sources;
 }
 
 static std::optional<AstGroupBy> ParseGroupBy(Lexer& lexer)
 {
-    if (lexer.AcceptStep(Token::KwGroup))
+    if (lexer.AcceptStep(Token::kKeywordGroup))
     {
-        lexer.ExpectStep(Token::KwBy);
+        lexer.ExpectStep(Token::kKeywordBy);
         std::vector<std::pair<AstExpr::DataColumn, SourceText>> columns;
         do
         {
             columns.push_back(ParseColumn(lexer));
-        } while (lexer.AcceptStep(Token::Comma));
+        } while (lexer.AcceptStep(Token::kComma));
         return {{std::move(columns)}};
     }
     return std::nullopt;
@@ -456,7 +459,7 @@ static std::optional<AstGroupBy> ParseGroupBy(Lexer& lexer)
 
 static AstExprPtr ParseHaving(Lexer& lexer)
 {
-    if (lexer.AcceptStep(Token::KwHaving))
+    if (lexer.AcceptStep(Token::kKeywordHaving))
     {
         return ParseExpr(lexer, ExprContext{.accept_aggregate = true, .inside_aggregate = false});
     }
@@ -465,11 +468,11 @@ static AstExprPtr ParseHaving(Lexer& lexer)
 
 static AstSelect ParseSelect(Lexer& lexer)
 {
-    lexer.ExpectStep(Token::KwSelect);
+    lexer.ExpectStep(Token::kKeywordSelect);
     AstSelectList             list    = ParseSelectList(lexer);
     std::vector<AstSourcePtr> sources = ParseSources(lexer);
     AstExprPtr                where;
-    if (lexer.AcceptStep(Token::KwWhere))
+    if (lexer.AcceptStep(Token::kKeywordWhere))
     {
         where = ParseExpr(lexer, ExprContext{.accept_aggregate = false, .inside_aggregate = false});
     }
@@ -484,7 +487,7 @@ static AstSelect ParseSelect(Lexer& lexer)
 
 static std::variant<AstOrderBy::Index, AstExpr::DataColumn> ParseOrderByColumn(Lexer& lexer)
 {
-    if (lexer.Accept(Token::Constant))
+    if (lexer.Accept(Token::kConstant))
     {
         const auto* index =
             std::get_if<ColumnValueInteger>(&lexer.GetToken().GetData<Token::DataConstant>());
@@ -494,7 +497,7 @@ static std::variant<AstOrderBy::Index, AstExpr::DataColumn> ParseOrderByColumn(L
             return AstOrderBy::Index{{static_cast<ColumnId>(*index), std::move(text)}};
         }
     }
-    if (lexer.Accept(Token::Identifier))
+    if (lexer.Accept(Token::kIdentifier))
     {
         auto [column, column_text_unused] = ParseColumn(lexer);
         return column;
@@ -504,25 +507,25 @@ static std::variant<AstOrderBy::Index, AstExpr::DataColumn> ParseOrderByColumn(L
 
 static bool ParseOrderByOrder(Lexer& lexer)
 {
-    if (lexer.AcceptStep(Token::KwAsc))
+    if (lexer.AcceptStep(Token::kKeywordAsc))
     {
         return true;
     }
-    return !lexer.AcceptStep(Token::KwDesc);
+    return !lexer.AcceptStep(Token::kKeywordDesc);
 }
 
 static std::optional<AstOrderBy> ParseOrderBy(Lexer& lexer)
 {
-    if (lexer.AcceptStep(Token::KwOrder))
+    if (lexer.AcceptStep(Token::kKeywordOrder))
     {
-        lexer.ExpectStep(Token::KwBy);
+        lexer.ExpectStep(Token::kKeywordBy);
         std::vector<AstOrderBy::Column> columns;
         do
         {
             std::variant<AstOrderBy::Index, AstExpr::DataColumn> column = ParseOrderByColumn(lexer);
             const bool                                           asc    = ParseOrderByOrder(lexer);
             columns.push_back({.column = std::move(column), .asc = asc});
-        } while (lexer.AcceptStep(Token::Comma));
+        } while (lexer.AcceptStep(Token::kComma));
         return {{std::move(columns)}};
     }
     return std::nullopt;
@@ -530,9 +533,9 @@ static std::optional<AstOrderBy> ParseOrderBy(Lexer& lexer)
 
 static std::optional<unsigned int> ParseLimit(Lexer& lexer)
 {
-    if (lexer.AcceptStep(Token::KwLimit))
+    if (lexer.AcceptStep(Token::kKeywordLimit))
     {
-        if (lexer.Accept(Token::Constant))
+        if (lexer.Accept(Token::kConstant))
         {
             const auto* index =
                 std::get_if<ColumnValueInteger>(&lexer.GetToken().GetData<Token::DataConstant>());
@@ -550,22 +553,22 @@ static std::optional<unsigned int> ParseLimit(Lexer& lexer)
 
 static AstQuery ParseQuery(Lexer& lexer)
 {
-    AstSelect                   select   = ParseSelect(lexer);
-    std::optional<AstOrderBy>   order_by = ParseOrderBy(lexer);
-    std::optional<unsigned int> limit    = ParseLimit(lexer);
+    AstSelect                         select   = ParseSelect(lexer);
+    std::optional<AstOrderBy>         order_by = ParseOrderBy(lexer);
+    const std::optional<unsigned int> limit    = ParseLimit(lexer);
     return {.select = std::move(select), .order_by = std::move(order_by), .limit = limit};
 }
 
 static AstCreateTable ParseCreateTable(Lexer& lexer)
 {
-    lexer.ExpectStep(Token::KwCreate);
-    lexer.ExpectStep(Token::KwTable);
-    SourceText name = lexer.ExpectStep(Token::Identifier).GetText();
-    lexer.ExpectStep(Token::LParen);
+    lexer.ExpectStep(Token::kKeywordCreate);
+    lexer.ExpectStep(Token::kKeywordTable);
+    SourceText name = lexer.ExpectStep(Token::kIdentifier).GetText();
+    lexer.ExpectStep(Token::kLParen);
     catalog::NamedColumns columns;
     do
     {
-        SourceText column_name = lexer.ExpectStep(Token::Identifier).GetText();
+        SourceText column_name = lexer.ExpectStep(Token::kIdentifier).GetText();
         const auto iter =
             std::ranges::find_if(columns, [&column_name](const catalog::NamedColumn& column)
                                  { return column.first == column_name.Get(); });
@@ -575,42 +578,42 @@ static AstCreateTable ParseCreateTable(Lexer& lexer)
         }
         auto [column_type, unused] = ParseType(lexer);
         columns.emplace_back(column_name.Get(), column_type);
-    } while (lexer.AcceptStep(Token::Comma) && !lexer.Accept(Token::RParen));
-    lexer.ExpectStep(Token::RParen);
+    } while (lexer.AcceptStep(Token::kComma) && !lexer.Accept(Token::kRParen));
+    lexer.ExpectStep(Token::kRParen);
     return {.name = std::move(name), .columns = std::move(columns)};
 }
 
 static AstDropTable ParseDropTable(Lexer& lexer)
 {
     // TODO: CASCADE | RESTRICT
-    lexer.ExpectStep(Token::KwDrop);
-    lexer.ExpectStep(Token::KwTable);
-    SourceText name = lexer.ExpectStep(Token::Identifier).GetText();
+    lexer.ExpectStep(Token::kKeywordDrop);
+    lexer.ExpectStep(Token::kKeywordTable);
+    SourceText name = lexer.ExpectStep(Token::kIdentifier).GetText();
     return {.name = std::move(name)};
 }
 
 static AstInsertValue ParseInsertValue(Lexer& lexer)
 {
-    lexer.ExpectStep(Token::KwInsert);
-    lexer.ExpectStep(Token::KwInto);
-    SourceText table = lexer.ExpectStep(Token::Identifier).GetText();
-    lexer.ExpectStep(Token::KwValues);
-    lexer.ExpectStep(Token::LParen);
+    lexer.ExpectStep(Token::kKeywordInsert);
+    lexer.ExpectStep(Token::kKeywordInto);
+    SourceText table = lexer.ExpectStep(Token::kIdentifier).GetText();
+    lexer.ExpectStep(Token::kKeywordValues);
+    lexer.ExpectStep(Token::kLParen);
     std::vector<AstExprPtr> exprs;
     do
     {
         exprs.push_back(
             ParseExpr(lexer, ExprContext{.accept_aggregate = false, .inside_aggregate = false}));
-    } while (lexer.AcceptStep(Token::Comma));
-    lexer.ExpectStep(Token::RParen);
+    } while (lexer.AcceptStep(Token::kComma));
+    lexer.ExpectStep(Token::kRParen);
     return {.table = std::move(table), .exprs = std::move(exprs)};
 }
 
 static AstUpdate ParseUpdate(Lexer& lexer)
 {
-    lexer.ExpectStep(Token::KwUpdate);
-    auto table = lexer.ExpectStep(Token::Identifier).GetText();
-    lexer.ExpectStep(Token::KwSet);
+    lexer.ExpectStep(Token::kKeywordUpdate);
+    auto table = lexer.ExpectStep(Token::kIdentifier).GetText();
+    lexer.ExpectStep(Token::kKeywordSet);
 
     UNREACHABLE();
 
@@ -618,15 +621,15 @@ static AstUpdate ParseUpdate(Lexer& lexer)
     // do {
     //     auto name = lexer.expect_step(Token::Identifier).get_text();
     //     if (!lexer.accept(Token::Op2) || lexer.get_token().get_data<Token::DataOp2>() !=
-    //     Op2::CompEq) // TODO: add to lexer class
+    //     Op2::kCompEq) // TODO: add to lexer class
     //     {
-    //         throw ClientError{std::string{"expected "} + op2_cstr(Op2::CompEq),
+    //         throw ClientError{std::string{"expected "} + op2_cstr(Op2::kCompEq),
     //         lexer.get_token().get_text()};
     //     }
     // } ;todo;
     //
     // AstExprPtr condition_opt;
-    // if (lexer.accept_step(Token::KwWhere))
+    // if (lexer.accept_step(Token::kKeywordWhere))
     //{
     //     condition_opt = parse_expr(lexer, ExprContext{.accept_aggregate = false,
     //     .inside_aggregate = false});
@@ -637,11 +640,11 @@ static AstUpdate ParseUpdate(Lexer& lexer)
 
 static AstDelete ParseDelete(Lexer& lexer)
 {
-    lexer.ExpectStep(Token::KwDelete);
-    lexer.ExpectStep(Token::KwFrom);
-    SourceText table = lexer.ExpectStep(Token::Identifier).GetText();
+    lexer.ExpectStep(Token::kKeywordDelete);
+    lexer.ExpectStep(Token::kKeywordFrom);
+    SourceText table = lexer.ExpectStep(Token::kIdentifier).GetText();
     AstExprPtr condition_opt;
-    if (lexer.AcceptStep(Token::KwWhere))
+    if (lexer.AcceptStep(Token::kKeywordWhere))
     {
         condition_opt =
             ParseExpr(lexer, ExprContext{.accept_aggregate = false, .inside_aggregate = false});
@@ -651,27 +654,27 @@ static AstDelete ParseDelete(Lexer& lexer)
 
 AstStatement ParseStatement(Lexer& lexer)
 {
-    if (lexer.Accept(Token::KwCreate))
+    if (lexer.Accept(Token::kKeywordCreate))
     {
         return ParseCreateTable(lexer);
     }
-    if (lexer.Accept(Token::KwDrop))
+    if (lexer.Accept(Token::kKeywordDrop))
     {
         return ParseDropTable(lexer);
     }
-    if (lexer.Accept(Token::KwInsert))
+    if (lexer.Accept(Token::kKeywordInsert))
     {
         return ParseInsertValue(lexer);
     }
-    if (lexer.Accept(Token::KwSelect))
+    if (lexer.Accept(Token::kKeywordSelect))
     {
         return ParseQuery(lexer);
     }
-    if (lexer.Accept(Token::KwUpdate))
+    if (lexer.Accept(Token::kKeywordUpdate))
     {
         return ParseUpdate(lexer);
     }
-    if (lexer.Accept(Token::KwDelete))
+    if (lexer.Accept(Token::kKeywordDelete))
     {
         return ParseDelete(lexer);
     }

@@ -77,8 +77,8 @@ static void ParseAndExecuteStatement(const std::string& source)
     {
         Lexer        lexer{source};
         AstStatement ast = ParseStatement(lexer);
-        lexer.AcceptStep(Token::Semicolon);
-        if (!lexer.Accept(Token::End))
+        lexer.AcceptStep(Token::kSemicolon);
+        if (!lexer.Accept(Token::kEnd))
         {
             lexer.Unexpected();
         }
@@ -111,7 +111,7 @@ static void ParseAndExecuteFile(const std::string& file_name)
         }
         source = {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
         Lexer lexer{source};
-        while (!lexer.Accept(Token::End))
+        while (!lexer.Accept(Token::kEnd))
         {
             const SourceText text_begin = lexer.GetToken().GetText();
             AstStatement     ast        = ParseStatement(lexer);
@@ -121,7 +121,7 @@ static void ParseAndExecuteFile(const std::string& file_name)
             std::printf("> ");
             text.PrintEscaped();
             ExecuteStatement(statement);
-            lexer.AcceptStep(Token::Semicolon);
+            lexer.AcceptStep(Token::kSemicolon);
         }
     }
     catch (const ClientError& error)

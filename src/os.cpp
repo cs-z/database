@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <string>
+#include <utility>
 
 namespace os
 {
@@ -60,7 +61,7 @@ static void FileRead(int fd, page::Id page_id, void* buffer)
     {
         throw ServerError{"read", std::to_string(fd), errno};
     }
-    if (static_cast<std::size_t>(bytes_returned) < bytes)
+    if (std::cmp_less(bytes_returned, bytes))
     {
         throw ServerError{"less bytes returned in read(" + std::to_string(fd) +
                           "): " + std::to_string(bytes_returned) + " < " + std::to_string(bytes)};
@@ -76,7 +77,7 @@ static void FileWrite(int fd, page::Id page_id, const void* buffer)
     {
         throw ServerError{"write", std::to_string(fd), errno};
     }
-    if (static_cast<std::size_t>(bytes_returned) < bytes)
+    if (std::cmp_less(bytes_returned, bytes))
     {
         throw ServerError{"less bytes returned in write(" + std::to_string(fd) +
                           "): " + std::to_string(bytes_returned) + " < " + std::to_string(bytes)};
@@ -196,7 +197,7 @@ unsigned int Random()
     {
         throw ServerError{"getrandom", errno};
     }
-    if (static_cast<std::size_t>(bytes_returned) < bytes)
+    if (std::cmp_less(bytes_returned, bytes))
     {
         throw ServerError{"less bytes returned in getrandom(): " + std::to_string(bytes_returned) +
                           " < " + std::to_string(bytes)};

@@ -14,11 +14,11 @@ class SourceText
 public:
     // TODO: move or copy
 
-    SourceText(const SourceText& other) noexcept = default;
-    SourceText(SourceText&& other) noexcept      = default;
-
+    SourceText(const SourceText& other) noexcept            = default;
+    SourceText(SourceText&& other) noexcept                 = default;
     SourceText& operator=(const SourceText& other) noexcept = default;
     SourceText& operator=(SourceText&& other) noexcept      = default;
+    ~SourceText()                                           = default;
 
     explicit SourceText() : first_{}, last_{}
     {
@@ -68,7 +68,7 @@ private:
 class ClientError : public std::runtime_error
 {
 public:
-    ClientError(const std::string& message) : std::runtime_error{message}
+    explicit ClientError(const std::string& message) : std::runtime_error{message}
     {
     }
     ClientError(const std::string& message, SourceText text)
@@ -84,7 +84,7 @@ private:
 class ServerError : public std::runtime_error
 {
 public:
-    ServerError(const std::string& message) : std::runtime_error{message}
+    explicit ServerError(const std::string& message) : std::runtime_error{message}
     {
     }
     ServerError(const char* function, int errnum);

@@ -58,7 +58,7 @@ Prefix CalculateLayout(const Value& value)
     return prefix;
 }
 
-template <typename T> T* GetColumn(U8* row, ColumnId column)
+template <typename T> static T* GetColumn(U8* row, ColumnId column)
 {
     const page::Offset offset = reinterpret_cast<ColumnPrefix*>(row)[column.Get()].offset;
     return reinterpret_cast<T*>(row + offset);
@@ -89,12 +89,12 @@ void Write(const Prefix& prefix, const Value& value, U8* row)
     }
 }
 
-ColumnPrefix GetPrefix(const U8* row, ColumnId column)
+static ColumnPrefix GetPrefix(const U8* row, ColumnId column)
 {
     return reinterpret_cast<const ColumnPrefix*>(row)[column.Get()];
 }
 
-template <typename T> const T* GetColumn(const U8* row, ColumnPrefix prefix)
+template <typename T> static const T* GetColumn(const U8* row, ColumnPrefix prefix)
 {
     return reinterpret_cast<const T*>(row + prefix.offset);
 }
@@ -112,22 +112,22 @@ Value Read(const Type& type, const U8* row)
         }
         switch (type.At(column_id.Get()))
         {
-        case ColumnType::BOOLEAN:
+        case ColumnType::kBoolean:
         {
             value.emplace_back(*GetColumn<ColumnValueBoolean>(row, prefix));
             break;
         }
-        case ColumnType::INTEGER:
+        case ColumnType::kInteger:
         {
             value.emplace_back(*GetColumn<ColumnValueInteger>(row, prefix));
             break;
         }
-        case ColumnType::REAL:
+        case ColumnType::kReal:
         {
             value.emplace_back(*GetColumn<ColumnValueReal>(row, prefix));
             break;
         }
-        case ColumnType::VARCHAR:
+        case ColumnType::kVarchar:
         {
             const char* const begin = GetColumn<char>(row, prefix);
             value.emplace_back(ColumnValueVarchar{begin, prefix.size});
@@ -152,11 +152,11 @@ int Compare(const Type& type, ColumnId column, const U8* row_l, const U8* row_r)
     }
     switch (type.At(column.Get()))
     {
-    case ColumnType::BOOLEAN:
+    case ColumnType::kBoolean:
     {
         UNREACHABLE();
     }
-    case ColumnType::INTEGER:
+    case ColumnType::kInteger:
     {
         const ColumnValueInteger column_value_l = *GetColumn<ColumnValueInteger>(row_l, prefix_l);
         const ColumnValueInteger column_value_r = *GetColumn<ColumnValueInteger>(row_r, prefix_r);
@@ -170,7 +170,7 @@ int Compare(const Type& type, ColumnId column, const U8* row_l, const U8* row_r)
         }
         return 0;
     }
-    case ColumnType::REAL:
+    case ColumnType::kReal:
     {
         const ColumnValueReal column_value_l = *GetColumn<ColumnValueReal>(row_l, prefix_l);
         const ColumnValueReal column_value_r = *GetColumn<ColumnValueReal>(row_r, prefix_r);
@@ -184,7 +184,7 @@ int Compare(const Type& type, ColumnId column, const U8* row_l, const U8* row_r)
         }
         return 0;
     }
-    case ColumnType::VARCHAR:
+    case ColumnType::kVarchar:
     {
         const char* column_value_l = GetColumn<char>(row_l, prefix_l);
         const char* column_value_r = GetColumn<char>(row_r, prefix_r);
@@ -208,11 +208,11 @@ int Compare(const Type& type, ColumnId column, const U8* row_l, const Value& row
     }
     switch (type.At(column.Get()))
     {
-    case ColumnType::BOOLEAN:
+    case ColumnType::kBoolean:
     {
         UNREACHABLE();
     }
-    case ColumnType::INTEGER:
+    case ColumnType::kInteger:
     {
         const ColumnValueInteger column_value_l = *GetColumn<ColumnValueInteger>(row_l, prefix_l);
         const ColumnValueInteger column_value_r = std::get<ColumnValueInteger>(value_r);
@@ -226,7 +226,7 @@ int Compare(const Type& type, ColumnId column, const U8* row_l, const Value& row
         }
         return 0;
     }
-    case ColumnType::REAL:
+    case ColumnType::kReal:
     {
         const ColumnValueReal column_value_l = *GetColumn<ColumnValueReal>(row_l, prefix_l);
         const ColumnValueReal column_value_r = std::get<ColumnValueReal>(value_r);
@@ -240,7 +240,7 @@ int Compare(const Type& type, ColumnId column, const U8* row_l, const Value& row
         }
         return 0;
     }
-    case ColumnType::VARCHAR:
+    case ColumnType::kVarchar:
     {
         const char* column_value_l = GetColumn<char>(row_l, prefix_l);
         return CompareStrings({column_value_l, prefix_l.size},

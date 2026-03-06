@@ -110,10 +110,10 @@ struct AstSource
     {
         enum class Join : std::uint8_t
         {
-            INNER,
-            LEFT,
-            RIGHT,
-            FULL,
+            kInner,
+            kLeft,
+            kRight,
+            kFull,
         };
         AstSourcePtr        source_l, source_r;
         std::optional<Join> join;

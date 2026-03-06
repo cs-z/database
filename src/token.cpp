@@ -5,125 +5,125 @@ const char* Token::TagToCstr(Tag tag)
 {
     switch (tag)
     {
-    case Tag::KwCreate:
+    case Tag::kKeywordCreate:
         return "CREATE";
-    case Tag::KwTable:
+    case Tag::kKeywordTable:
         return "TABLE";
-    case Tag::KwDefault:
+    case Tag::kKeywordDefault:
         return "DEFAULT";
-    case Tag::KwConstraint:
+    case Tag::kKeywordConstraint:
         return "CONSTRAINT";
-    case Tag::KwNot:
+    case Tag::kKeywordNot:
         return "NOT";
-    case Tag::KwUnique:
+    case Tag::kKeywordUnique:
         return "UNIQUE";
-    case Tag::KwPrimary:
+    case Tag::kKeywordPrimary:
         return "PRIMARY";
-    case Tag::KwKey:
+    case Tag::kKeywordKey:
         return "KEY";
-    case Tag::KwCheck:
+    case Tag::kKeywordCheck:
         return "CHECK";
-    case Tag::KwDrop:
+    case Tag::kKeywordDrop:
         return "DROP";
-    case Tag::KwInsert:
+    case Tag::kKeywordInsert:
         return "INSERT";
-    case Tag::KwInto:
+    case Tag::kKeywordInto:
         return "INTO";
-    case Tag::KwValues:
+    case Tag::kKeywordValues:
         return "VALUES";
-    case Tag::KwSelect:
+    case Tag::kKeywordSelect:
         return "SELECT";
-    case Tag::KwDistinct:
+    case Tag::kKeywordDistinct:
         return "DISTINCT";
-    case Tag::KwAll:
+    case Tag::kKeywordAll:
         return "ALL";
-    case Tag::KwFrom:
+    case Tag::kKeywordFrom:
         return "FROM";
-    case Tag::KwAs:
+    case Tag::kKeywordAs:
         return "AS";
-    case Tag::KwJoin:
+    case Tag::kKeywordJoin:
         return "JOIN";
-    case Tag::KwCross:
+    case Tag::kKeywordCross:
         return "CROSS";
-    case Tag::KwInner:
+    case Tag::kKeywordInner:
         return "INNER";
-    case Tag::KwOuter:
+    case Tag::kKeywordOuter:
         return "OUTER";
-    case Tag::KwLeft:
+    case Tag::kKeywordLeft:
         return "LEFT";
-    case Tag::KwRight:
+    case Tag::kKeywordRight:
         return "RIGHT";
-    case Tag::KwFull:
+    case Tag::kKeywordFull:
         return "FULL";
-    case Tag::KwOn:
+    case Tag::kKeywordOn:
         return "ON";
-    case Tag::KwWhere:
+    case Tag::kKeywordWhere:
         return "WHERE";
-    case Tag::KwGroup:
+    case Tag::kKeywordGroup:
         return "GROUP";
-    case Tag::KwBy:
+    case Tag::kKeywordBy:
         return "BY";
-    case Tag::KwHaving:
+    case Tag::kKeywordHaving:
         return "HAVING";
-    case Tag::KwUnion:
+    case Tag::kKeywordUnion:
         return "UNION";
-    case Tag::KwExcept:
+    case Tag::kKeywordExcept:
         return "EXCEPT";
-    case Tag::KwIntersect:
+    case Tag::kKeywordIntersect:
         return "INTERSECT";
-    case Tag::KwOrder:
+    case Tag::kKeywordOrder:
         return "ORDER";
-    case Tag::KwAsc:
+    case Tag::kKeywordAsc:
         return "ASC";
-    case Tag::KwDesc:
+    case Tag::kKeywordDesc:
         return "DESC";
-    case Tag::KwInteger:
+    case Tag::kKeywordInteger:
         return "INTEGER";
-    case Tag::KwReal:
+    case Tag::kKeywordReal:
         return "REAL";
-    case Tag::KwVarchar:
+    case Tag::kKeywordVarchar:
         return "VARCHAR";
-    case Tag::KwBetween:
+    case Tag::kKeywordBetween:
         return "BETWEEN";
-    case Tag::KwIn:
+    case Tag::kKeywordIn:
         return "IN";
-    case Tag::KwIs:
+    case Tag::kKeywordIs:
         return "IS";
-    case Tag::KwExists:
+    case Tag::kKeywordExists:
         return "EXISTS";
-    case Tag::KwCast:
+    case Tag::kKeywordCast:
         return "CAST";
-    case Tag::KwNull:
+    case Tag::kKeywordNull:
         return "NULL";
-    case Tag::KwLimit:
+    case Tag::kKeywordLimit:
         return "LIMIT";
-    case Tag::KwDelete:
+    case Tag::kKeywordDelete:
         return "DELETE";
-    case Tag::KwUpdate:
+    case Tag::kKeywordUpdate:
         return "UPDATE";
-    case Tag::KwSet:
+    case Tag::kKeywordSet:
         return "SET";
-    case Tag::LParen:
+    case Tag::kLParen:
         return "(";
-    case Tag::RParen:
+    case Tag::kRParen:
         return ")";
-    case Tag::Period:
+    case Tag::kPeriod:
         return ".";
-    case Tag::Comma:
+    case Tag::kComma:
         return ",";
-    case Tag::Semicolon:
+    case Tag::kSemicolon:
         return ";";
-    case Tag::Asterisk:
+    case Tag::kAsterisk:
         return "*";
-    case Tag::Op2:
+    case Tag::kOp2:
         return "an operator";
-    case Tag::Function:
+    case Tag::kFunction:
         return "an aggregation function";
-    case Tag::Identifier:
+    case Tag::kIdentifier:
         return "an identifier";
-    case Tag::Constant:
+    case Tag::kConstant:
         return "a constant";
-    case Tag::End:
+    case Tag::kEnd:
         return "end of source";
     }
     UNREACHABLE();

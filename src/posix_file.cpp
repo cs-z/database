@@ -17,13 +17,13 @@ PosixFile::PosixFile(const std::filesystem::path& path, Mode mode)
     int flags = 0;
     switch (mode)
     {
-    case Mode::Open:
+    case Mode::kOpen:
         flags = O_RDWR;
         break;
-    case Mode::Create:
+    case Mode::kCreate:
         flags = O_RDWR | O_CREAT | O_EXCL;
         break;
-    case Mode::CreateTemp:
+    case Mode::kCreateTemp:
         flags = O_RDWR | O_TMPFILE;
         break;
     }
@@ -43,9 +43,8 @@ PosixFile::~PosixFile()
     }
 }
 
-PosixFile::PosixFile(PosixFile&& other) noexcept
+PosixFile::PosixFile(PosixFile&& other) noexcept : fd_{other.fd_}
 {
-    fd_       = other.fd_;
     other.fd_ = -1;
 }
 

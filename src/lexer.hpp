@@ -30,7 +30,7 @@
 class Lexer
 {
 public:
-    Lexer(const std::string& source);
+    explicit Lexer(const std::string& source);
 
     [[nodiscard]] const Token& GetToken() const
     {

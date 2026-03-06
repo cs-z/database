@@ -13,12 +13,12 @@ std::optional<ColumnType> ColumnValueToType(const ColumnValue& value)
         Overload{
             [](const ColumnValueNull&) -> std::optional<ColumnType> { return std::nullopt; },
             [](const ColumnValueBoolean&) -> std::optional<ColumnType>
-            { return ColumnType::BOOLEAN; },
+            { return ColumnType::kBoolean; },
             [](const ColumnValueInteger&) -> std::optional<ColumnType>
-            { return ColumnType::INTEGER; },
-            [](const ColumnValueReal&) -> std::optional<ColumnType> { return ColumnType::REAL; },
+            { return ColumnType::kInteger; },
+            [](const ColumnValueReal&) -> std::optional<ColumnType> { return ColumnType::kReal; },
             [](const ColumnValueVarchar&) -> std::optional<ColumnType>
-            { return ColumnType::VARCHAR; },
+            { return ColumnType::kVarchar; },
         },
         value);
 }
@@ -32,11 +32,11 @@ std::string ColumnValueToString(const ColumnValue& value, bool quote)
             {
                 switch (value)
                 {
-                case Bool::TRUE:
+                case Bool::kTrue:
                     return "TRUE";
-                case Bool::FALSE:
+                case Bool::kFalse:
                     return "FALSE";
-                case Bool::UNKNOWN:
+                case Bool::kUnknown:
                     return "UNKNOWN";
                 }
                 UNREACHABLE();
@@ -72,12 +72,12 @@ ColumnValue ColumnValueEvalCast(const ColumnValue& value, ColumnType to)
             {
                 switch (to)
                 {
-                case ColumnType::INTEGER:
-                case ColumnType::REAL:
+                case ColumnType::kInteger:
+                case ColumnType::kReal:
                     UNREACHABLE();
-                case ColumnType::BOOLEAN:
+                case ColumnType::kBoolean:
                     return value;
-                case ColumnType::VARCHAR:
+                case ColumnType::kVarchar:
                     return ColumnValueToString(value, false);
                 }
                 UNREACHABLE();
@@ -86,13 +86,13 @@ ColumnValue ColumnValueEvalCast(const ColumnValue& value, ColumnType to)
             {
                 switch (to)
                 {
-                case ColumnType::BOOLEAN:
+                case ColumnType::kBoolean:
                     UNREACHABLE();
-                case ColumnType::INTEGER:
+                case ColumnType::kInteger:
                     return value;
-                case ColumnType::REAL:
+                case ColumnType::kReal:
                     return static_cast<ColumnValueReal>(value);
-                case ColumnType::VARCHAR:
+                case ColumnType::kVarchar:
                     return ColumnValueToString(value, false);
                 }
                 UNREACHABLE();
@@ -101,13 +101,13 @@ ColumnValue ColumnValueEvalCast(const ColumnValue& value, ColumnType to)
             {
                 switch (to)
                 {
-                case ColumnType::BOOLEAN:
+                case ColumnType::kBoolean:
                     UNREACHABLE();
-                case ColumnType::INTEGER:
+                case ColumnType::kInteger:
                     return static_cast<ColumnValueInteger>(value);
-                case ColumnType::REAL:
+                case ColumnType::kReal:
                     return value;
-                case ColumnType::VARCHAR:
+                case ColumnType::kVarchar:
                     return ColumnValueToString(value, false);
                 }
                 UNREACHABLE();
@@ -116,11 +116,11 @@ ColumnValue ColumnValueEvalCast(const ColumnValue& value, ColumnType to)
             {
                 switch (to)
                 {
-                case ColumnType::BOOLEAN:
-                case ColumnType::INTEGER:
-                case ColumnType::REAL:
+                case ColumnType::kBoolean:
+                case ColumnType::kInteger:
+                case ColumnType::kReal:
                     UNREACHABLE();
-                case ColumnType::VARCHAR:
+                case ColumnType::kVarchar:
                     return value;
                 }
                 UNREACHABLE();

@@ -10,14 +10,13 @@
 #include <filesystem>
 #include <utility>
 
-class PosixFileTest : public ::testing::Test
+struct PosixFileTest : public ::testing::Test
 {
-protected:
     void SetUp() override
     {
-        test_dir_          = std::filesystem::temp_directory_path();
-        test_file_path_    = test_dir_ / "database_test_file.dat";
-        invalid_file_path_ = test_dir_ / "database_test_file_should_not_exist.dat";
+        test_dir          = std::filesystem::temp_directory_path();
+        test_file_path    = test_dir / "database_test_file.dat";
+        invalid_file_path = test_dir / "database_test_file_should_not_exist.dat";
         RemoveFile();
     }
 
@@ -28,32 +27,32 @@ protected:
 
     void RemoveFile() const
     {
-        if (std::filesystem::exists(test_file_path_))
+        if (std::filesystem::exists(test_file_path))
         {
-            std::filesystem::remove(test_file_path_);
+            std::filesystem::remove(test_file_path);
         }
     }
 
-    std::filesystem::path test_dir_;
-    std::filesystem::path test_file_path_;
-    std::filesystem::path invalid_file_path_;
+    std::filesystem::path test_dir;
+    std::filesystem::path test_file_path;
+    std::filesystem::path invalid_file_path;
 };
 
 TEST_F(PosixFileTest, CreateAndReopen)
 {
     {
-        PosixFile file{test_file_path_, PosixFile::Mode::Create};
+        PosixFile file{test_file_path, PosixFile::Mode::kCreate};
         EXPECT_EQ(file.GetPageCount(), 0);
         EXPECT_EQ(file.AppendPage(), 0);
         EXPECT_EQ(file.GetPageCount(), 1);
     }
-    PosixFile file{test_file_path_, PosixFile::Mode::Open};
+    PosixFile file{test_file_path, PosixFile::Mode::kOpen};
     EXPECT_EQ(file.GetPageCount(), 1);
 }
 
 TEST_F(PosixFileTest, CreateTemp)
 {
-    PosixFile file{test_dir_, PosixFile::Mode::CreateTemp};
+    PosixFile file{test_dir, PosixFile::Mode::kCreateTemp};
     EXPECT_EQ(file.GetPageCount(), 0);
     EXPECT_EQ(file.AppendPage(), 0);
     EXPECT_EQ(file.GetPageCount(), 1);
@@ -61,7 +60,7 @@ TEST_F(PosixFileTest, CreateTemp)
 
 TEST_F(PosixFileTest, ReadWrite)
 {
-    PosixFile file{test_file_path_, PosixFile::Mode::Create};
+    PosixFile file{test_file_path, PosixFile::Mode::kCreate};
     EXPECT_EQ(file.GetPageCount(), 0);
     EXPECT_EQ(file.AppendPage(), 0);
     EXPECT_EQ(file.GetPageCount(), 1);
@@ -82,7 +81,7 @@ TEST_F(PosixFileTest, ReadWrite)
 
 TEST_F(PosixFileTest, WriteMultiple)
 {
-    PosixFile  file{test_file_path_, PosixFile::Mode::Create};
+    PosixFile  file{test_file_path, PosixFile::Mode::kCreate};
     const auto id_a = file.AppendPage();
     const auto id_b = file.AppendPage();
 
@@ -107,7 +106,7 @@ TEST_F(PosixFileTest, WriteMultiple)
 
 TEST_F(PosixFileTest, Truncate)
 {
-    PosixFile file{test_file_path_, PosixFile::Mode::Create};
+    PosixFile file{test_file_path, PosixFile::Mode::kCreate};
     EXPECT_EQ(file.GetPageCount(), 0);
 
     EXPECT_EQ(file.AppendPage(), 0);
@@ -125,7 +124,7 @@ TEST_F(PosixFileTest, Truncate)
 
 TEST_F(PosixFileTest, MoveSemantics)
 {
-    PosixFile file{test_file_path_, PosixFile::Mode::Create};
+    PosixFile file{test_file_path, PosixFile::Mode::kCreate};
     EXPECT_EQ(file.GetPageCount(), 0);
     EXPECT_EQ(file.AppendPage(), 0);
     EXPECT_EQ(file.GetPageCount(), 1);
@@ -138,12 +137,12 @@ TEST_F(PosixFileTest, MoveSemantics)
 
 TEST_F(PosixFileTest, OpenNonExistingFile)
 {
-    EXPECT_THROW((PosixFile{invalid_file_path_, PosixFile::Mode::Open}), ServerError);
+    EXPECT_THROW((PosixFile{invalid_file_path, PosixFile::Mode::kOpen}), ServerError);
 }
 
 TEST_F(PosixFileTest, ReadInvalidPage)
 {
-    PosixFile                   file{test_file_path_, PosixFile::Mode::Create};
+    PosixFile                   file{test_file_path, PosixFile::Mode::kCreate};
     std::array<U8, page::kSize> read_buffer;
     EXPECT_THROW((file.ReadPage(page::Id{1}, read_buffer)), ServerError);
 }

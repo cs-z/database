@@ -10,10 +10,10 @@
 
 enum class ColumnType : std::uint8_t
 {
-    BOOLEAN,
-    INTEGER,
-    REAL,
-    VARCHAR,
+    kBoolean,
+    kInteger,
+    kReal,
+    kVarchar,
 };
 
 // TODO: make constexpr
@@ -21,11 +21,11 @@ inline bool ColumnTypeIsComparable(ColumnType type)
 {
     switch (type)
     {
-    case ColumnType::INTEGER:
-    case ColumnType::REAL:
-    case ColumnType::VARCHAR:
+    case ColumnType::kInteger:
+    case ColumnType::kReal:
+    case ColumnType::kVarchar:
         return true;
-    case ColumnType::BOOLEAN:
+    case ColumnType::kBoolean:
         return false;
     }
     UNREACHABLE();
@@ -36,11 +36,11 @@ inline bool ColumnTypeIsArithmetic(ColumnType type)
 {
     switch (type)
     {
-    case ColumnType::INTEGER:
-    case ColumnType::REAL:
+    case ColumnType::kInteger:
+    case ColumnType::kReal:
         return true;
-    case ColumnType::BOOLEAN:
-    case ColumnType::VARCHAR:
+    case ColumnType::kBoolean:
+    case ColumnType::kVarchar:
         return false;
     }
     UNREACHABLE();

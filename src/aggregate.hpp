@@ -53,6 +53,6 @@ private:
     const Aggregates        aggregates_;
     std::optional<Value>    current_key_;
     std::vector<Aggregator> aggregators_;
-    ColumnValueInteger      count_;
-    bool                    done_;
+    ColumnValueInteger      count_ = 0;
+    bool                    done_  = false;
 };

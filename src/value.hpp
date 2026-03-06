@@ -2,7 +2,6 @@
 
 #include "common.hpp"
 #include "type.hpp"
-#include "value.hpp"
 
 #include <cstdint>
 #include <optional>
@@ -13,9 +12,9 @@
 
 enum class Bool : std::uint8_t
 {
-    TRUE,
-    FALSE,
-    UNKNOWN,
+    kTrue,
+    kFalse,
+    kUnknown,
 };
 
 using ColumnValueNull    = std::monostate;

@@ -93,8 +93,9 @@ public:
     }
 
     Columns(const Columns& columns_l, const Columns& columns_r)
+        : tables_{columns_l.tables_}, columns_{columns_l.columns_},
+          columns_table_{columns_l.columns_table_}
     {
-        tables_               = columns_l.tables_;
         const ColumnId offset = tables_.back().columns.second;
         for (const Table& table : columns_r.tables_)
         {
@@ -105,12 +106,10 @@ public:
             const std::pair columns{table.columns.first + offset, table.columns.second + offset};
             tables_.push_back({.name = table.name, .columns = columns});
         }
-        columns_ = columns_l.columns_;
         for (const auto& column : columns_r.columns_)
         {
             columns_.push_back(column);
         }
-        columns_table_ = columns_l.columns_table_;
         for (const std::string& table : columns_r.columns_table_)
         {
             columns_table_.push_back(table);
@@ -222,13 +221,13 @@ private:
     {
         return type_l;
     }
-    if (type_l == ColumnType::INTEGER && type_r == ColumnType::REAL)
+    if (type_l == ColumnType::kInteger && type_r == ColumnType::kReal)
     {
-        return ColumnType::REAL;
+        return ColumnType::kReal;
     }
-    if (type_l == ColumnType::REAL && type_r == ColumnType::INTEGER)
+    if (type_l == ColumnType::kReal && type_r == ColumnType::kInteger)
     {
-        return ColumnType::REAL;
+        return ColumnType::kReal;
     }
     return std::nullopt;
 }
@@ -259,9 +258,10 @@ CastTogether(const std::vector<std::optional<ColumnType>>& list, const SourceTex
 
 struct ExprContext
 {
-    std::unordered_map<ColumnId, SourceText>& nonaggregated_columns;
-    Aggregates&                               aggregates;
-    const bool                                inside_aggregation;
+    std::unordered_map<ColumnId, SourceText>&
+                nonaggregated_columns; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    Aggregates& aggregates;            // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    bool        inside_aggregation;
 };
 
 [[nodiscard]] static ExprPtr CreateNonaggregatedColumnExpr(ColumnId          column_id,
@@ -290,7 +290,7 @@ struct ExprContext
     return std::make_unique<Expr>(Expr::DataColumn{column_id}, column_type);
 }
 
-[[nodiscard]] static ExprPtr CompileExpr(const AstExpr& ast, const Columns& columns,
+[[nodiscard]] static ExprPtr CompileExpr(const AstExpr& ast, const Columns* columns,
                                          std::optional<ExprContext> context)
 {
     const SourceText text = ast.text;
@@ -303,7 +303,11 @@ struct ExprContext
             },
             [&columns, context, text](const AstExpr::DataColumn& ast)
             {
-                const auto [column_id, column_type] = columns.GetColumn(ast);
+                if (columns == nullptr)
+                {
+                    throw ClientError{"unexpected column reference", ast.name};
+                }
+                const auto [column_id, column_type] = columns->GetColumn(ast);
                 if (context && !context->inside_aggregation)
                 {
                     return CreateNonaggregatedColumnExpr(column_id, column_type, text, *context);
@@ -378,7 +382,7 @@ struct ExprContext
                                                                 .max          = std::move(max),
                                                                 .negated      = ast.negated,
                                                                 .between_text = ast.between_text},
-                                              ColumnType::BOOLEAN);
+                                              ColumnType::kBoolean);
             },
             [&columns, context](const AstExpr::DataIn& ast)
             {
@@ -408,7 +412,7 @@ struct ExprContext
                 return std::make_unique<Expr>(Expr::DataIn{.expr    = std::move(expr),
                                                            .list    = std::move(list),
                                                            .negated = ast.negated},
-                                              ColumnType::BOOLEAN);
+                                              ColumnType::kBoolean);
             },
             [&columns, context](const AstExpr::DataFunction& ast)
             {
@@ -425,34 +429,34 @@ struct ExprContext
                                     .inside_aggregation    = true});
                     switch (ast.function)
                     {
-                    case Function::AVG:
-                    case Function::SUM:
+                    case Function::kAvg:
+                    case Function::kSum:
                         if (arg->type && !ColumnTypeIsArithmetic(*arg->type))
                         {
                             throw ClientError{"invalid argument type", ast.arg->text};
                         }
                         type = arg->type;
                         break;
-                    case Function::MAX:
-                    case Function::MIN:
+                    case Function::kMax:
+                    case Function::kMin:
                         if (arg->type && !ColumnTypeIsComparable(*arg->type))
                         {
                             throw ClientError{"invalid argument type", ast.arg->text};
                         }
                         type = arg->type;
                         break;
-                    case Function::COUNT:
-                        type = ColumnType::INTEGER;
+                    case Function::kCount:
+                        type = ColumnType::kInteger;
                         break;
                     }
                 }
                 else
                 {
-                    ASSERT(ast.function == Function::COUNT);
-                    type = ColumnType::INTEGER;
+                    ASSERT(ast.function == Function::kCount);
+                    type = ColumnType::kInteger;
                 }
-                const ColumnId column_id(context->aggregates.group_by.size() +
-                                         context->aggregates.exprs.size());
+                const auto column_id = static_cast<ColumnId>(context->aggregates.group_by.size() +
+                                                             context->aggregates.exprs.size());
                 context->aggregates.exprs.push_back(
                     {.function = ast.function, .arg = std::move(arg)});
                 return std::make_unique<Expr>(Expr::DataFunction{column_id}, type);
@@ -489,8 +493,8 @@ struct ExprContext
                 auto [source_l, columns_l] = CompileSource(*ast.source_l);
                 auto [source_r, columns_r] = CompileSource(*ast.source_r);
                 Columns columns{columns_l, columns_r};
-                ExprPtr condition = CompileExpr(*ast.condition, columns, std::nullopt);
-                if (condition->type != ColumnType::BOOLEAN)
+                ExprPtr condition = CompileExpr(*ast.condition, &columns, std::nullopt);
+                if (condition->type != ColumnType::kBoolean)
                 {
                     throw ClientError{"condition must be boolean", ast.condition->text};
                 }
@@ -499,7 +503,7 @@ struct ExprContext
                         Source::DataJoinConditional{
                             .source_l = std::move(source_l),
                             .source_r = std::move(source_r),
-                            .join = ast.join.value_or(AstSource::DataJoinConditional::Join::INNER),
+                            .join = ast.join.value_or(AstSource::DataJoinConditional::Join::kInner),
                             .condition = std::move(condition)},
                         columns.GetType()),
                     std::move(columns));
@@ -532,8 +536,8 @@ CompileSources(const std::vector<AstSourcePtr>& asts)
     {
         return ExprPtr{};
     }
-    ExprPtr expr = CompileExpr(*ast, columns, std::nullopt);
-    if (expr->type != ColumnType::BOOLEAN)
+    ExprPtr expr = CompileExpr(*ast, &columns, std::nullopt);
+    if (expr->type != ColumnType::kBoolean)
     {
         throw ClientError{"condition must be boolean", ast->text};
     }
@@ -562,8 +566,8 @@ CompileSources(const std::vector<AstSourcePtr>& asts)
     {
         return ExprPtr{};
     }
-    ExprPtr expr = CompileExpr(*ast, columns, context);
-    if (expr->type != ColumnType::BOOLEAN)
+    ExprPtr expr = CompileExpr(*ast, &columns, context);
+    if (expr->type != ColumnType::kBoolean)
     {
         throw ClientError{"condition must be boolean", ast->text};
     }
@@ -622,11 +626,11 @@ CompileSelectList(const Columns& columns, const AstSelectList& ast,
                  &table_columns](const AstSelectList::Expr& ast_element)
                 {
                     ExprPtr expr =
-                        CompileExpr(*ast_element.expr, columns,
+                        CompileExpr(*ast_element.expr, &columns,
                                     ExprContext{.nonaggregated_columns = nonaggregated_columns,
                                                 .aggregates            = aggregates,
                                                 .inside_aggregation    = false});
-                    const ColumnType column_type = expr->type.value_or(ColumnType::INTEGER);
+                    const ColumnType column_type = expr->type.value_or(ColumnType::kInteger);
                     std::string      column_name =
                         ast_element.alias ? ast_element.alias->Get() : ast_element.expr->ToString();
                     const auto iter =
@@ -831,11 +835,10 @@ CompileSelect(const AstSelect& ast)
     {
         throw ClientError{"column number mismatch"};
     }
-    Value   value;
-    Columns columns;
+    Value value;
     for (std::size_t i = 0; i < type.Size(); i++)
     {
-        ExprPtr expr = CompileExpr(*ast.exprs[i], columns, std::nullopt);
+        ExprPtr expr = CompileExpr(*ast.exprs[i], nullptr, std::nullopt);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         if (expr->type.has_value() && expr->type.value() != type.At(i))
         {
@@ -852,8 +855,8 @@ CompileSelect(const AstSelect& ast)
     if (ast.condition_opt)
     {
         const Columns columns{ast.table, table_columns};
-        auto          condition = CompileExpr(*ast.condition_opt, columns, std::nullopt);
-        if (condition->type != ColumnType::BOOLEAN)
+        auto          condition = CompileExpr(*ast.condition_opt, &columns, std::nullopt);
+        if (condition->type != ColumnType::kBoolean)
         {
             throw ClientError{"condition must be boolean", ast.condition_opt->text};
         }

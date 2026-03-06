@@ -15,13 +15,13 @@ std::string ColumnTypeToString(ColumnType type)
 {
     switch (type)
     {
-    case ColumnType::BOOLEAN:
+    case ColumnType::kBoolean:
         return "BOOLEAN";
-    case ColumnType::INTEGER:
+    case ColumnType::kInteger:
         return "INTEGER";
-    case ColumnType::REAL:
+    case ColumnType::kReal:
         return "REAL";
-    case ColumnType::VARCHAR:
+    case ColumnType::kVarchar:
         return "VARCHAR";
     }
     UNREACHABLE();
@@ -43,37 +43,37 @@ void CompileCast(std::optional<ColumnType> from, const std::pair<ColumnType, Sou
     {
         switch (*from)
         {
-        case ColumnType::BOOLEAN:
+        case ColumnType::kBoolean:
             switch (to.first)
             {
-            case ColumnType::INTEGER:
-            case ColumnType::REAL:
+            case ColumnType::kInteger:
+            case ColumnType::kReal:
                 break;
-            case ColumnType::BOOLEAN:
-            case ColumnType::VARCHAR:
+            case ColumnType::kBoolean:
+            case ColumnType::kVarchar:
                 return;
             }
             break;
-        case ColumnType::INTEGER:
-        case ColumnType::REAL:
+        case ColumnType::kInteger:
+        case ColumnType::kReal:
             switch (to.first)
             {
-            case ColumnType::BOOLEAN:
+            case ColumnType::kBoolean:
                 break;
-            case ColumnType::INTEGER:
-            case ColumnType::REAL:
-            case ColumnType::VARCHAR:
+            case ColumnType::kInteger:
+            case ColumnType::kReal:
+            case ColumnType::kVarchar:
                 return;
             }
             break;
-        case ColumnType::VARCHAR:
+        case ColumnType::kVarchar:
             switch (to.first)
             {
-            case ColumnType::BOOLEAN:
-            case ColumnType::INTEGER:
-            case ColumnType::REAL:
+            case ColumnType::kBoolean:
+            case ColumnType::kInteger:
+            case ColumnType::kReal:
                 break;
-            case ColumnType::VARCHAR:
+            case ColumnType::kVarchar:
                 return;
             }
             break;
@@ -92,16 +92,16 @@ void Type::Push(ColumnType column)
 {
     switch (column)
     {
-    case ColumnType::BOOLEAN:
+    case ColumnType::kBoolean:
         align_ = std::max<page::Offset>(align_, alignof(ColumnValueBoolean));
         break;
-    case ColumnType::INTEGER:
+    case ColumnType::kInteger:
         align_ = std::max<page::Offset>(align_, alignof(ColumnValueInteger));
         break;
-    case ColumnType::REAL:
+    case ColumnType::kReal:
         align_ = std::max<page::Offset>(align_, alignof(ColumnValueReal));
         break;
-    case ColumnType::VARCHAR:
+    case ColumnType::kVarchar:
         align_ = std::max<page::Offset>(align_, alignof(char));
         break;
     }

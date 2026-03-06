@@ -1,7 +1,6 @@
 #pragma once
 
 #include "error.hpp"
-#include "op.hpp"
 #include "type.hpp"
 #include "value.hpp"
 
@@ -10,26 +9,26 @@
 
 enum class Function : std::uint8_t
 {
-    AVG,
-    MAX,
-    MIN,
-    SUM,
-    COUNT,
+    kAvg,
+    kMax,
+    kMin,
+    kSum,
+    kCount,
 };
 
 inline const char* FunctionToCstr(Function function)
 {
     switch (function)
     {
-    case Function::AVG:
+    case Function::kAvg:
         return "AVG";
-    case Function::MAX:
+    case Function::kMax:
         return "MAX";
-    case Function::MIN:
+    case Function::kMin:
         return "MIN";
-    case Function::SUM:
+    case Function::kSum:
         return "SUM";
-    case Function::COUNT:
+    case Function::kCount:
         return "COUNT";
     }
     UNREACHABLE();
@@ -37,11 +36,11 @@ inline const char* FunctionToCstr(Function function)
 
 enum class Op1 : std::uint8_t
 {
-    Pos,
-    Neg,
-    IsNull,
-    IsNotNull,
-    Not,
+    kPos,
+    kNeg,
+    kIsNull,
+    kIsNotNull,
+    kNot,
 };
 
 std::string               Op1ToString(Op1 op, const std::string& expr);
@@ -52,19 +51,19 @@ ColumnValue               Op1Eval(Op1 op, const ColumnValue& value);
 
 enum class Op2 : std::uint8_t
 {
-    ArithMul,
-    ArithDiv,
-    ArithMod,
-    ArithAdd,
-    ArithSub,
-    CompL,
-    CompLe,
-    CompG,
-    CompGe,
-    CompEq,
-    CompNe,
-    LogicAnd,
-    LogicOr,
+    kArithMul,
+    kArithDiv,
+    kArithMod,
+    kArithAdd,
+    kArithSub,
+    kCompL,
+    kCompLe,
+    kCompG,
+    kCompGe,
+    kCompEq,
+    kCompNe,
+    kLogicAnd,
+    kLogicOr,
 };
 
 const char*               Op2Cstr(Op2 op);

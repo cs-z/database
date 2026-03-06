@@ -27,7 +27,7 @@ struct IterBase
     virtual void                               Close()   = 0;
     [[nodiscard]] virtual std::optional<Value> Next()    = 0;
 
-    const Type type;
+    Type type;
 };
 
 using Iter = std::unique_ptr<IterBase>;

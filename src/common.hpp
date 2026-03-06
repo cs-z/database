@@ -31,6 +31,7 @@ public:
     constexpr StrongId(StrongId&&) noexcept       = default;
     StrongId& operator=(const StrongId&) noexcept = default;
     StrongId& operator=(StrongId&&) noexcept      = default;
+    ~StrongId()                                   = default;
 
     constexpr bool operator<(const StrongId& other) const
     {
@@ -176,10 +177,10 @@ struct ColumnTag
 };
 using ColumnId = StrongId<ColumnTag, unsigned int>;
 
-[[noreturn]] void abort_expr(const char* expr, const char* file, long line);
+[[noreturn]] void AbortExpr(const char* expr, const char* file, std::int64_t line);
 
-#define ASSERT(expr) static_cast<bool>(expr) ? void(0) : abort_expr(#expr, __FILE__, __LINE__)
-#define UNREACHABLE() abort_expr("UNREACHABLE", __FILE__, __LINE__)
+#define ASSERT(expr) static_cast<bool>(expr) ? void(0) : AbortExpr(#expr, __FILE__, __LINE__)
+#define UNREACHABLE() AbortExpr("UNREACHABLE", __FILE__, __LINE__)
 
 constexpr std::size_t kFlexibleArray = 1;
 

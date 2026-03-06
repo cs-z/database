@@ -127,7 +127,7 @@ private:
 class Output
 {
 public:
-    Output(const os::TempFile& file) : file_{file}, page_id_{}, page_id_begin_{}
+    explicit Output(const os::TempFile& file) : file_{file}, page_id_{}, page_id_begin_{}
     {
         page_->Init({});
     }
@@ -166,8 +166,8 @@ private:
         page_->Init({});
     }
 
-    const os::TempFile&             file_;
-    page::Id                        page_id_, page_id_begin_;
+    const os::TempFile& file_; // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    page::Id            page_id_, page_id_begin_;
     buffer::Buffer<page::Slotted<>> page_;
 };
 
@@ -332,8 +332,8 @@ static os::TempFile MergeSort(Iter iter, const OrderBy& order_by, page::Id& page
 
     // TODO: if parent is materialized, simply copy and sort pages
 
-    page::Id                        page_id = page::Id{};
-    buffer::Buffer<page::Slotted<>> page;
+    page::Id                              page_id = page::Id{};
+    const buffer::Buffer<page::Slotted<>> page;
     page->Init({});
 
     const Type&        type  = iter->type;

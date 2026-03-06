@@ -10,7 +10,7 @@
 #include <string>
 #include <utility>
 
-Lexer::Lexer(const std::string& source) : ptr_{source.c_str()}, token_{Token::End, SourceText{}}
+Lexer::Lexer(const std::string& source) : ptr_{source.c_str()}, token_{Token::kEnd, SourceText{}}
 {
     StepToken();
 }
@@ -76,81 +76,81 @@ Token Lexer::NextToken()
     const char* text_begin = ptr_;
     if (*ptr_ == '\0')
     {
-        return {Token::End, SourceText{ptr_}};
+        return {Token::kEnd, SourceText{ptr_}};
     }
     if (*ptr_ == '(')
     {
-        return {Token::LParen, SourceText{ptr_++}};
+        return {Token::kLParen, SourceText{ptr_++}};
     }
     if (*ptr_ == ')')
     {
-        return {Token::RParen, SourceText{ptr_++}};
+        return {Token::kRParen, SourceText{ptr_++}};
     }
     if (*ptr_ == '.')
     {
-        return {Token::Period, SourceText{ptr_++}};
+        return {Token::kPeriod, SourceText{ptr_++}};
     }
     if (*ptr_ == ',')
     {
-        return {Token::Comma, SourceText{ptr_++}};
+        return {Token::kComma, SourceText{ptr_++}};
     }
     if (*ptr_ == ';')
     {
-        return {Token::Semicolon, SourceText{ptr_++}};
+        return {Token::kSemicolon, SourceText{ptr_++}};
     }
     if (*ptr_ == '*')
     {
-        return {Token::Asterisk, SourceText{ptr_++}};
+        return {Token::kAsterisk, SourceText{ptr_++}};
     }
     if (*ptr_ == '+')
     {
-        return {Token::Op2, Op2::ArithAdd, SourceText{ptr_++}};
+        return {Token::kOp2, Op2::kArithAdd, SourceText{ptr_++}};
     }
     if (*ptr_ == '-')
     {
-        return {Token::Op2, Op2::ArithSub, SourceText{ptr_++}};
+        return {Token::kOp2, Op2::kArithSub, SourceText{ptr_++}};
     }
     if (*ptr_ == '/')
     {
-        return {Token::Op2, Op2::ArithDiv, SourceText{ptr_++}};
+        return {Token::kOp2, Op2::kArithDiv, SourceText{ptr_++}};
     }
     if (*ptr_ == '%')
     {
-        return {Token::Op2, Op2::ArithMod, SourceText{ptr_++}};
+        return {Token::kOp2, Op2::kArithMod, SourceText{ptr_++}};
     }
     if (*ptr_ == '=')
     {
-        return {Token::Op2, Op2::CompEq, SourceText{ptr_++}};
+        return {Token::kOp2, Op2::kCompEq, SourceText{ptr_++}};
     }
     if (ptr_[0] == '<' && ptr_[1] == '=')
     {
         ptr_ += 2;
-        return {Token::Op2, Op2::CompLe, SourceText{text_begin, ptr_}};
+        return {Token::kOp2, Op2::kCompLe, SourceText{text_begin, ptr_}};
     }
     if (ptr_[0] == '<' && ptr_[1] == '>')
     {
         ptr_ += 2;
-        return {Token::Op2, Op2::CompNe, SourceText{text_begin, ptr_}};
+        return {Token::kOp2, Op2::kCompNe, SourceText{text_begin, ptr_}};
     }
     if (ptr_[0] == '<')
     {
         ptr_ += 1;
-        return {Token::Op2, Op2::CompL, SourceText{text_begin, ptr_}};
+        return {Token::kOp2, Op2::kCompL, SourceText{text_begin, ptr_}};
     }
     if (ptr_[0] == '>' && ptr_[1] == '=')
     {
         ptr_ += 2;
-        return {Token::Op2, Op2::CompGe, SourceText{text_begin, ptr_}};
+        return {Token::kOp2, Op2::kCompGe, SourceText{text_begin, ptr_}};
     }
     if (ptr_[0] == '>')
     {
         ptr_ += 1;
-        return {Token::Op2, Op2::CompG, SourceText{text_begin, ptr_}};
+        return {Token::kOp2, Op2::kCompG, SourceText{text_begin, ptr_}};
     }
     if (ptr_[0] == '!' && ptr_[1] == '=')
     {
         ptr_ += 2;
-        return {Token::Op2, Op2::CompNe, SourceText{text_begin, ptr_}};
+        return {Token::kOp2, Op2::kCompNe, SourceText{text_begin, ptr_}};
     }
     if (IsAlphabetic(*ptr_))
     {
@@ -163,245 +163,247 @@ Token Lexer::NextToken()
         std::ranges::transform(identifier, identifier.begin(), toupper);
         if (identifier == "CREATE")
         {
-            return {Token::KwCreate, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordCreate, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "TABLE")
         {
-            return {Token::KwTable, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordTable, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "DEFAULT")
         {
-            return {Token::KwDefault, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordDefault, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "CONSTRAINT")
         {
-            return {Token::KwConstraint, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordConstraint, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "NOT")
         {
-            return {Token::KwNot, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordNot, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "UNIQUE")
         {
-            return {Token::KwUnique, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordUnique, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "PRIMARY")
         {
-            return {Token::KwPrimary, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordPrimary, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "KEY")
         {
-            return {Token::KwKey, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordKey, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "CHECK")
         {
-            return {Token::KwCheck, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordCheck, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "DROP")
         {
-            return {Token::KwDrop, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordDrop, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "INSERT")
         {
-            return {Token::KwInsert, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordInsert, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "INTO")
         {
-            return {Token::KwInto, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordInto, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "VALUES")
         {
-            return {Token::KwValues, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordValues, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "SELECT")
         {
-            return {Token::KwSelect, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordSelect, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "DISTINCT")
         {
-            return {Token::KwDistinct, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordDistinct, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "ALL")
         {
-            return {Token::KwAll, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordAll, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "FROM")
         {
-            return {Token::KwFrom, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordFrom, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "AS")
         {
-            return {Token::KwAs, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordAs, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "JOIN")
         {
-            return {Token::KwJoin, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordJoin, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "CROSS")
         {
-            return {Token::KwCross, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordCross, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "INNER")
         {
-            return {Token::KwInner, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordInner, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "OUTER")
         {
-            return {Token::KwOuter, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordOuter, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "LEFT")
         {
-            return {Token::KwLeft, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordLeft, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "RIGHT")
         {
-            return {Token::KwRight, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordRight, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "FULL")
         {
-            return {Token::KwFull, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordFull, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "ON")
         {
-            return {Token::KwOn, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordOn, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "WHERE")
         {
-            return {Token::KwWhere, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordWhere, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "GROUP")
         {
-            return {Token::KwGroup, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordGroup, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "BY")
         {
-            return {Token::KwBy, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordBy, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "HAVING")
         {
-            return {Token::KwHaving, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordHaving, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "UNION")
         {
-            return {Token::KwUnion, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordUnion, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "EXCEPT")
         {
-            return {Token::KwExcept, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordExcept, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "INTERSECT")
         {
-            return {Token::KwIntersect, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordIntersect, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "ORDER")
         {
-            return {Token::KwOrder, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordOrder, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "ASC")
         {
-            return {Token::KwAsc, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordAsc, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "DESC")
         {
-            return {Token::KwDesc, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordDesc, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "INTEGER" || identifier == "INT")
         {
-            return {Token::KwInteger, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordInteger, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "REAL" || identifier == "FLOAT" || identifier == "DOUBLE" ||
             identifier == "DECIMAL" || identifier == "NUMERIC" || identifier == "NUMBER")
         {
-            return {Token::KwReal, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordReal, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "VARCHAR" || identifier == "CHAR" || identifier == "TEXT")
         {
-            return {Token::KwVarchar, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordVarchar, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "NULL")
         {
-            return {Token::KwNull, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordNull, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "LIMIT")
         {
-            return {Token::KwLimit, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordLimit, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "DELETE")
         {
-            return {Token::KwDelete, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordDelete, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "UPDATE")
         {
-            return {Token::KwUpdate, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordUpdate, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "SET")
         {
-            return {Token::KwSet, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordSet, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "TRUE")
         {
-            return {Token::Constant, Token::DataConstant{Bool::TRUE},
+            return {Token::kConstant, Token::DataConstant{Bool::kTrue},
                     SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "FALSE")
         {
-            return {Token::Constant, Token::DataConstant{Bool::FALSE},
+            return {Token::kConstant, Token::DataConstant{Bool::kFalse},
                     SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "AND")
         {
-            return {Token::Op2, Op2::LogicAnd, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kOp2, Op2::kLogicAnd,
+                    SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "OR")
         {
-            return {Token::Op2, Op2::LogicOr, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kOp2, Op2::kLogicOr,
+                    SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "COUNT")
         {
-            return {Token::Function, Function::COUNT,
+            return {Token::kFunction, Function::kCount,
                     SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "SUM")
         {
-            return {Token::Function, Function::SUM,
+            return {Token::kFunction, Function::kSum,
                     SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "AVG")
         {
-            return {Token::Function, Function::AVG,
+            return {Token::kFunction, Function::kAvg,
                     SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "MAX")
         {
-            return {Token::Function, Function::MAX,
+            return {Token::kFunction, Function::kMax,
                     SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "MIN")
         {
-            return {Token::Function, Function::MIN,
+            return {Token::kFunction, Function::kMin,
                     SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "BETWEEN")
         {
-            return {Token::KwBetween, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordBetween, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "IN")
         {
-            return {Token::KwIn, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordIn, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "IS")
         {
-            return {Token::KwIs, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordIs, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "EXISTS")
         {
-            return {Token::KwExists, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordExists, SourceText{std::move(identifier), text_begin, ptr_}};
         }
         if (identifier == "CAST")
         {
-            return {Token::KwCast, SourceText{std::move(identifier), text_begin, ptr_}};
+            return {Token::kKeywordCast, SourceText{std::move(identifier), text_begin, ptr_}};
         }
-        return {Token::Identifier, SourceText{std::move(identifier), text_begin, ptr_}};
+        return {Token::kIdentifier, SourceText{std::move(identifier), text_begin, ptr_}};
     }
     if (IsDigit(*ptr_))
     {
@@ -430,10 +432,10 @@ Token Lexer::NextToken()
             const auto real =
                 static_cast<ColumnValueReal>(whole) +
                 (static_cast<ColumnValueReal>(fraction) / static_cast<ColumnValueReal>(divisor));
-            return {Token::Constant, Token::DataConstant{real}, SourceText{text_begin, ptr_}};
+            return {Token::kConstant, Token::DataConstant{real}, SourceText{text_begin, ptr_}};
         }
         const auto integer = static_cast<ColumnValueInteger>(whole);
-        return {Token::Constant, Token::DataConstant{integer}, SourceText{text_begin, ptr_}};
+        return {Token::kConstant, Token::DataConstant{integer}, SourceText{text_begin, ptr_}};
     }
     if (*ptr_ == '\'' || *ptr_ == '\"' || *ptr_ == '`')
     {
@@ -452,7 +454,7 @@ Token Lexer::NextToken()
             throw ClientError{"invalid character", SourceText{ptr_}};
         }
         ptr_++;
-        return {Token::Constant, Token::DataConstant{std::move(value)},
+        return {Token::kConstant, Token::DataConstant{std::move(value)},
                 SourceText{text_begin, ptr_}};
     }
     throw ClientError{"invalid character", SourceText{ptr_}};

@@ -278,7 +278,7 @@ void Test()
         static constexpr unsigned int kIterationCount = 10;
         for (unsigned int j = 0; j < kIterationCount; j++)
         {
-            const page::Id     index_set(rand() % test.size());
+            const auto         index_set = static_cast<page::Id>(rand() % test.size());
             const page::Offset value_set = (rand() % 100'000U) + 1U;
             Update(file_id, index_set, value_set);
             test.at(index_set.Get())                 = value_set;
